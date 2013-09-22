@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -22,7 +22,10 @@ Glacier2::RouterI::RouterI(const InstancePtr& instance, const ConnectionPtr& con
                            const SessionPrx& session, const Identity& controlId, const FilterManagerPtr& filters,
                            const Ice::Context& context) :
     _instance(instance),
-    _clientBlobject(new ClientBlobject(_instance, filters, context)),
+    _routingTable(new RoutingTable(_instance->communicator(), _instance->proxyVerifier())),
+    _clientBlobject(new ClientBlobject(_instance, filters, context, _routingTable)),
+    _clientBlobjectBuffered(_instance->clientRequestQueueThread()),
+    _serverBlobjectBuffered(_instance->serverRequestQueueThread()),
     _connection(connection),
     _userId(userId),
     _session(session),
@@ -58,6 +61,11 @@ Glacier2::RouterI::RouterI(const InstancePtr& instance, const ConnectionPtr& con
         ServerBlobjectPtr& serverBlobject = const_cast<ServerBlobjectPtr&>(_serverBlobject);
         serverBlobject = new ServerBlobject(_instance, _connection);
     }
+
+    if(_instance->getObserver())
+    {
+        updateObserver(_instance->getObserver());
+    }
 }
 
 Glacier2::RouterI::~RouterI()
@@ -65,7 +73,20 @@ Glacier2::RouterI::~RouterI()
 }
 
 void
-Glacier2::RouterI::destroy(const AMI_Session_destroyPtr& amiCB)
+Glacier2::RouterI::updateObserver(const Glacier2::Instrumentation::RouterObserverPtr& observer)
+{
+    // Can only be called with the SessionRouterI mutex locked
+
+    _observer = _routingTable->updateObserver(observer, _userId, _connection);
+    _clientBlobject->updateObserver(_observer);
+    if(_serverBlobject)
+    {
+        _serverBlobject->updateObserver(_observer);
+    }
+}
+
+void
+Glacier2::RouterI::destroy(const Callback_Session_destroyPtr& asyncCB)
 {
     if(_session)
     {
@@ -91,13 +112,21 @@ Glacier2::RouterI::destroy(const AMI_Session_destroyPtr& amiCB)
 
         if(_context.size() > 0)
         {
-            _session->destroy_async(amiCB, _context);
+            _session->begin_destroy(_context, asyncCB);
         }
         else
         {
-            _session->destroy_async(amiCB);
+            _session->begin_destroy(asyncCB);
         }
     }
+
+    _clientBlobject->destroy();
+    if(_serverBlobject)
+    {
+        _serverBlobject->destroy();
+    }
+
+    _routingTable->destroy();
 }
 
 ObjectPrx
@@ -125,8 +154,7 @@ Glacier2::RouterI::addProxy(const ObjectPrx& proxy, const Current& current)
 ObjectProxySeq
 Glacier2::RouterI::addProxies(const ObjectProxySeq& proxies, const Current& current)
 {
-    updateTimestamp();
-    return _clientBlobject->add(proxies, current);
+    return _routingTable->add(proxies, current);
 }
 
 string
@@ -172,18 +200,22 @@ Glacier2::RouterI::getSessionTimeout(const Current&) const
 ClientBlobjectPtr
 Glacier2::RouterI::getClientBlobject() const
 {
-    updateTimestamp();
+    // Can only be called with the SessionRouterI mutex locked
+    if(!_clientBlobjectBuffered && _observer)
+    {
+        _observer->forwarded(true);
+    }
     return _clientBlobject;
 }
 
 ServerBlobjectPtr
 Glacier2::RouterI::getServerBlobject() const
 {
-    //
-    // We do not update the timestamp for callbacks from the
-    // server. We only update the timestamp for client activity.
-    //
-
+    // Can only be called with the SessionRouterI mutex locked
+    if(!_serverBlobjectBuffered && _observer)
+    {
+        _observer->forwarded(false);
+    }
     return _serverBlobject;
 }
 
@@ -196,21 +228,14 @@ Glacier2::RouterI::getSession() const
 IceUtil::Time
 Glacier2::RouterI::getTimestamp() const
 {
-    IceUtil::Mutex::TryLock lock(_timestampMutex);
-    if(lock.acquired())
-    {
-        return _timestamp;
-    }
-    else
-    {
-        return IceUtil::Time::now(IceUtil::Time::Monotonic);
-    }
+    // Can only be called with the SessionRouterI mutex locked
+    return _timestamp;
 }
 
 void
 Glacier2::RouterI::updateTimestamp() const
 {
-    IceUtil::Mutex::Lock lock(_timestampMutex);
+    // Can only be called with the SessionRouterI mutex locked
     _timestamp = IceUtil::Time::now(IceUtil::Time::Monotonic);
 }
 

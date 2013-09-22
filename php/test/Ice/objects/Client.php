@@ -1,7 +1,7 @@
 <?
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -146,7 +146,7 @@ class MyObjectFactory implements Ice_ObjectFactory
         {
             return new FI();
         }
-	else if($id == "::Test::I")
+        else if($id == "::Test::I")
         {
             return new II();
         }
@@ -353,7 +353,33 @@ function allTests($communicator)
     $initial->setI($j);
     $initial->setI($h);
     echo "ok\n";
- 
+
+    echo "testing sequences... ";
+    flush();
+    $outS = null;
+    $initial->opBaseSeq(array(), $outS);
+
+    $retS = $initial->opBaseSeq(array(new Test_Base()), $outS);
+    test(count($retS) == 1 && count($outS) == 1);
+    echo "ok\n";
+
+    echo "testing compact ID... ";
+    flush();
+    try
+    {
+        $r = $initial->getCompact();
+        test($r != null);
+    }
+    catch(Exception $ex)
+    {
+        $one = $NS ? "Ice\\OperationNotExistException" : "Ice_OperationNotExistException";
+        if(!($ex instanceof $one))
+        {
+            throw $ex;
+        }
+    }
+    echo "ok\n";
+
     echo "testing UnexpectedObjectException... ";
     flush();
     $ref = "uoet:default -p 12010";
@@ -391,7 +417,7 @@ function allTests($communicator)
     return $initial;
 }
 
-$communicator = Ice_initialize(&$argv);
+$communicator = Ice_initialize($argv);
 $factory = new MyObjectFactory();
 $communicator->addObjectFactory($factory, "::Test::B");
 $communicator->addObjectFactory($factory, "::Test::C");

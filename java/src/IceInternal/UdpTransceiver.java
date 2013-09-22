@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -48,9 +48,20 @@ final class UdpTransceiver implements Transceiver
         _fd = null;
     }
 
+    @SuppressWarnings("deprecation") 
     public boolean
     write(Buffer buf)
     {
+        //
+        // We don't want write or send to be called on android main thread as this will cause
+        // NetworkOnMainThreadException to be thrown. If that is the android main thread
+        // we return false and this method will be later called from the thread pool
+        //
+        if(Util.isAndroidMainThread(Thread.currentThread()))
+        {
+            return false;
+        }
+
         assert(buf.b.position() == 0);
         assert(_fd != null && _state >= StateConnected);
                 
@@ -113,7 +124,8 @@ final class UdpTransceiver implements Transceiver
         assert(ret == buf.b.limit());
         return true;
     }
-
+    
+    @SuppressWarnings("deprecation")
     public boolean
     read(Buffer buf, Ice.BooleanHolder moreData)
     {
@@ -228,47 +240,33 @@ final class UdpTransceiver implements Transceiver
     public Ice.ConnectionInfo
     getInfo()
     {
-        assert(_fd != null);
-
         Ice.UDPConnectionInfo info = new Ice.UDPConnectionInfo();
-        java.net.DatagramSocket socket = _fd.socket();
-        info.localAddress = socket.getLocalAddress().getHostAddress();
-        info.localPort = socket.getLocalPort();
-        if(_state == StateNotConnected)
+        if(_fd != null)
         {
-            if(_peerAddr != null)
+            java.net.DatagramSocket socket = _fd.socket();
+            info.localAddress = socket.getLocalAddress().getHostAddress();
+            info.localPort = socket.getLocalPort();
+            if(_state == StateNotConnected)
             {
-                info.remoteAddress = _peerAddr.getAddress().getHostAddress();
-                info.remotePort = _peerAddr.getPort();
+                if(_peerAddr != null)
+                {
+                    info.remoteAddress = _peerAddr.getAddress().getHostAddress();
+                    info.remotePort = _peerAddr.getPort();
+                }
             }
             else
             {
-                info.remoteAddress = "";
-                info.remotePort = -1;
-            }
-        }
-        else
-        {
-            if(socket.getInetAddress() != null)
-            {
-                info.remoteAddress = socket.getInetAddress().getHostAddress();
-                info.remotePort = socket.getPort();
-            }
-            else
-            {
-                info.remoteAddress = "";
-                info.remotePort = -1;
+                if(socket.getInetAddress() != null)
+                {
+                    info.remoteAddress = socket.getInetAddress().getHostAddress();
+                    info.remotePort = socket.getPort();
+                }
             }
         }
         if(_mcastAddr != null)
         {
             info.mcastAddress = _mcastAddr.getAddress().getHostAddress();
             info.mcastPort = _mcastAddr.getPort();
-        }
-        else
-        {
-            info.mcastAddress = "";
-            info.mcastPort = -1;
         }
         return info;
     }
@@ -301,6 +299,7 @@ final class UdpTransceiver implements Transceiver
     //
     // Only for use by UdpEndpoint
     //
+    @SuppressWarnings("deprecation")
     UdpTransceiver(Instance instance, java.net.InetSocketAddress addr, String mcastInterface, int mcastTtl)
     {
         _traceLevels = instance.traceLevels();
@@ -311,15 +310,19 @@ final class UdpTransceiver implements Transceiver
 
         try
         {
-            _fd = Network.createUdpSocket();
+            _fd = Network.createUdpSocket(_addr);
             setBufSize(instance);
             Network.setBlock(_fd, false);
-            Network.doConnect(_fd, _addr);
-            _state = StateConnected; // We're connected now
+            //
+            // NOTE: setting the multicast interface before performing the
+            // connect is important for some OS such as OS X.
+            //
             if(_addr.getAddress().isMulticastAddress())
             {
                 configureMulticast(null, mcastInterface, mcastTtl);
             }
+            Network.doConnect(_fd, _addr);
+            _state = StateConnected; // We're connected now
 
             if(_traceLevels.network >= 1)
             {
@@ -337,6 +340,7 @@ final class UdpTransceiver implements Transceiver
     //
     // Only for use by UdpEndpoint
     //
+    @SuppressWarnings("deprecation")
     UdpTransceiver(Instance instance, String host, int port, String mcastInterface, boolean connect)
     {
         _traceLevels = instance.traceLevels();
@@ -346,10 +350,10 @@ final class UdpTransceiver implements Transceiver
 
         try
         {
-            _fd = Network.createUdpSocket();
+            _addr = Network.getAddressForServer(host, port, instance.protocolSupport(), instance.preferIPv6());
+            _fd = Network.createUdpSocket(_addr);
             setBufSize(instance);
             Network.setBlock(_fd, false);
-            _addr = Network.getAddressForServer(host, port, instance.protocolSupport());
             if(_traceLevels.network >= 2)
             {
                 String s = "attempting to bind to udp socket " + Network.addrToString(_addr);
@@ -371,14 +375,15 @@ final class UdpTransceiver implements Transceiver
                     //
                     int protocol = 
                         _mcastAddr.getAddress().getAddress().length == 4 ? Network.EnableIPv4 : Network.EnableIPv6;
-                    _addr = Network.getAddressForServer("", port, protocol);
+                    _addr = Network.getAddressForServer("", port, protocol, instance.preferIPv6());
                 }
                 _addr = Network.doBind(_fd, _addr);
+                configureMulticast(_mcastAddr, mcastInterface, -1);
+
                 if(port == 0)
                 {
                     _mcastAddr = new java.net.InetSocketAddress(_mcastAddr.getAddress(), _addr.getPort());
                 }
-                configureMulticast(_mcastAddr, mcastInterface, -1);
             }
             else
             {
@@ -405,7 +410,7 @@ final class UdpTransceiver implements Transceiver
             if(_traceLevels.network >= 1)
             {
                 StringBuffer s = new StringBuffer("starting to receive udp packets\n");
-		s.append(toString());
+                s.append(toString());
 
                 java.util.List<String> interfaces = 
                     Network.getHostsForEndpointExpand(_addr.getAddress().getHostAddress(), instance.protocolSupport(),
@@ -494,115 +499,220 @@ final class UdpTransceiver implements Transceiver
     }
 
     //
-    // The NIO classes do not support multicast, at least not directly. This method works around
-    // that limitation by using reflection to configure the file descriptor of a DatagramChannel for
-    // multicast operation. Specifically, an instance of java.net.PlainDatagramSocketImpl is used
-    // to (temporarily) wrap the channel's file descriptor.
+    // The NIO classes before JDK 1.7 do not support multicast, at least not directly. 
+    // This method works around that limitation by using reflection to configure the
+    // file descriptor of a DatagramChannel for multicast operation. Specifically, an 
+    // instance of java.net.PlainDatagramSocketImpl is use to (temporarily) wrap the 
+    // channel's file descriptor.
+    //
+    // If using JDK >= 1.7 we use the new added MulticastChannel via reflection to allow 
+    // compilation with older JDK versions.
     //
     private void
     configureMulticast(java.net.InetSocketAddress group, String interfaceAddr, int ttl)
     {
         try
         {
-            Class<?> cls;
-
-            cls = Util.findClass("java.net.PlainDatagramSocketImpl", null);
-            if(cls == null)
+            Class<?> cls = Util.findClass("java.nio.channels.MulticastChannel", null);
+            java.lang.reflect.Method m = null;
+            java.net.DatagramSocketImpl socketImpl = null;
+            java.lang.reflect.Field socketFd = null;
+            java.net.NetworkInterface intf = null;
+            if(cls == null || !cls.isAssignableFrom(_fd.getClass()))
             {
-                throw new Ice.SocketException();
+                cls = Util.findClass("java.net.PlainDatagramSocketImpl", null);
+                if(cls == null)
+                {
+                    throw new Ice.SocketException();
+                }
+                java.lang.reflect.Constructor<?> c = cls.getDeclaredConstructor((Class<?>[])null);
+                c.setAccessible(true);
+                socketImpl = (java.net.DatagramSocketImpl)c.newInstance((Object[])null);
+
+                //
+                // We have to invoke the protected create() method on the PlainDatagramSocketImpl object so
+                // that this hack works properly when IPv6 is enabled on Windows.
+                //
+                try
+                {
+                    m = cls.getDeclaredMethod("create", (Class<?>[])null);
+                    m.setAccessible(true);
+                    m.invoke(socketImpl);
+                }
+                catch(java.lang.NoSuchMethodException ex) // OpenJDK
+                {
+                }
+
+                cls = Util.findClass("sun.nio.ch.DatagramChannelImpl", null);
+                if(cls == null)
+                {
+                    throw new Ice.SocketException();
+                }
+                java.lang.reflect.Field channelFd = cls.getDeclaredField("fd");
+                channelFd.setAccessible(true);
+
+                socketFd = java.net.DatagramSocketImpl.class.getDeclaredField("fd");
+                socketFd.setAccessible(true);
+                socketFd.set(socketImpl, channelFd.get(_fd));
             }
-            java.lang.reflect.Constructor<?> c = cls.getDeclaredConstructor((Class<?>[])null);
-            c.setAccessible(true);
-            java.net.DatagramSocketImpl socketImpl = (java.net.DatagramSocketImpl)c.newInstance((Object[])null);
-
-            //
-            // We have to invoke the protected create() method on the PlainDatagramSocketImpl object so
-            // that this hack works properly when IPv6 is enabled on Windows.
-            //
-	    java.lang.reflect.Method m;
-	    try
-	    {
-		m = cls.getDeclaredMethod("create", (Class<?>[])null);
-		m.setAccessible(true);
-		m.invoke(socketImpl);
-	    }
-	    catch(java.lang.NoSuchMethodException ex) // OpenJDK
-	    {
-	    }
-
-            cls = Util.findClass("sun.nio.ch.DatagramChannelImpl", null);
-            if(cls == null)
-            {
-                throw new Ice.SocketException();
-            }
-            java.lang.reflect.Field channelFd = cls.getDeclaredField("fd");
-            channelFd.setAccessible(true);
-
-            java.lang.reflect.Field socketFd = java.net.DatagramSocketImpl.class.getDeclaredField("fd");
-            socketFd.setAccessible(true);
-            socketFd.set(socketImpl, channelFd.get(_fd));
 
             try 
             {
-                java.net.NetworkInterface intf = null;
                 if(interfaceAddr.length() != 0)
                 {
                     intf = java.net.NetworkInterface.getByName(interfaceAddr);
                     if(intf == null)
                     {
-                        java.net.InetSocketAddress addr = Network.getAddress(interfaceAddr, 0, Network.EnableIPv4);
+                        java.net.InetSocketAddress addr = Network.getAddressForServer(interfaceAddr, 0, 
+                                                                                      Network.EnableIPv4, false);
                         intf = java.net.NetworkInterface.getByInetAddress(addr.getAddress());
                     }
                 }
 
                 if(group != null)
                 {
+                    //
+                    // Join multicast group.
+                    // 
                     Class<?>[] types;
                     Object[] args;
-		    try
-		    {
-                        types = new Class<?>[]{ java.net.SocketAddress.class, java.net.NetworkInterface.class };
-                        m = socketImpl.getClass().getDeclaredMethod("joinGroup", types);
-                        args = new Object[]{ group, intf };
-		    }
-		    catch(java.lang.NoSuchMethodException ex) // OpenJDK
-		    {                        
+                    if(socketImpl == null)
+                    {
                         types = new Class<?>[]{ java.net.InetAddress.class, java.net.NetworkInterface.class };
-			m = socketImpl.getClass().getDeclaredMethod("join", types);
-                        args = new Object[]{ group.getAddress(), intf };
-		    }
-                    m.setAccessible(true);
-                    m.invoke(socketImpl, args);
+                        m = _fd.getClass().getDeclaredMethod("join", types);
+                        m.setAccessible(true);
+                        boolean join = false;
+                        if(intf != null)
+                        {
+                            m.invoke(_fd, new Object[] { group.getAddress(), intf });
+                            join = true;
+                        }
+                        else
+                        {
+                            //
+                            // If the user doesn't specify an interface, we join to the multicast group with all the
+                            // interfaces that support multicast and has a configured address with the same protocol
+                            // as the group address protocol.
+                            //
+                            int protocol = group.getAddress().getAddress().length == 4 ? Network.EnableIPv4 :
+                                                                                         Network.EnableIPv6;
+
+                            java.util.List<java.net.NetworkInterface> interfaces = 
+                                        java.util.Collections.list(java.net.NetworkInterface.getNetworkInterfaces());
+                            for(java.net.NetworkInterface iface : interfaces)
+                            {
+                                if(!iface.supportsMulticast())
+                                {
+                                    continue;
+                                }
+                                boolean hasProtocolAddress = false;
+                                java.util.List<java.net.InetAddress> addresses =
+                                                                java.util.Collections.list(iface.getInetAddresses());
+                                for(java.net.InetAddress address : addresses)
+                                {
+                                    if(address.getAddress().length == 4 && protocol == Network.EnableIPv4 ||
+                                       address.getAddress().length != 4 && protocol == Network.EnableIPv6)
+                                    {
+                                        hasProtocolAddress = true;
+                                        break;
+                                    }
+                                }
+
+                                if(hasProtocolAddress)
+                                {
+                                    m.invoke(_fd, new Object[] { group.getAddress(), iface });
+                                    join = true;
+                                }
+                            }
+
+                            if(!join)
+                            {
+                                throw new Ice.SocketException(new IllegalArgumentException(
+                                                            "There aren't any interfaces that support multicast, " +
+                                                            "or the interfaces that support it\n" +
+                                                            "are not configured for the group protocol. " +
+                                                            "Cannot join the mulitcast group."));
+                            }
+                        }
+                    }
+                    else
+                    {
+                        try
+                        {
+                            types = new Class<?>[]{ java.net.SocketAddress.class, java.net.NetworkInterface.class };
+                            m = socketImpl.getClass().getDeclaredMethod("joinGroup", types);
+                            args = new Object[]{ group, intf };
+                        }
+                        catch(java.lang.NoSuchMethodException ex) // OpenJDK
+                        {                        
+                            types = new Class<?>[]{ java.net.InetAddress.class, java.net.NetworkInterface.class };
+                            m = socketImpl.getClass().getDeclaredMethod("join", types);
+                            args = new Object[]{ group.getAddress(), intf };
+                        }
+                        m.setAccessible(true);
+                        m.invoke(socketImpl, args);
+                    }
                 }
                 else if(intf != null)
                 {
-                    Class<?>[] types = new Class<?>[]{ Integer.TYPE, Object.class };
+                    //
+                    // Otherwise, set the multicast interface if specified.
+                    //
 
-		    try
-		    {
-			m = socketImpl.getClass().getDeclaredMethod("setOption", types);
-		    }
-		    catch(java.lang.NoSuchMethodException ex) // OpenJDK
-		    {
-			m = socketImpl.getClass().getDeclaredMethod("socketSetOption", types);
-		    }
-                    m.setAccessible(true);
-                    Object[] args = new Object[]{ Integer.valueOf(java.net.SocketOptions.IP_MULTICAST_IF2), intf };
-                    m.invoke(socketImpl, args);
+                    Class<?>[] types = new Class<?>[]{ Integer.TYPE, Object.class };
+                    if(socketImpl == null)
+                    {
+                        Class<?> socketOption = Util.findClass("java.net.SocketOption", null);
+                        Class<?> standardSocketOptions = Util.findClass("java.net.StandardSocketOptions", null);
+                        m = _fd.getClass().getDeclaredMethod("setOption", new Class<?>[]{socketOption, Object.class});
+                        m.setAccessible(true);
+                        java.lang.reflect.Field ipMcastIf = standardSocketOptions.getDeclaredField("IP_MULTICAST_IF");
+                        ipMcastIf.setAccessible(true);
+                        m.invoke(_fd, new Object[]{ ipMcastIf.get(null), intf });
+                    }
+                    else
+                    {
+                        try
+                        {
+                            m = socketImpl.getClass().getDeclaredMethod("setOption", types);
+                        }
+                        catch(java.lang.NoSuchMethodException ex) // OpenJDK
+                        {
+                            m = socketImpl.getClass().getDeclaredMethod("socketSetOption", types);
+                        }
+                        m.setAccessible(true);
+                        Object[] args = new Object[]{ Integer.valueOf(java.net.SocketOptions.IP_MULTICAST_IF2), intf };
+                        m.invoke(socketImpl, args);
+                    }
                 }
 
                 if(ttl != -1)
                 {
-                    Class<?>[] types = new Class<?>[]{ Integer.TYPE };
-                    m = java.net.DatagramSocketImpl.class.getDeclaredMethod("setTimeToLive", types);
-                    m.setAccessible(true);
-                    Object[] args = new Object[]{ Integer.valueOf(ttl) };
-                    m.invoke(socketImpl, args);
+                    if(socketImpl == null)
+                    {
+                        Class<?> socketOption = Util.findClass("java.net.SocketOption", null);
+                        Class<?> standardSocketOptions = Util.findClass("java.net.StandardSocketOptions", null);
+                        m = _fd.getClass().getDeclaredMethod("setOption", new Class<?>[]{socketOption, Object.class});
+                        m.setAccessible(true);
+                        java.lang.reflect.Field ipMcastTtl = standardSocketOptions.getDeclaredField("IP_MULTICAST_TTL");
+                        ipMcastTtl.setAccessible(true);
+                        m.invoke(_fd, new Object[]{ ipMcastTtl.get(null), ttl });
+                    }
+                    else
+                    {
+                        Class<?>[] types = new Class<?>[]{ Integer.TYPE };
+                        m = java.net.DatagramSocketImpl.class.getDeclaredMethod("setTimeToLive", types);
+                        m.setAccessible(true);
+                        m.invoke(socketImpl, new Object[]{ Integer.valueOf(ttl) });
+                    }
                 }
             }
             finally 
             {
-                socketFd.set(socketImpl, null);
+                if(socketFd != null && socketImpl != null)
+                {
+                    socketFd.set(socketImpl, null);
+                }
             }
         }
         catch(Exception ex)
@@ -615,13 +725,23 @@ final class UdpTransceiver implements Transceiver
     finalize()
         throws Throwable
     {
-        IceUtilInternal.Assert.FinalizerAssert(_fd == null);
-
-        super.finalize();
+        try
+        {
+            IceUtilInternal.Assert.FinalizerAssert(_fd == null);
+        }
+        catch(java.lang.Exception ex)
+        {
+        }
+        finally
+        {
+            super.finalize();
+        }
     }
 
     private TraceLevels _traceLevels;
     private Ice.Logger _logger;
+
+    @SuppressWarnings("deprecation")
     private Ice.Stats _stats;
     private int _state;
     private int _rcvSize;

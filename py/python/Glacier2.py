@@ -1,6 +1,6 @@
 # **********************************************************************
 #
-# Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -23,6 +23,7 @@ import Glacier2_Router_ice
 import Glacier2_Session_ice
 import Glacier2_PermissionsVerifier_ice
 import Glacier2_SSLInfo_ice
+import Glacier2_Metrics_ice
 
 class SessionNotExistException(Exception):
     def __init__(self):
@@ -31,22 +32,6 @@ class SessionNotExistException(Exception):
 class RestartSessionException(Exception):
     def __init__(self):
         pass
-
-class AMI_Router_refreshSessionI:
-    def __init__(self, app, pinger):
-        self._app = app
-        self._pinger = pinger
-
-    def ice_response(self):
-        pass
-
-    def ice_exception(self, ex):
-        # Here the session has gone. The thread
-        # terminates, and we notify the
-        # application that the session has been
-        # destroyed.
-        self._pinger.done()
-        self._app.sessionDestroyed()
 
 class SessionPingThread(threading.Thread):
     def __init__(self, app, router, period):
@@ -61,7 +46,7 @@ class SessionPingThread(threading.Thread):
         self._cond.acquire()
         try:
             while not self._done:
-                self._router.refreshSession_async(AMI_Router_refreshSessionI(self._app, self))
+                self._router.begin_refreshSession(self.response, self.exception)
 
                 if not self._done:
                     self._cond.wait(self._period)
@@ -76,6 +61,20 @@ class SessionPingThread(threading.Thread):
                 self._cond.notify()
         finally:
             self._cond.release()
+
+    def response(self):
+        #
+        # Ignore successful call to refreshSession.
+        #
+        pass
+
+    def exception(self, ex):
+        #
+        # Here the session has gone. The thread terminates, and we notify the
+        # application that the session has been destroyed.
+        #
+        self.done()
+        self._app.sessionDestroyed()
 
 class Application(Ice.Application):
 
@@ -129,7 +128,7 @@ Application.NoSignalHandling.
         return Ice.Identity(name, self.categoryForClient())
 
     def addWithUUID(self, servant):
-        return objectAdapter().add(servant, createCallbackIdentity(Ice.generateUUID()))
+        return self.objectAdapter().add(servant, self.createCallbackIdentity(Ice.generateUUID()))
 
     def objectAdapter(self):
         if Application._router == None:

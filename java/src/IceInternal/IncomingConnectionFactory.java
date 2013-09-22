@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -27,6 +27,15 @@ public final class IncomingConnectionFactory extends EventHandler implements Ice
     destroy()
     {
         setState(StateClosed);
+    }
+
+    public synchronized void
+    updateConnectionObservers()
+    {
+        for(Ice.ConnectionI connection : _connections)
+        {
+            connection.updateObserver();
+        }
     }
 
     public void
@@ -144,7 +153,7 @@ public final class IncomingConnectionFactory extends EventHandler implements Ice
                 connections.add(connection);
             }
         }
-        
+
         return connections;
     }
 
@@ -183,7 +192,7 @@ public final class IncomingConnectionFactory extends EventHandler implements Ice
                 Thread.yield();
                 return;
             }
-                
+
             //
             // Reap closed connections.
             //
@@ -237,7 +246,8 @@ public final class IncomingConnectionFactory extends EventHandler implements Ice
 
             try
             {
-                connection = new Ice.ConnectionI(_instance, _reaper, transceiver, null, _endpoint, _adapter);
+                connection = new Ice.ConnectionI(_adapter.getCommunicator(), _instance, _reaper, transceiver, null,
+                                                 _endpoint, _adapter);
             }
             catch(Ice.LocalException ex)
             {
@@ -279,7 +289,7 @@ public final class IncomingConnectionFactory extends EventHandler implements Ice
             return _transceiver.toString();
         }
 
-        assert(_acceptor != null);      
+        assert(_acceptor != null);
         return _acceptor.toString();
     }
 
@@ -321,7 +331,7 @@ public final class IncomingConnectionFactory extends EventHandler implements Ice
             return;
         }
 
-        if(_warn)
+        if(_warn && !(ex instanceof Ice.SocketException))
         {
             warning(ex);
         }
@@ -356,9 +366,10 @@ public final class IncomingConnectionFactory extends EventHandler implements Ice
             if(_transceiver != null)
             {
                 _endpoint = h.value;
-                Ice.ConnectionI connection = 
-                    new Ice.ConnectionI(_instance, _reaper, _transceiver, null, _endpoint, _adapter);
-                connection.start(null);                
+                Ice.ConnectionI connection =
+                    new Ice.ConnectionI(_adapter.getCommunicator(), _instance, _reaper, _transceiver, null, _endpoint,
+                                        _adapter);
+                connection.start(null);
                 _connections.add(connection);
             }
             else
@@ -384,7 +395,7 @@ public final class IncomingConnectionFactory extends EventHandler implements Ice
                 }
                 catch(Ice.LocalException e)
                 {
-                    // Here we ignore any exceptions in close().                        
+                    // Here we ignore any exceptions in close().
                 }
             }
 
@@ -396,7 +407,7 @@ public final class IncomingConnectionFactory extends EventHandler implements Ice
                 }
                 catch(Ice.LocalException e)
                 {
-                    // Here we ignore any exceptions in close().                        
+                    // Here we ignore any exceptions in close().
                 }
             }
 
@@ -418,10 +429,18 @@ public final class IncomingConnectionFactory extends EventHandler implements Ice
     finalize()
         throws Throwable
     {
-        IceUtilInternal.Assert.FinalizerAssert(_state == StateFinished);
-        IceUtilInternal.Assert.FinalizerAssert(_connections.isEmpty());
-
-        super.finalize();
+        try
+        {
+            IceUtilInternal.Assert.FinalizerAssert(_state == StateFinished);
+            IceUtilInternal.Assert.FinalizerAssert(_connections.isEmpty());
+        }
+        catch(java.lang.Exception ex)
+        {
+        }
+        finally
+        {
+            super.finalize();
+        }
     }
 
     private static final int StateActive = 0;
@@ -447,6 +466,14 @@ public final class IncomingConnectionFactory extends EventHandler implements Ice
                 }
                 if(_acceptor != null)
                 {
+                    if(_instance.traceLevels().network >= 1)
+                    {
+                        StringBuffer s = new StringBuffer("accepting ");
+                        s.append(_endpoint.protocol());
+                        s.append(" connections at ");
+                        s.append(_acceptor.toString());
+                        _instance.initializationData().logger.trace(_instance.traceLevels().networkCat, s.toString());
+                    }                
                     ((Ice.ObjectAdapterI)_adapter).getThreadPool().register(this, SocketOperation.Read);
                 }
 
@@ -465,6 +492,14 @@ public final class IncomingConnectionFactory extends EventHandler implements Ice
                 }
                 if(_acceptor != null)
                 {
+                    if(_instance.traceLevels().network >= 1)
+                    {
+                        StringBuffer s = new StringBuffer("holding ");
+                        s.append(_endpoint.protocol());
+                        s.append(" connections at ");
+                        s.append(_acceptor.toString());
+                        _instance.initializationData().logger.trace(_instance.traceLevels().networkCat, s.toString());
+                    }                
                     ((Ice.ObjectAdapterI)_adapter).getThreadPool().unregister(this, SocketOperation.Read);
                 }
 

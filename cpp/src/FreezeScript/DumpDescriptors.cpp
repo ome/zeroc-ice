@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -1249,7 +1249,7 @@ FreezeScript::RecordDescriptor::RecordDescriptor(const DescriptorPtr& parent, in
 }
 
 void
-FreezeScript::RecordDescriptor::execute(const SymbolTablePtr& sym, ExecuteInfo* info)
+FreezeScript::RecordDescriptor::execute(const SymbolTablePtr& /*sym*/, ExecuteInfo* info)
 {
     //
     // Temporarily add an object factory.
@@ -1269,12 +1269,12 @@ FreezeScript::RecordDescriptor::execute(const SymbolTablePtr& sym, ExecuteInfo* 
             Ice::ByteSeq keyBytes;
             keyBytes.resize(dbKey.get_size());
             memcpy(&keyBytes[0], dbKey.get_data(), dbKey.get_size());
-            Ice::InputStreamPtr inKey = Ice::createInputStream(info->communicator, keyBytes);
+            Ice::InputStreamPtr inKey = Ice::wrapInputStream(info->communicator, keyBytes);
 
             Ice::ByteSeq valueBytes;
             valueBytes.resize(dbValue.get_size());
             memcpy(&valueBytes[0], dbValue.get_data(), dbValue.get_size());
-            Ice::InputStreamPtr inValue = Ice::createInputStream(info->communicator, valueBytes);
+            Ice::InputStreamPtr inValue = Ice::wrapInputStream(info->communicator, valueBytes);
             inValue->startEncapsulation();
 
             //
@@ -1398,7 +1398,7 @@ FreezeScript::DatabaseDescriptor::execute(const SymbolTablePtr&, ExecuteInfo* in
 //
 FreezeScript::DumpDBDescriptor::DumpDBDescriptor(int line, const DataFactoryPtr& factory,
                                                  const ErrorReporterPtr& errorReporter,
-                                                 const IceXML::Attributes& attributes, const Slice::UnitPtr& unit) :
+                                                 const IceXML::Attributes& /*attributes*/, const Slice::UnitPtr& unit) :
     Descriptor(0, line, factory, errorReporter), _unit(unit), _info(new ExecuteInfo)
 {
     _info->symbolTable = new SymbolTableI(factory, unit, errorReporter, _info);

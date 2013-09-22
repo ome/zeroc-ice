@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -34,7 +34,7 @@ FileIteratorI::FileIteratorI(const AdminSessionIPtr& session,
 }
 
 bool
-FileIteratorI::read(int size, Ice::StringSeq& lines, const Ice::Current& current)
+FileIteratorI::read(int size, Ice::StringSeq& lines, const Ice::Current&)
 {
     try
     {
@@ -96,13 +96,13 @@ AdminSessionI::_register(const SessionServantManagerPtr& servantManager, const I
 }
 
 AdminPrx
-AdminSessionI::getAdmin(const Ice::Current& current) const
+AdminSessionI::getAdmin(const Ice::Current&) const
 {
     return _admin;
 }
 
 Ice::ObjectPrx
-AdminSessionI::getAdminCallbackTemplate(const Ice::Current& current) const
+AdminSessionI::getAdminCallbackTemplate(const Ice::Current&) const
 {
     return _adminCallbackTemplate;
 }
@@ -185,11 +185,11 @@ AdminSessionI::setObserversByIdentity(const Ice::Identity& registryObserver,
         throw ex;
     }
 
-    setupObserverSubscription(RegistryObserverTopicName, toProxy(registryObserver, current.con));
-    setupObserverSubscription(NodeObserverTopicName, toProxy(nodeObserver, current.con));
-    setupObserverSubscription(ApplicationObserverTopicName, toProxy(appObserver, current.con));
-    setupObserverSubscription(AdapterObserverTopicName, toProxy(adapterObserver, current.con));
-    setupObserverSubscription(ObjectObserverTopicName, toProxy(objectObserver, current.con));
+    setupObserverSubscription(RegistryObserverTopicName, toProxy(registryObserver, current.con, current.encoding));
+    setupObserverSubscription(NodeObserverTopicName, toProxy(nodeObserver, current.con, current.encoding));
+    setupObserverSubscription(ApplicationObserverTopicName, toProxy(appObserver, current.con, current.encoding));
+    setupObserverSubscription(AdapterObserverTopicName, toProxy(adapterObserver, current.con, current.encoding));
+    setupObserverSubscription(ObjectObserverTopicName, toProxy(objectObserver, current.con, current.encoding));
 
 }
 
@@ -223,7 +223,7 @@ AdminSessionI::finishUpdate(const Ice::Current& current)
 }
 
 string
-AdminSessionI::getReplicaName(const Ice::Current& current) const
+AdminSessionI::getReplicaName(const Ice::Current&) const
 {
     return _replicaName;
 }
@@ -238,6 +238,7 @@ AdminSessionI::openServerLog(const string& id, const string& path, int nLines, c
     catch(const SynchronizationException&)
     {
         throw DeploymentException("server is being updated");
+        return 0;
     }
 }
 
@@ -251,6 +252,7 @@ AdminSessionI::openServerStdOut(const string& id, int nLines, const Ice::Current
     catch(const SynchronizationException&)
     {
         throw DeploymentException("server is being updated");
+        return 0;
     }
 }
 
@@ -264,6 +266,7 @@ AdminSessionI::openServerStdErr(const string& id, int nLines, const Ice::Current
     catch(const SynchronizationException&)
     {
         throw DeploymentException("server is being updated");
+        return 0;
     }
 }
 
@@ -332,9 +335,9 @@ AdminSessionI::setupObserverSubscription(TopicName name, const Ice::ObjectPrx& o
 }
 
 Ice::ObjectPrx
-AdminSessionI::toProxy(const Ice::Identity& id, const Ice::ConnectionPtr& connection)
+AdminSessionI::toProxy(const Ice::Identity& id, const Ice::ConnectionPtr& connection, const Ice::EncodingVersion& v)
 {
-    return id.name.empty() ? Ice::ObjectPrx() : connection->createProxy(id);
+    return id.name.empty() ? Ice::ObjectPrx() : connection->createProxy(id)->ice_encodingVersion(v);
 }
 
 FileIteratorPrx
@@ -375,7 +378,7 @@ AdminSessionI::addFileIterator(const FileReaderPrx& reader,
 }
 
 void
-AdminSessionI::removeFileIterator(const Ice::Identity& id, const Ice::Current& current)
+AdminSessionI::removeFileIterator(const Ice::Identity& id, const Ice::Current&)
 {
     Lock sync(*this);
     _servantManager->remove(id);
@@ -486,7 +489,7 @@ AdminSessionManagerI::AdminSessionManagerI(const AdminSessionFactoryPtr& factory
 }
 
 Glacier2::SessionPrx
-AdminSessionManagerI::create(const string& userId, const Glacier2::SessionControlPrx& ctl, const Ice::Current& current)
+AdminSessionManagerI::create(const string& userId, const Glacier2::SessionControlPrx& ctl, const Ice::Current&)
 {
     return _factory->createGlacier2Session(userId, ctl);
 }
@@ -498,7 +501,7 @@ AdminSSLSessionManagerI::AdminSSLSessionManagerI(const AdminSessionFactoryPtr& f
 Glacier2::SessionPrx
 AdminSSLSessionManagerI::create(const Glacier2::SSLInfo& info, 
                                 const Glacier2::SessionControlPrx& ctl,
-                                const Ice::Current& current)
+                                const Ice::Current&)
 {
     string userDN;
     if(!info.certs.empty()) // TODO: Require userDN?

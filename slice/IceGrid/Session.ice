@@ -1,14 +1,13 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
-#ifndef ICE_GRID_SESSION_ICE
-#define ICE_GRID_SESSION_ICE
+#pragma once
 
 [["cpp:header-ext:h"]]
 
@@ -61,7 +60,7 @@ interface Session extends Glacier2::Session
      * @see #releaseObject
      *
      **/
-    ["ami", "amd"] Object* allocateObjectById(Ice::Identity id)
+    ["amd"] Object* allocateObjectById(Ice::Identity id)
         throws ObjectNotRegisteredException, AllocationException;
     
     /**
@@ -82,7 +81,7 @@ interface Session extends Glacier2::Session
      * @see #releaseObject
      *
      **/
-    ["ami", "amd"] Object* allocateObjectByType(string type)
+    ["amd"] Object* allocateObjectByType(string type)
         throws AllocationException;
     
     /**
@@ -122,4 +121,3 @@ interface Session extends Glacier2::Session
 
 };
 
-#endif

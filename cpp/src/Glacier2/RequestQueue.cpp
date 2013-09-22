@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -169,7 +169,8 @@ Glacier2::Request::queued()
     if(!_proxy->ice_isTwoway())
     {
 #if (defined(_MSC_VER) && (_MSC_VER >= 1600))
-        _amdCB->ice_response(true, pair<const Byte*, const Byte*>(nullptr, nullptr));
+        _amdCB->ice_response(true, pair<const Byte*, const Byte*>(static_cast<const Byte*>(nullptr), 
+                                                                  static_cast<const Byte*>(nullptr)));
 #else
         _amdCB->ice_response(true, pair<const Byte*, const Byte*>(0, 0));
 #endif
@@ -185,7 +186,8 @@ Glacier2::RequestQueue::RequestQueue(const RequestQueueThreadPtr& requestQueueTh
     _callback(newCallback_Object_ice_invoke(this, &RequestQueue::response, &RequestQueue::exception,
                                             &RequestQueue::sent)),
     _flushCallback(newCallback_Connection_flushBatchRequests(this, &RequestQueue::exception, &RequestQueue::sent)),
-    _pendingSend(false)
+    _pendingSend(false),
+    _destroyed(false)
 {
 }
 
@@ -193,6 +195,10 @@ bool
 Glacier2::RequestQueue::addRequest(const RequestPtr& request)
 {
     IceUtil::Mutex::Lock lock(*this);
+    if(_destroyed)
+    {
+        throw Ice::ObjectNotExistException(__FILE__, __LINE__);
+    }
     if(request->hasOverride())
     {
         for(deque<RequestPtr>::iterator p = _requests.begin(); p != _requests.end(); ++p)
@@ -203,6 +209,10 @@ Glacier2::RequestQueue::addRequest(const RequestPtr& request)
             //
             if(request->override(*p))
             {
+                if(_observer)
+                {
+                    _observer->overridden(!_connection);
+                }
                 request->queued();
                 *p = request;
                 return true;
@@ -219,6 +229,10 @@ Glacier2::RequestQueue::addRequest(const RequestPtr& request)
     }
     _requests.push_back(request);
     request->queued();
+    if(_observer)
+    {
+        _observer->queued(!_connection);
+    }
     return false;
 }
 
@@ -241,6 +255,44 @@ Glacier2::RequestQueue::flushRequests(set<Ice::ObjectPrx>& batchProxies)
 }
 
 void
+Glacier2::RequestQueue::destroy()
+{
+    IceUtil::Mutex::Lock lock(*this);
+
+    _destroyed = true;
+
+    //
+    // Although the session has been destroyed, we cannot destroy this queue
+    // until all requests have completed.
+    //
+    if(_requests.empty())
+    {
+        destroyInternal();
+    }
+}
+
+void
+Glacier2::RequestQueue::updateObserver(const Glacier2::Instrumentation::SessionObserverPtr& observer)
+{
+    IceUtil::Mutex::Lock lock(*this);
+    _observer = observer;
+}
+
+void
+Glacier2::RequestQueue::destroyInternal()
+{
+    //
+    // Must be called with the mutex locked.
+    //
+
+    //
+    // Remove cyclic references.
+    //
+    const_cast<Ice::Callback_Object_ice_invokePtr&>(_callback) = 0;
+    const_cast<Ice::Callback_Connection_flushBatchRequestsPtr&>(_flushCallback) = 0;
+}
+
+void
 Glacier2::RequestQueue::flush()
 {
     assert(_connection);
@@ -253,6 +305,11 @@ Glacier2::RequestQueue::flush()
     {
         try
         {
+            assert(_callback);
+            if(_observer)
+            {
+                _observer->forwarded(!_connection);
+            }
             Ice::AsyncResultPtr result = (*p)->invoke(_callback);
             if(!result)
             {
@@ -289,6 +346,11 @@ Glacier2::RequestQueue::flush()
             _pendingSendRequest = 0;
         }
     }
+
+    if(_destroyed && _requests.empty())
+    {
+        destroyInternal();
+    }
 }
 
 void
@@ -300,6 +362,11 @@ Glacier2::RequestQueue::flush(set<Ice::ObjectPrx>& batchProxies)
     {
         try
         {
+            if(_observer)
+            {
+                _observer->forwarded(!_connection);
+            }
+            assert(_callback);
             Ice::AsyncResultPtr result = (*p)->invoke(_callback);
             if(!result)
             {
@@ -312,6 +379,11 @@ Glacier2::RequestQueue::flush(set<Ice::ObjectPrx>& batchProxies)
         }
     }
     _requests.clear();
+
+    if(_destroyed)
+    {
+        destroyInternal();
+    }
 }
 
 void

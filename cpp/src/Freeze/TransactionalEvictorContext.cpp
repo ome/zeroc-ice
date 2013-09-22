@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -39,7 +39,7 @@ Freeze::TransactionalEvictorDeadlockException::ice_name() const
     return "Freeze::TransactionalEvictorDeadlockException";
 }
 
-Ice::Exception*
+Freeze::TransactionalEvictorDeadlockException*
 Freeze::TransactionalEvictorDeadlockException::ice_clone() const
 {
     return new TransactionalEvictorDeadlockException(*this);
@@ -50,14 +50,6 @@ Freeze::TransactionalEvictorDeadlockException::ice_throw() const
 {
     throw *this;
 }
-
-void
-Freeze::TransactionalEvictorDeadlockException::ice_print(ostream& out) const
-{
-    Exception::ice_print(out);
-    out << ":\ntransactional evictor deadlock exception";
-}
-
 
 //
 // TransactionalEvictorContext
@@ -205,7 +197,7 @@ Freeze::TransactionalEvictorContext::exception(const std::exception& ex)
 
     if(dx != 0 && _owner == IceUtil::ThreadControl())
     {
-        _deadlockException.reset(dynamic_cast<DeadlockException*>(dx->ice_clone()));
+        _deadlockException.reset(dx->ice_clone());
         return false;
     }
 
@@ -213,7 +205,7 @@ Freeze::TransactionalEvictorContext::exception(const std::exception& ex)
         dynamic_cast<const TransactionalEvictorDeadlockException*>(&ex);
     if(edx != 0 && _owner == IceUtil::ThreadControl())
     {
-        _nestedCallDeadlockException.reset(dynamic_cast<TransactionalEvictorDeadlockException*>(edx->ice_clone()));
+        _nestedCallDeadlockException.reset(edx->ice_clone());
         return false;
     }
 
@@ -273,7 +265,7 @@ Freeze::TransactionalEvictorContext::ServantHolder::ServantHolder() :
 }
 
 
-Freeze::TransactionalEvictorContext::ServantHolder::~ServantHolder()
+Freeze::TransactionalEvictorContext::ServantHolder::~ServantHolder() ICE_NOEXCEPT_FALSE
 {
     if(_ownBody && _body.ownServant)
     {
@@ -283,8 +275,11 @@ Freeze::TransactionalEvictorContext::ServantHolder::~ServantHolder()
         {
             if(!_body.readOnly && !_body.removed)
             {
-                EvictorIBase::updateStats(_body.rec.stats, 
-                                          IceUtil::Time::now(IceUtil::Time::Monotonic).toMilliSeconds());
+                if(_body.store->keepStats())
+                {
+                    EvictorIBase::updateStats(_body.rec.stats, 
+                                              IceUtil::Time::now(IceUtil::Time::Monotonic).toMilliSeconds());
+                }
                 _body.store->update(_body.current->id, _body.rec, ctx->_tx);
             }
         

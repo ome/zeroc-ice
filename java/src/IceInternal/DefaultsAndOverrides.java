@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -115,6 +115,14 @@ public final class DefaultsAndOverrides
         defaultLocatorCacheTimeout = properties.getPropertyAsIntWithDefault("Ice.Default.LocatorCacheTimeout", -1);
 
         defaultPreferSecure = properties.getPropertyAsIntWithDefault("Ice.Default.PreferSecure", 0) > 0;
+
+        value = properties.getPropertyWithDefault("Ice.Default.EncodingVersion", 
+                                                  Ice.Util.encodingVersionToString(Protocol.currentEncoding));
+        defaultEncoding = Ice.Util.stringToEncodingVersion(value);
+        Protocol.checkSupportedEncoding(defaultEncoding);        
+
+        boolean slicedFormat = properties.getPropertyAsIntWithDefault("Ice.Default.SlicedFormat", 0) > 0;
+        defaultFormat = slicedFormat ? Ice.FormatType.SlicedFormat : Ice.FormatType.CompactFormat;
     }
 
     final public String defaultHost;
@@ -123,6 +131,8 @@ public final class DefaultsAndOverrides
     final public Ice.EndpointSelectionType defaultEndpointSelection;
     final public int defaultLocatorCacheTimeout;
     final public boolean defaultPreferSecure;
+    final public Ice.EncodingVersion defaultEncoding;
+    final public Ice.FormatType defaultFormat;
 
     final public boolean overrideTimeout;
     final public int overrideTimeoutValue;

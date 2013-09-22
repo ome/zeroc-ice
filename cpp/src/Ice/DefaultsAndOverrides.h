@@ -1,7 +1,7 @@
 
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -15,6 +15,8 @@
 #include <Ice/DefaultsAndOverridesF.h>
 #include <Ice/PropertiesF.h>
 #include <Ice/Endpoint.h>
+#include <Ice/EndpointTypes.h>
+#include <Ice/Format.h>
 
 namespace IceInternal
 {
@@ -31,6 +33,8 @@ public:
     Ice::EndpointSelectionType defaultEndpointSelection;
     int defaultLocatorCacheTimeout;
     bool defaultPreferSecure;
+    Ice::EncodingVersion defaultEncoding;
+    Ice::FormatType defaultFormat;
 
     bool overrideTimeout;
     Ice::Int overrideTimeoutValue;

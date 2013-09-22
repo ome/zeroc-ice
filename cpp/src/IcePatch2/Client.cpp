@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -263,7 +263,7 @@ Client::run(int argc, char* argv[])
     }
     if(opts.isSet("thorough"))
     {
-        properties->setProperty("IcePatch2.Thorough", "1");
+        properties->setProperty("IcePatch2Client.Thorough", "1");
     }
 
     if(args.size() > 1)
@@ -274,7 +274,7 @@ Client::run(int argc, char* argv[])
     }
     if(args.size() == 1)
     {
-        properties->setProperty("IcePatch2.Directory", simplify(args[0]));
+        properties->setProperty("IcePatch2Client.Directory", simplify(args[0]));
     }
 
     bool aborted = false;
@@ -326,8 +326,7 @@ Client::usage(const string& appName)
     cerr << options << endl;
 }
 
-//COMPILERFIX: Borland C++ 2010 doesn't support wmain for console applications.
-#if defined(_WIN32 ) && !defined(__BCPLUSPLUS__)
+#ifdef _WIN32
 
 int
 wmain(int argc, wchar_t* argv[])

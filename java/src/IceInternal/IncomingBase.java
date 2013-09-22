@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -18,7 +18,10 @@ public class IncomingBase
         _instance = instance;
         _response = response;
         _compress = compress;
-        _os = new BasicStream(instance);
+        if(_response)
+        {
+            _os = new BasicStream(instance, Protocol.currentProtocolEncoding);
+        }
         _connection = connection;
 
         _current = new Ice.Current();
@@ -59,6 +62,9 @@ public class IncomingBase
         _instance = other._instance;
         //other._instance = null; // Don't reset _instance.
 
+        _observer = other._observer;
+        other._observer = null;
+
         _servant = other._servant;
         other._servant = null;
 
@@ -82,6 +88,89 @@ public class IncomingBase
 
         _connection = other._connection;
         other._connection = null;
+    }
+
+    public BasicStream
+    __startWriteParams(Ice.FormatType format)
+    {
+        if(_response)
+        {
+            assert(_os.size() == Protocol.headerSize + 4); // Reply status position.
+            assert(_current.encoding != null); // Encoding for reply is known.
+            _os.writeByte((byte)0);
+            _os.startWriteEncaps(_current.encoding, format);
+        }
+    
+        //
+        // We still return the stream even if no response is expected. The
+        // servant code might still write some out parameters if for
+        // example a method with out parameters somehow and erroneously
+        // invoked as oneway (or if the invocation is invoked on a 
+        // blobject and the blobject erroneously writes a response).
+        //
+        return _os;
+    }
+    
+    public void 
+    __endWriteParams(boolean ok)
+    {
+        if(!ok && _observer != null)
+        {
+            _observer.userException();
+        }
+
+        if(_response)
+        {
+            int save = _os.pos();
+            _os.pos(Protocol.headerSize + 4); // Reply status position.
+            _os.writeByte(ok ? ReplyStatus.replyOK : ReplyStatus.replyUserException);
+            _os.pos(save);
+            _os.endWriteEncaps();
+        }
+    }
+
+    public void 
+    __writeEmptyParams()
+    {
+        if(_response)
+        {
+            assert(_os.size() == Protocol.headerSize + 4); // Reply status position.
+            assert(_current.encoding != null); // Encoding for reply is known.
+            _os.writeByte(ReplyStatus.replyOK);
+            _os.writeEmptyEncaps(_current.encoding);
+        }
+    }
+
+    public void 
+    __writeParamEncaps(byte[] v, boolean ok)
+    {
+        if(!ok && _observer != null)
+        {
+            _observer.userException();
+        }
+
+        if(_response)
+        {
+            assert(_os.size() == Protocol.headerSize + 4); // Reply status position.
+            assert(_current.encoding != null); // Encoding for reply is known.
+            _os.writeByte(ok ? ReplyStatus.replyOK : ReplyStatus.replyUserException);
+            if(v == null || v.length == 0)
+            {
+                _os.writeEmptyEncaps(_current.encoding);
+            }
+            else
+            {
+                _os.writeEncaps(v);
+            }
+        }
+    }
+
+    public void
+    __writeUserException(Ice.UserException ex, Ice.FormatType format)
+    {
+        BasicStream __os = __startWriteParams(format);
+        __os.writeUserException(ex);
+        __endWriteParams(false);
     }
 
     //
@@ -111,9 +200,9 @@ public class IncomingBase
 
         _compress = compress;
 
-        if(_os == null)
+        if(_response && _os == null)
         {
-            _os = new BasicStream(instance);
+            _os = new BasicStream(instance, Protocol.currentProtocolEncoding);
         }
 
         _connection = connection;
@@ -132,6 +221,8 @@ public class IncomingBase
         {
             _cookie.value = null;
         }
+
+        _observer = null;
 
         if(_os != null)
         {
@@ -183,17 +274,25 @@ public class IncomingBase
         {
             assert(_connection != null);
 
+            if(_observer != null)
+            {
+                _observer.userException();
+            }
+
             //
             // The operation may have already marshaled a reply; we must overwrite that reply.
             //
             if(_response)
             {
-                _os.endWriteEncaps();
                 _os.resize(Protocol.headerSize + 4, false); // Reply status position.
                 _os.writeByte(ReplyStatus.replyUserException);
                 _os.startWriteEncaps();
                 _os.writeUserException(ex);
                 _os.endWriteEncaps();
+                if(_observer != null)
+                {
+                    _observer.reply(_os.size() - Protocol.headerSize - 4);
+                }
                 _connection.sendResponse(_os, _compress);
             }
             else
@@ -201,6 +300,11 @@ public class IncomingBase
                 _connection.sendNoResponse();
             }
 
+            if(_observer != null)
+            {
+                _observer.detach();
+                _observer = null;
+            }
             _connection = null;
         }
         catch(java.lang.Exception ex)
@@ -240,10 +344,14 @@ public class IncomingBase
             {
                 __warning(ex);
             }
+            
+            if(_observer != null)
+            {
+                _observer.failed(ex.ice_name());
+            }
 
             if(_response)
             {
-                _os.endWriteEncaps();
                 _os.resize(Protocol.headerSize + 4, false); // Reply status position.
                 if(ex instanceof Ice.ObjectNotExistException)
                 {
@@ -278,6 +386,10 @@ public class IncomingBase
 
                 _os.writeString(ex.operation);
 
+                if(_observer != null)
+                {
+                    _observer.reply(_os.size() - Protocol.headerSize - 4);
+                }
                 _connection.sendResponse(_os, _compress);
             }
             else
@@ -292,12 +404,20 @@ public class IncomingBase
                 __warning(ex);
             }
 
+            if(_observer != null)
+            {
+                _observer.failed(ex.ice_name());
+            }
+
             if(_response)
             {
-                _os.endWriteEncaps();
                 _os.resize(Protocol.headerSize + 4, false); // Reply status position.
                 _os.writeByte(ReplyStatus.replyUnknownLocalException);
                 _os.writeString(ex.unknown);
+                if(_observer != null)
+                {
+                    _observer.reply(_os.size() - Protocol.headerSize - 4);
+                }
                 _connection.sendResponse(_os, _compress);
             }
             else
@@ -312,12 +432,20 @@ public class IncomingBase
                 __warning(ex);
             }
 
+            if(_observer != null)
+            {
+                _observer.failed(ex.ice_name());
+            }
+
             if(_response)
             {
-                _os.endWriteEncaps();
                 _os.resize(Protocol.headerSize + 4, false); // Reply status position.
                 _os.writeByte(ReplyStatus.replyUnknownUserException);
                 _os.writeString(ex.unknown);
+                if(_observer != null)
+                {
+                    _observer.reply(_os.size() - Protocol.headerSize - 4);
+                }
                 _connection.sendResponse(_os, _compress);
             }
             else
@@ -332,12 +460,20 @@ public class IncomingBase
                 __warning(ex);
             }
 
+            if(_observer != null)
+            {
+                _observer.failed(ex.ice_name());
+            }
+
             if(_response)
             {
-                _os.endWriteEncaps();
                 _os.resize(Protocol.headerSize + 4, false); // Reply status position.
                 _os.writeByte(ReplyStatus.replyUnknownException);
                 _os.writeString(ex.unknown);
+                if(_observer != null)
+                {
+                    _observer.reply(_os.size() - Protocol.headerSize - 4);
+                }
                 _connection.sendResponse(_os, _compress);
             }
             else
@@ -352,9 +488,13 @@ public class IncomingBase
                 __warning(ex);
             }
 
+            if(_observer != null)
+            {
+                _observer.failed(ex.ice_name());
+            }
+
             if(_response)
             {
-                _os.endWriteEncaps();
                 _os.resize(Protocol.headerSize + 4, false); // Reply status position.
                 _os.writeByte(ReplyStatus.replyUnknownLocalException);
                 //_os.writeString(ex.toString());
@@ -364,6 +504,10 @@ public class IncomingBase
                 ex.printStackTrace(pw);
                 pw.flush();
                 _os.writeString(sw.toString());
+                if(_observer != null)
+                {
+                    _observer.reply(_os.size() - Protocol.headerSize - 4);
+                }
                 _connection.sendResponse(_os, _compress);
             }
             else
@@ -378,9 +522,13 @@ public class IncomingBase
                 __warning(ex);
             }
 
+            if(_observer != null)
+            {
+                _observer.failed(ex.ice_name());
+            }
+
             if(_response)
             {
-                _os.endWriteEncaps();
                 _os.resize(Protocol.headerSize + 4, false); // Reply status position.
                 _os.writeByte(ReplyStatus.replyUnknownUserException);
                 //_os.writeString(ex.toString());
@@ -390,6 +538,10 @@ public class IncomingBase
                 ex.printStackTrace(pw);
                 pw.flush();
                 _os.writeString(sw.toString());
+                if(_observer != null)
+                {
+                    _observer.reply(_os.size() - Protocol.headerSize - 4);
+                }
                 _connection.sendResponse(_os, _compress);
             }
             else
@@ -404,9 +556,13 @@ public class IncomingBase
                 __warning(ex);
             }
 
+            if(_observer != null)
+            {
+                _observer.failed(ex.getClass().getName());
+            }
+
             if(_response)
             {
-                _os.endWriteEncaps();
                 _os.resize(Protocol.headerSize + 4, false); // Reply status position.
                 _os.writeByte(ReplyStatus.replyUnknownException);
                 //_os.writeString(ex.toString());
@@ -415,6 +571,10 @@ public class IncomingBase
                 ex.printStackTrace(pw);
                 pw.flush();
                 _os.writeString(sw.toString());
+                if(_observer != null)
+                {
+                    _observer.reply(_os.size() - Protocol.headerSize - 4);
+                }
                 _connection.sendResponse(_os, _compress);
             }
             else
@@ -423,6 +583,11 @@ public class IncomingBase
             }
         }
 
+        if(_observer != null)
+        {
+            _observer.detach();
+            _observer = null;
+        }
         _connection = null;
     }
 
@@ -431,6 +596,7 @@ public class IncomingBase
     protected Ice.Object _servant;
     protected Ice.ServantLocator _locator;
     protected Ice.LocalObjectHolder _cookie;
+    protected Ice.Instrumentation.DispatchObserver _observer;
 
     protected boolean _response;
     protected byte _compress;

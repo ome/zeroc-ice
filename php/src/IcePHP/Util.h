@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -20,21 +20,14 @@ extern "C"
 ZEND_FUNCTION(Ice_stringVersion);
 ZEND_FUNCTION(Ice_intVersion);
 ZEND_FUNCTION(Ice_generateUUID);
+ZEND_FUNCTION(Ice_currentProtocol);
+ZEND_FUNCTION(Ice_currentProtocolEncoding);
+ZEND_FUNCTION(Ice_currentEncoding);
+ZEND_FUNCTION(Ice_protocolVersionToString);
+ZEND_FUNCTION(Ice_stringToProtocolVersion);
+ZEND_FUNCTION(Ice_encodingVersionToString);
+ZEND_FUNCTION(Ice_stringToEncodingVersion);
 }
-
-#define ICEPHP_UTIL_FUNCTIONS \
-    ZEND_FE(Ice_stringVersion, NULL) \
-    ZEND_FE(Ice_intVersion, NULL) \
-    ZEND_FE(Ice_generateUUID, NULL)
-
-#ifdef ICEPHP_USE_NAMESPACES
-#   define ICEPHP_UTIL_NS_FUNCTIONS \
-    ZEND_NS_FALIAS("Ice", stringVersion, Ice_stringVersion, NULL) \
-    ZEND_NS_FALIAS("Ice", intVersion, Ice_intVersion, NULL) \
-    ZEND_NS_FALIAS("Ice", generateUUID, Ice_generateUUID, NULL)
-#else
-#   define ICEPHP_UTIL_NS_FUNCTIONS
-#endif
 
 namespace IcePHP
 {
@@ -85,6 +78,21 @@ bool extractStringMap(zval*, std::map<std::string, std::string>& TSRMLS_DC);
 
 bool createStringArray(zval*, const Ice::StringSeq& TSRMLS_DC);
 bool extractStringArray(zval*, Ice::StringSeq& TSRMLS_DC);
+
+//
+// Create a PHP instance of Ice_ProtocolVersion.
+//
+bool createProtocolVersion(zval*, const Ice::ProtocolVersion& TSRMLS_DC);
+
+//
+// Create a PHP instance of Ice_EncodingVersion.
+//
+bool createEncodingVersion(zval*, const Ice::EncodingVersion& TSRMLS_DC);
+
+//
+// Extracts the members of an encoding version.
+//
+bool extractEncodingVersion(zval*, Ice::EncodingVersion& TSRMLS_DC);
 
 //
 // Convert the given exception into its PHP equivalent.

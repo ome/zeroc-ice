@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -576,6 +576,18 @@ public class Client extends test.Util.Application
             test(false);
         }
         catch(NotRegisteredException ex)
+        {
+        }
+
+        //
+        // Call an operation that does not exist on the servant
+        //    
+        try
+        {
+            int balance = AccountPrxHelper.uncheckedCast(servants[0]).getBalance();
+            test(false);
+        }
+        catch(Ice.OperationNotExistException ex)
         {
         }
 

@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -13,6 +13,7 @@ namespace IceInternal
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Threading;
+    using Ice.Instrumentation;
 
     public interface OutgoingMessageCallback
     {
@@ -23,15 +24,16 @@ namespace IceInternal
     public class Outgoing : OutgoingMessageCallback
     {
         public Outgoing(RequestHandler handler, string operation, Ice.OperationMode mode,
-                        Dictionary<string, string> context)
+                        Dictionary<string, string> context, InvocationObserver observer)
         {
             _state = StateUnsent;
             _sent = false;
             _handler = handler;
+            _observer = observer;
+            _encoding = Protocol.getCompatibleEncoding(handler.getReference().getEncoding());
+            _os = new BasicStream(_handler.getReference().getInstance(), Ice.Util.currentProtocolEncoding);
 
-            Instance instance = _handler.getReference().getInstance();
-            _is = new BasicStream(instance);
-            _os = new BasicStream(instance);
+            Protocol.checkSupportedProtocol(Protocol.getCompatibleProtocol(_handler.getReference().getProtocol()));
 
             writeHeader(operation, mode, context);
         }
@@ -40,19 +42,26 @@ namespace IceInternal
         // These functions allow this object to be reused, rather than reallocated.
         //
         public void reset(RequestHandler handler, string operation, Ice.OperationMode mode,
-                          Dictionary<string, string> context)
+                          Dictionary<string, string> context, InvocationObserver observer)
         {
             _state = StateUnsent;
             _exception = null;
             _sent = false;
             _handler = handler;
+            _observer = observer;
+            _encoding = Protocol.getCompatibleEncoding(handler.getReference().getEncoding());
+
+            Protocol.checkSupportedProtocol(Protocol.getCompatibleProtocol(_handler.getReference().getProtocol()));
 
             writeHeader(operation, mode, context);
         }
 
         public void reclaim()
         {
-            _is.reset();
+            if(_is != null)
+            {
+                _is.reset();
+            }
             _os.reset();
         }
 
@@ -60,8 +69,6 @@ namespace IceInternal
         public bool invoke()
         {
             Debug.Assert(_state == StateUnsent);
-
-            _os.endWriteEncaps();
 
             switch(_handler.getReference().getMode())
             {
@@ -270,6 +277,12 @@ namespace IceInternal
                 //
                 _sent = true;
             }
+
+            if(_remoteObserver != null && _handler.getReference().getMode() != Reference.Mode.ModeTwoway)
+            {
+                _remoteObserver.detach();
+                _remoteObserver = null;
+            }
         }
 
         public void finished(BasicStream istr)
@@ -281,6 +294,18 @@ namespace IceInternal
 
                 Debug.Assert(_state <= StateInProgress);
 
+                if(_remoteObserver != null)
+                {
+                    _remoteObserver.reply(istr.size() - Protocol.headerSize - 4);
+                    _remoteObserver.detach();
+                    _remoteObserver = null;
+                }
+
+                if(_is == null)
+                {
+                    _is = new IceInternal.BasicStream(_handler.getReference().getInstance(), 
+                                                      Ice.Util.currentProtocolEncoding);
+                }
                 _is.swap(istr);
                 byte replyStatus = _is.readByte();
 
@@ -294,6 +319,10 @@ namespace IceInternal
 
                     case ReplyStatus.replyUserException:
                     {
+                        if(_observer != null)
+                        {
+                            _observer.userException();
+                        }
                         _state = StateUserException; // The state must be set last, in case there is an exception.
                         break;
                     }
@@ -418,6 +447,12 @@ namespace IceInternal
             try
             {
                 Debug.Assert(_state <= StateInProgress);
+                if(_remoteObserver != null)
+                {
+                    _remoteObserver.failed(ex.ice_name());
+                    _remoteObserver.detach();
+                    _remoteObserver = null;
+                }
                 _state = StateFailed;
                 _exception = ex;
                 _sent = sent;
@@ -429,14 +464,63 @@ namespace IceInternal
             }
         }
 
-        public BasicStream istr()
-        {
-            return _is;
-        }
-
         public BasicStream ostr()
         {
             return _os;
+        }
+
+        public BasicStream startReadParams()
+        {
+            _is.startReadEncaps();
+            return _is;
+        }
+
+        public void endReadParams()
+        {
+            _is.endReadEncaps();
+        }
+
+        public void readEmptyParams()
+        {
+            _is.skipEmptyEncaps();
+        }
+
+        public byte[] readParamEncaps()
+        {
+            return _is.readEncaps(out _encoding);
+        }
+
+        public BasicStream startWriteParams(Ice.FormatType format)
+        {
+            _os.startWriteEncaps(_encoding, format);
+            return _os;
+        }
+
+        public void endWriteParams()
+        {
+            _os.endWriteEncaps();
+        }
+
+        public void writeEmptyParams()
+        {
+            _os.writeEmptyEncaps(_encoding);
+        }
+
+        public void writeParamEncaps(byte[] encaps)
+        {
+            if(encaps == null || encaps.Length == 0)
+            {
+                _os.writeEmptyEncaps(_encoding);
+            }
+            else
+            {
+                _os.writeEncaps(encaps);
+            }
+        }
+
+        public bool hasResponse()
+        {
+            return _is != null && !_is.isEmpty();
         }
 
         public void throwUserException()
@@ -444,12 +528,24 @@ namespace IceInternal
             try
             {
                 _is.startReadEncaps();
-                _is.throwException();
+                _is.throwException(null);
             }
             catch(Ice.UserException)
             {
                 _is.endReadEncaps();
                 throw;
+            }
+        }
+
+        public void attachRemoteObserver(Ice.ConnectionInfo info, Ice.Endpoint endpt, int requestId, int sz)
+        {
+            if(_observer != null)
+            {
+                _remoteObserver = _observer.getRemoteObserver(info, endpt, requestId, sz);
+                if(_remoteObserver != null)
+                {
+                    _remoteObserver.attach();
+                }
             }
         }
 
@@ -519,13 +615,6 @@ namespace IceInternal
                         implicitContext.write(prxContext, _os);
                     }
                 }
-
-                //
-                // Input and output parameters are always sent in an
-                // encapsulation, which makes it possible to forward requests as
-                // blobs.
-                //
-                _os.startWriteEncaps();
             }
             catch(Ice.LocalException ex)
             {
@@ -539,6 +628,7 @@ namespace IceInternal
         internal bool _sent;
 
         private Ice.LocalException _exception;
+        private Ice.EncodingVersion _encoding;
 
         private const int StateUnsent = 0;
         private const int StateInProgress = 1;
@@ -548,6 +638,9 @@ namespace IceInternal
         private const int StateFailed = 5;
         private int _state;
 
+        private InvocationObserver _observer;
+        private RemoteObserver _remoteObserver;
+
         private readonly IceUtilInternal.Monitor _m = new IceUtilInternal.Monitor();
 
         public Outgoing next; // For use by Ice.ObjectDelM_
@@ -555,18 +648,21 @@ namespace IceInternal
 
     public class BatchOutgoing : OutgoingMessageCallback
     {
-        public BatchOutgoing(Ice.ConnectionI connection, Instance instance)
+        public BatchOutgoing(Ice.ConnectionI connection, Instance instance, InvocationObserver observer)
         {
             _connection = connection;
             _sent = false;
-            _os = new BasicStream(instance);
+            _observer = observer;
+            _os = new BasicStream(instance, Ice.Util.currentProtocolEncoding);
         }
 
-        public BatchOutgoing(RequestHandler handler)
+        public BatchOutgoing(RequestHandler handler, InvocationObserver observer)
         {
             _handler = handler;
             _sent = false;
-            _os = new BasicStream(handler.getReference().getInstance());
+            _observer = observer;
+            _os = new BasicStream(handler.getReference().getInstance(), Ice.Util.currentProtocolEncoding);
+            Protocol.checkSupportedProtocol(handler.getReference().getProtocol());
         }
 
         public void invoke()
@@ -615,11 +711,22 @@ namespace IceInternal
             {
                 _sent = true;
             }
+
+            if(_remoteObserver != null)
+            {
+                _remoteObserver.detach();
+                _remoteObserver = null;
+            }
         }
 
         public void finished(Ice.LocalException ex, bool sent)
         {
             _m.Lock();
+            if(_remoteObserver != null)
+            {
+                _remoteObserver.failed(ex.ice_name());
+                _remoteObserver.detach();
+            }
             try
             {
                 _exception = ex;
@@ -636,13 +743,27 @@ namespace IceInternal
             return _os;
         }
 
+        public void attachRemoteObserver(Ice.ConnectionInfo info, Ice.Endpoint endpt, int size)
+        {
+            if(_observer != null)
+            {
+                _remoteObserver = _observer.getRemoteObserver(info, endpt, 0, size);
+                if(_remoteObserver != null)
+                {
+                    _remoteObserver.attach();
+                }
+            }
+        }
+
         private RequestHandler _handler;
         private Ice.ConnectionI _connection;
         private BasicStream _os;
         private bool _sent;
         private Ice.LocalException _exception;
 
+        private InvocationObserver _observer;
+        private Observer _remoteObserver;
+
         private readonly IceUtilInternal.Monitor _m = new IceUtilInternal.Monitor();
     }
-
 }

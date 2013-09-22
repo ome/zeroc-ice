@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -32,6 +32,20 @@ public:
     virtual void unknownMostDerived1AsBase(const ::Ice::Current&);
     virtual void unknownMostDerived1AsKnownIntermediate(const ::Ice::Current&);
     virtual void unknownMostDerived2AsBase(const ::Ice::Current&);
+
+    virtual void unknownMostDerived2AsBaseCompact(const ::Ice::Current&);
+
+    virtual void knownPreservedAsBase(const ::Ice::Current&);
+    virtual void knownPreservedAsKnownPreserved(const ::Ice::Current&);
+
+    virtual void relayKnownPreservedAsBase(const ::Test::RelayPrx&, const ::Ice::Current&);
+    virtual void relayKnownPreservedAsKnownPreserved(const ::Test::RelayPrx&, const ::Ice::Current&);
+
+    virtual void unknownPreservedAsBase(const ::Ice::Current&);
+    virtual void unknownPreservedAsKnownPreserved(const ::Ice::Current&);
+
+    virtual void relayUnknownPreservedAsBase(const ::Test::RelayPrx&, const ::Ice::Current&);
+    virtual void relayUnknownPreservedAsKnownPreserved(const ::Test::RelayPrx&, const ::Ice::Current&);
 
     virtual void shutdown(const ::Ice::Current&);
 };

@@ -1,14 +1,13 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
-#ifndef TEST_ICE
-#define TEST_ICE
+#pragma once
 
 module Test
 {
@@ -69,7 +68,42 @@ exception DerivedException extends BaseException
 
 class Forward;          /* Forward-declared class defined in another compilation unit */
 
-["ami"] interface TestIntf
+class PBase
+{
+    int pi;
+};
+
+sequence<PBase> PBaseSeq;
+
+["preserve-slice"]
+class Preserved extends PBase
+{
+    string ps;
+};
+
+class PDerived extends Preserved
+{
+    PBase pb;
+};
+
+class CompactPDerived(56) extends Preserved
+{
+    PBase pb;
+};
+
+["preserve-slice"]
+class PNode
+{
+    PNode next;
+};
+
+["preserve-slice"]
+exception PreservedException
+{
+};
+
+["format:sliced"]
+interface TestIntf
 {
     Object SBaseAsObject();
     SBase SBaseAsSBase();
@@ -78,7 +112,10 @@ class Forward;          /* Forward-declared class defined in another compilation
 
     SBase SBSUnknownDerivedAsSBase();
 
+    ["format:compact"] SBase SBSUnknownDerivedAsSBaseCompact();
+
     Object SUnknownAsObject();
+    void checkSUnknown(Object o);
 
     B oneElementCycle();
     B twoElementCycle();
@@ -99,10 +136,24 @@ class Forward;          /* Forward-declared class defined in another compilation
 
     BDict dictionaryTest(BDict bin, out BDict bout);
 
+    PBase exchangePBase(PBase pb);
+
+    Preserved PBSUnknownAsPreserved();
+    void checkPBSUnknown(Preserved p);
+
+    ["amd"] Preserved PBSUnknownAsPreservedWithGraph();
+    void checkPBSUnknownWithGraph(Preserved p);
+
+    ["amd"] Preserved PBSUnknown2AsPreservedWithGraph();
+    void checkPBSUnknown2WithGraph(Preserved p);
+
+    PNode exchangePNode(PNode pn);
+
     void throwBaseAsBase() throws BaseException;
     void throwDerivedAsBase() throws BaseException;
     void throwDerivedAsDerived() throws DerivedException;
     void throwUnknownDerivedAsBase() throws BaseException;
+    ["amd"] void throwPreservedException() throws PreservedException;
 
     void useForward(out Forward f); /* Use of forward-declared class to verify that code is generated correctly. */
 
@@ -111,4 +162,3 @@ class Forward;          /* Forward-declared class defined in another compilation
 
 };
 
-#endif

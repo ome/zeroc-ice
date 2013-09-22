@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -17,15 +17,26 @@ namespace IceInternal
         //
         Ice.Communicator getCommunicator();
 
+#if !SILVERLIGHT
         //
         // Get the endpoint host resolver.
         //
         IceInternal.EndpointHostResolver getEndpointHostResolver();
-
+#endif
         //
         // Get the protocol support.
         //
         int getProtocolSupport();
+
+        //
+        // Get the protocol support.
+        //
+        bool getPreferIPv6();
+
+        //
+        // Get the default encoding to be used in endpoints.
+        //
+        Ice.EncodingVersion getDefaultEncoding();
 
         //
         // Get the default hostname to be used in endpoints.
@@ -71,6 +82,7 @@ namespace IceInternal
             return _communicator;
         }
 
+#if !SILVERLIGHT
         //
         // Get the endpoint host resolver.
         //
@@ -78,6 +90,7 @@ namespace IceInternal
         {
             return _instance.endpointHostResolver();
         }
+#endif
 
         //
         // Get the protocol support.
@@ -85,6 +98,22 @@ namespace IceInternal
         public int getProtocolSupport()
         {
             return _instance.protocolSupport();
+        }
+
+        //
+        // Get the protocol support.
+        //
+        public bool getPreferIPv6()
+        {
+            return _instance.preferIPv6();
+        }
+
+        //
+        // Get the default hostname to be used in endpoints.
+        //
+        public Ice.EncodingVersion getDefaultEncoding()
+        {
+            return _instance.defaultsAndOverrides().defaultEncoding;
         }
 
         //

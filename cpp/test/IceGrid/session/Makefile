@@ -1,6 +1,6 @@
 # **********************************************************************
 #
-# Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -16,15 +16,20 @@ VERIFIER	= verifier
 TARGETS		= $(CLIENT) $(SERVER) $(VERIFIER)
 
 COBJS		= Client.o \
-		  AllTests.o
+		  AllTests.o \
+		  Test.o
 
-SOBJS		= Server.o
+SOBJS		= Server.o \
+		  Test.o
 
-VOBJS		= PermissionsVerifier.o
+VOBJS		= PermissionsVerifier.o \
+		  Test.o
 
 SRCS		= $(COBJS:.o=.cpp) \
 		  $(VOBJS:.o=.cpp) \
 		  $(SOBJS:.o=.cpp)
+
+SLICE_SRCS	= Test.ice
 
 GENPIC          = no
 
@@ -43,7 +48,7 @@ $(VERIFIER): $(VOBJS)
 
 $(SERVER): $(SOBJS)
 	rm -f $@
-	$(CXX) $(LDFLAGS) -o $@ $(SOBJS) -lGlacier2 -lIceSSL $(LIBS) $(OPENSSL_RPATH_LINK)
+	$(CXX) $(LDFLAGS) -o $@ $(SOBJS) -lGlacier2 $(ICESSL_LIBS) $(OPENSSL_RPATH_LINK)
 
 clean::
 	-rm -rf db/node db/registry db/node-1 db/replica-*

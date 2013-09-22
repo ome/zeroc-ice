@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -18,14 +18,13 @@ namespace Ice
 {
 
 class AsyncResult;
+ICE_API IceUtil::Shared* upCast(::Ice::AsyncResult*);
 typedef IceInternal::Handle<AsyncResult> AsyncResultPtr;
 
 }
 
 namespace IceInternal
 {
-
-ICE_API IceUtil::Shared* upCast(::Ice::AsyncResult*);
 
 class OutgoingAsync;
 ICE_API IceUtil::Shared* upCast(OutgoingAsync*);

@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -8,19 +8,22 @@
 // **********************************************************************
 
 #include <Ice/Ice.h>
+#include <TestCommon.h>
 #include <TestI.h>
+
+DEFINE_TEST("collocated")
 
 using namespace std;
 using namespace Test;
 
 int
-run(int argc, char* argv[], const Ice::CommunicatorPtr& communicator)
+run(int, char**, const Ice::CommunicatorPtr& communicator)
 {
     communicator->getProperties()->setProperty("TestAdapter.Endpoints", "default -p 12010");
     Ice::ObjectAdapterPtr adapter = communicator->createObjectAdapter("TestAdapter");
     Ice::ObjectPtr object = new InitialI(adapter);
     adapter->add(object, communicator->stringToIdentity("initial"));
-
+    
     InitialPrx allTests(const Ice::CommunicatorPtr&);
     allTests(communicator);
 

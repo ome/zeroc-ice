@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -12,11 +12,97 @@
 #include <Ice/Instance.h>
 #include <Ice/LoggerUtil.h>
 #include <Ice/LocalException.h>
+#include <IceUtil/Time.h>
 
 using namespace std;
 using namespace IceInternal;
 
-#if defined(ICE_USE_IOCP)
+#ifdef ICE_OS_WINRT
+using namespace Windows::Foundation;
+using namespace Windows::Storage::Streams;
+using namespace Windows::Networking;
+using namespace Windows::Networking::Sockets;
+
+Selector::Selector(const InstancePtr& instance) : _instance(instance)
+{
+}
+
+void
+Selector::destroy()
+{
+}
+
+void
+Selector::initialize(IceInternal::EventHandler* handler)
+{
+    handler->__incRef();
+    handler->getNativeInfo()->setCompletedHandler(
+        ref new SocketOperationCompletedHandler([=](int operation)
+                                                {
+                                                    completed(handler, static_cast<SocketOperation>(operation));
+                                                }));
+}
+
+void
+Selector::update(IceInternal::EventHandler* handler, SocketOperation remove, SocketOperation add)
+{
+    handler->_registered = static_cast<SocketOperation>(handler->_registered & ~remove);
+    handler->_registered = static_cast<SocketOperation>(handler->_registered | add);
+    if(add & SocketOperationRead && !(handler->_pending & SocketOperationRead))
+    {
+        handler->_pending = static_cast<SocketOperation>(handler->_pending | SocketOperationRead);
+        completed(handler, SocketOperationRead); // Start an asynchrnous read 
+    }
+    else if(add & SocketOperationWrite && !(handler->_pending & SocketOperationWrite))
+    {
+        handler->_pending = static_cast<SocketOperation>(handler->_pending | SocketOperationWrite);
+        completed(handler, SocketOperationWrite); // Start an asynchrnous write 
+    }
+}
+
+void
+Selector::finish(IceInternal::EventHandler* handler)
+{
+    handler->_registered = SocketOperationNone;
+    handler->__decRef();
+}
+
+IceInternal::EventHandler* 
+Selector::getNextHandler(SocketOperation& status, int timeout)
+{
+    Lock lock(*this);
+    while(_events.empty())
+    {
+        if(timeout > 0)
+        {
+            timedWait(IceUtil::Time::seconds(timeout));
+            if(_events.empty())
+            {
+                throw SelectorTimeoutException();  
+            }
+        }
+        else
+        {
+            wait();
+        }
+    }
+    assert(!_events.empty());
+    IceInternal::EventHandler* handler = _events.front().handler;
+    status = _events.front().status;
+    _events.pop_front();
+    return handler;
+}
+
+void 
+Selector::completed(IceInternal::EventHandler* handler, SocketOperation op)
+{
+    Lock lock(*this);
+    _events.push_back(SelectEvent(handler, op));
+    notify();
+}
+
+#elif defined(ICE_USE_IOCP)
+
 Selector::Selector(const InstancePtr& instance) : _instance(instance)
 {
 }
@@ -28,7 +114,7 @@ Selector::~Selector()
 void
 Selector::setup(int sizeIO)
 {
-    _handle = CreateIoCompletionPort(INVALID_HANDLE_VALUE, NULL, NULL, sizeIO);
+    _handle = CreateIoCompletionPort(INVALID_HANDLE_VALUE, NULL, 0, sizeIO);
     if(_handle == NULL)
     {
         Ice::SocketException ex(__FILE__, __LINE__);
@@ -75,13 +161,7 @@ Selector::update(EventHandler* handler, SocketOperation remove, SocketOperation 
 
     if(info)
     {
-        if(!PostQueuedCompletionStatus(_handle, 0, reinterpret_cast<ULONG_PTR>(handler), 
-#if defined(_MSC_VER) && (_MSC_VER < 1300) // COMPILER FIX: VC60
-                                       reinterpret_cast<LPOVERLAPPED>(info)
-#else
-                                       info
-#endif
-                                       ))
+        if(!PostQueuedCompletionStatus(_handle, 0, reinterpret_cast<ULONG_PTR>(handler), info))
         {
             Ice::SocketException ex(__FILE__, __LINE__);
             ex.error = GetLastError();
@@ -123,12 +203,7 @@ Selector::getNextHandler(SocketOperation& status, int timeout)
                 abort();
             }
         }
-
-#if defined(_MSC_VER) && (_MSC_VER < 1300) // COMPILER FIX: VC60
-        AsyncInfo* info = reinterpret_cast<AsyncInfo*>(ol);
-#else
         AsyncInfo* info = static_cast<AsyncInfo*>(ol);
-#endif
         status = info->status;
         info->count = SOCKET_ERROR;
         info->error = WSAGetLastError();
@@ -136,11 +211,7 @@ Selector::getNextHandler(SocketOperation& status, int timeout)
     }
 
     assert(ol);
-#if defined(_MSC_VER) && (_MSC_VER < 1300) // COMPILER FIX: VC60
-    AsyncInfo* info = reinterpret_cast<AsyncInfo*>(ol);
-#else
     AsyncInfo* info = static_cast<AsyncInfo*>(ol);
-#endif
     status = info->status;
     info->count = count;
     info->error = 0;
@@ -482,6 +553,9 @@ Selector::~Selector()
 void
 Selector::destroy()
 {
+#if !defined(ICE_USE_SELECT) && !defined(ICE_USE_POLL)
+    assert(_events.empty());
+#endif
 }
 
 void

@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -127,6 +127,46 @@ namespace IceInternal
             finally
             {
                 _m.Unlock();
+            }
+        }
+
+        public void
+        updateConnectionObservers()
+        {
+            List<Ice.ObjectAdapterI> adapters;
+            _m.Lock();
+            try
+            {
+                adapters = new List<Ice.ObjectAdapterI>(_adapters);
+            }
+            finally
+            {
+                _m.Unlock();
+            }
+            
+            foreach(Ice.ObjectAdapterI adapter in adapters)
+            {
+                adapter.updateConnectionObservers();
+            }
+        }
+        
+        public void
+        updateThreadObservers()
+        {
+            List<Ice.ObjectAdapterI> adapters;
+            _m.Lock();
+            try
+            {
+                adapters = new List<Ice.ObjectAdapterI>(_adapters);
+            }
+            finally
+            {
+                _m.Unlock();
+            }
+            
+            foreach(Ice.ObjectAdapterI adapter in adapters)
+            {
+                adapter.updateThreadObservers();
             }
         }
         

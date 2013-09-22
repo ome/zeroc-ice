@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -183,7 +183,8 @@ public final class Selector
             
             if(++_spuriousWakeUp > 100)
             {
-                _instance.initializationData().logger.error("spurious selector wake up");
+                _spuriousWakeUp = 0;
+                _instance.initializationData().logger.warning("spurious selector wake up");
             }
             return;
         }
@@ -269,7 +270,7 @@ public final class Selector
             }
             catch(java.nio.channels.CancelledKeyException ex)
             {
-                // This sometime occurs on Mac OS X, ignore.
+                // This sometime occurs on OS X, ignore.
                 continue;
             }
             catch(java.io.IOException ex)

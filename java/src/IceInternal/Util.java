@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -40,7 +40,22 @@ public final class Util
         //
         // getResourceAsStream returns null if the resource can't be found.
         //
-        java.io.InputStream stream = cl.getResourceAsStream(path);
+        java.io.InputStream stream = null;
+        try
+        {
+            stream = cl.getResourceAsStream(path);
+        }
+        catch(IllegalArgumentException ex)
+        {
+            //
+            // With JDK-7 this can happen if the result url (base url + path) produces a 
+            // malformed url for an URLClassLoader. For example the code in following
+            // comment will produce this exception under Windows.
+            //
+            // URLClassLoader cl = new URLClassLoader(new URL[] {new URL("http://localhost:8080/")});
+            // java.io.InputStream in = IceInternal.Util.openResource(cl, "c:\\foo.txt");
+            //
+        }
         if(stream == null)
         {
             try
@@ -81,24 +96,6 @@ public final class Util
         }
 
         //
-        // Try using the system class loader (which knows about CLASSPATH).
-        //
-        if(c == null)
-        {
-            try
-            {
-                cl = ClassLoader.getSystemClassLoader();
-                if(cl != null)
-                {
-                    c = loadClass(className, cl);
-                }
-            }
-            catch(SecurityException ex)
-            {
-            }
-        }
-
-        //
         // Try using the current thread's class loader.
         //
         if(c == null)
@@ -117,7 +114,7 @@ public final class Util
         }
 
         //
-        // Fall back to Class.forName().
+        // Try using Class.forName().
         //
         try
         {
@@ -131,12 +128,29 @@ public final class Util
             // Ignore
         }
 
+        //
+        // Fall back to the system class loader (which knows about CLASSPATH).
+        //
+        if(c == null)
+        {
+            try
+            {
+                cl = ClassLoader.getSystemClassLoader();
+                if(cl != null)
+                {
+                    c = loadClass(className, cl);
+                }
+            }
+            catch(SecurityException ex)
+            {
+            }
+        }
+
         return c;
     }
 
     private static Class<?>
     loadClass(String className, ClassLoader cl)
-        throws LinkageError
     {
         if(cl != null)
         {
@@ -179,4 +193,45 @@ public final class Util
         }
         return java.lang.Thread.NORM_PRIORITY;
     }
+
+    //
+    // Return true if the given thread is the android main thread, also know as the GUI thread.
+    //
+    public static boolean
+    isAndroidMainThread(Thread thread)
+    {
+        if(!System.getProperty("java.vm.name").startsWith("Dalvik"))
+        {
+            return false;
+        }
+
+        if(_androidMainThread == null)
+        {
+            try
+            {
+                Class<?> c = Util.findClass("android.os.Looper", null);
+                java.lang.reflect.Method getMainLooper = c.getDeclaredMethod("getMainLooper", (Class<?>[])null);
+                java.lang.reflect.Method getThread = c.getDeclaredMethod("getThread", (Class<?>[])null);
+
+                Object looper = getMainLooper.invoke(null);
+                _androidMainThread = (Thread)getThread.invoke(looper);
+            }
+            catch(java.lang.reflect.InvocationTargetException ex)
+            {
+                assert false;
+            }
+            catch(java.lang.NoSuchMethodException ex)
+            {
+                assert false;
+            }
+            catch(IllegalAccessException ex)
+            {
+                assert false;
+            }
+        }
+
+        return thread != null && _androidMainThread == thread;
+    }
+
+    private static Thread _androidMainThread;
 }

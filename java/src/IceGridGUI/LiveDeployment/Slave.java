@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -29,7 +29,7 @@ class Slave extends TreeNode
     //
     public boolean[] getAvailableActions()
     {
-        boolean[] actions = new boolean[ACTION_COUNT];
+        boolean[] actions = new boolean[IceGridGUI.LiveDeployment.TreeNode.ACTION_COUNT];
         actions[SHUTDOWN_REGISTRY] = true;
         actions[RETRIEVE_STDOUT] = true;
         actions[RETRIEVE_STDERR] = true;
@@ -41,22 +41,22 @@ class Slave extends TreeNode
         final String prefix = "Shutting down registry '" + _id + "'...";
         getCoordinator().getStatusBar().setText(prefix);
 
-        AMI_Admin_shutdownRegistry cb = new AMI_Admin_shutdownRegistry()
+        Callback_Admin_shutdownRegistry cb = new Callback_Admin_shutdownRegistry()
             {
                 //
                 // Called by another thread!
                 //
-                public void ice_response()
+                public void response()
                 {
                     amiSuccess(prefix);
                 }
 
-                public void ice_exception(Ice.UserException e)
+                public void exception(Ice.UserException e)
                 {
                     amiFailure(prefix, "Failed to shutdown " + _id, e);
                 }
 
-                public void ice_exception(Ice.LocalException e)
+                public void exception(Ice.LocalException e)
                 {
                     amiFailure(prefix, "Failed to shutdown " + _id,
                                e.toString());
@@ -67,7 +67,7 @@ class Slave extends TreeNode
         {
             getCoordinator().getMainFrame().setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
 
-            getCoordinator().getAdmin().shutdownRegistry_async(cb, _id);
+            getCoordinator().getAdmin().begin_shutdownRegistry(_id, cb);
         }
         catch(Ice.LocalException e)
         {

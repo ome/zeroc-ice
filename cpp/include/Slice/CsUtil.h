@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -35,16 +35,21 @@ public:
 protected:
     static std::string fixId(const std::string&, int = 0, bool = false);
     static std::string fixId(const ContainedPtr&, int = 0, bool = false);
-    static std::string typeToString(const TypePtr&);
+    static std::string getOptionalFormat(const TypePtr&);
+    static std::string getStaticId(const TypePtr&);
+    static std::string typeToString(const TypePtr&, bool = false);
     static bool isValueType(const TypePtr&);
 
     //
     // Generate code to marshal or unmarshal a type
     //
-    void writeMarshalUnmarshalCode(::IceUtilInternal::Output&, const TypePtr&, const std::string&, bool, bool,
-                                   bool, const std::string& = "", bool = false);
+    void writeMarshalUnmarshalCode(::IceUtilInternal::Output&, const TypePtr&, const std::string&, bool, bool);
+    void writeOptionalMarshalUnmarshalCode(::IceUtilInternal::Output&, const TypePtr&, const std::string&, int, bool,
+                                           bool);
     void writeSequenceMarshalUnmarshalCode(::IceUtilInternal::Output&, const SequencePtr&, const std::string&,
-                                           bool, bool);
+                                           bool, bool, bool);
+    void writeOptionalSequenceMarshalUnmarshalCode(::IceUtilInternal::Output&, const SequencePtr&, const std::string&,
+                                                   int, bool, bool);
 
 private:
 

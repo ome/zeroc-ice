@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -16,13 +16,15 @@ package Ice;
  **/
 public class AsyncResult
 {
-    protected AsyncResult(IceInternal.Instance instance, String op, IceInternal.CallbackBase del)
+    protected AsyncResult(Communicator communicator, IceInternal.Instance instance, String op,
+                          IceInternal.CallbackBase del)
     {
+        _communicator = communicator;
         _instance = instance;
         _operation = op;
-        _is = new IceInternal.BasicStream(instance, false, false);
-        _os = new IceInternal.BasicStream(instance, false, false);
+        _os = new IceInternal.BasicStream(instance, IceInternal.Protocol.currentProtocolEncoding, false, false);
         _state = 0;
+        _sentSynchronously = false;
         _exception = null;
         _callback = del;
     }
@@ -34,11 +36,11 @@ public class AsyncResult
      **/
     public Communicator getCommunicator()
     {
-        return null;
+        return _communicator;
     }
 
     /**
-     * Returns the connection that that was used for the invocation.
+     * Returns the connection that was used for the invocation.
      *
      * @return The connection.
      **/
@@ -48,7 +50,7 @@ public class AsyncResult
     }
 
     /**
-     * Returns the proxy that that was used to call the <code>begin_</code> method.
+     * Returns the proxy that was used to call the <code>begin_</code> method.
      *
      * @return The proxy.
      **/
@@ -168,14 +170,34 @@ public class AsyncResult
         return _operation;
     }
 
-    public final IceInternal.BasicStream __os()
+    public final IceInternal.BasicStream __getOs()
     {
         return _os;
     }
 
-    public final IceInternal.BasicStream __is()
+    public IceInternal.BasicStream
+    __startReadParams()
     {
+        _is.startReadEncaps();
         return _is;
+    }
+
+    public void 
+    __endReadParams()
+    {
+        _is.endReadEncaps();
+    }
+
+    public void 
+    __readEmptyParams()
+    {
+        _is.skipEmptyEncaps(null);
+    }
+
+    public byte[]
+    __readParamEncaps()
+    {
+        return _is.readEncaps(null);
     }
 
     public final boolean __wait()
@@ -212,7 +234,7 @@ public class AsyncResult
         try
         {
             _is.startReadEncaps();
-            _is.throwException();
+            _is.throwException(null);
         }
         catch(UserException ex)
         {
@@ -250,12 +272,18 @@ public class AsyncResult
         synchronized(_monitor)
         {
             _state |= Done;
+            _os.resize(0, false); // Clear buffer now, instead of waiting for AsyncResult deallocation
             _exception = ex;
             _monitor.notifyAll();
         }
 
         if(_callback != null)
         {
+            if(_instance.useApplicationClassLoader())
+            {
+                Thread.currentThread().setContextClassLoader(_callback.getClass().getClassLoader());
+            }
+
             try
             {
                 _callback.__completed(this);
@@ -272,6 +300,19 @@ public class AsyncResult
             {
                 __error(exc);
             }
+            finally
+            {
+                if(_instance.useApplicationClassLoader())
+                {
+                    Thread.currentThread().setContextClassLoader(null);
+                }
+            }
+        }
+
+        if(_observer != null)
+        {
+            _observer.detach();
+            _observer = null;
         }
     }
 
@@ -284,6 +325,11 @@ public class AsyncResult
 
         if(_callback != null)
         {
+            if(_instance.useApplicationClassLoader())
+            {
+                Thread.currentThread().setContextClassLoader(_callback.getClass().getClassLoader());
+            }
+
             try
             {
                 _callback.__sent(this);
@@ -300,9 +346,43 @@ public class AsyncResult
             {
                 __error(exc);
             }
+            finally
+            {
+                if(_instance.useApplicationClassLoader())
+                {
+                    Thread.currentThread().setContextClassLoader(null);
+                }
+            }
+        }
+
+        if(_observer != null)
+        {
+            Ice.ObjectPrx proxy = getProxy();
+            if(proxy == null || !proxy.ice_isTwoway())
+            {
+                _observer.detach();
+            }
         }
     }
 
+    public void 
+    __attachRemoteObserver(Ice.ConnectionInfo info, Ice.Endpoint endpt, int requestId, int size)
+    {
+        if(_observer != null)
+        {
+            _remoteObserver = _observer.getRemoteObserver(info, endpt, requestId, size);
+            if(_remoteObserver != null)
+            {
+                _remoteObserver.attach();
+            }
+        }
+    }
+
+    public Ice.Instrumentation.InvocationObserver __getObserver()
+    {
+        return _observer;
+    }
+    
     public final void __sentAsync()
     {
         //
@@ -381,6 +461,11 @@ public class AsyncResult
 
         if(_callback != null)
         {
+            if(_instance.useApplicationClassLoader())
+            {
+                Thread.currentThread().setContextClassLoader(_callback.getClass().getClassLoader());
+            }
+
             try
             {
                 _callback.__completed(this);
@@ -397,6 +482,19 @@ public class AsyncResult
             {
                 __error(exc);
             }
+            finally
+            {
+                if(_instance.useApplicationClassLoader())
+                {
+                    Thread.currentThread().setContextClassLoader(null);
+                }
+            }
+        }
+
+        if(_observer != null)
+        {
+            _observer.detach();
+            _observer = null;
         }
     }
 
@@ -415,6 +513,7 @@ public class AsyncResult
         _instance.initializationData().logger.error(s);
     }
 
+    protected Communicator _communicator;
     protected IceInternal.Instance _instance;
     protected String _operation;
 
@@ -431,5 +530,8 @@ public class AsyncResult
     protected boolean _sentSynchronously;
     protected LocalException _exception;
 
+    protected Ice.Instrumentation.InvocationObserver _observer;
+    protected Ice.Instrumentation.RemoteObserver _remoteObserver;
+    
     private IceInternal.CallbackBase _callback;
 }

@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -9,6 +9,7 @@
 
 #include <TestI.h>
 #include <Ice/Ice.h>
+#include <TestCommon.h>
 
 using namespace Test;
 
@@ -137,6 +138,88 @@ TestI::unknownMostDerived2AsBase(const ::Ice::Current&)
     umd2.ui = "UnknownMostDerived2.ui";
     umd2.umd2 = "UnknownMostDerived2.umd2";
     throw umd2;
+}
+
+void
+TestI::unknownMostDerived2AsBaseCompact(const ::Ice::Current&)
+{
+    UnknownMostDerived2 umd2;
+    umd2.b = "UnknownMostDerived2.b";
+    umd2.ui = "UnknownMostDerived2.ui";
+    umd2.umd2 = "UnknownMostDerived2.umd2";
+    throw umd2;
+}
+
+void
+TestI::knownPreservedAsBase(const ::Ice::Current&)
+{
+    KnownPreservedDerived ex;
+    ex.b = "base";
+    ex.kp = "preserved";
+    ex.kpd = "derived";
+    throw ex;
+}
+
+void
+TestI::knownPreservedAsKnownPreserved(const ::Ice::Current&)
+{
+    KnownPreservedDerived ex;
+    ex.b = "base";
+    ex.kp = "preserved";
+    ex.kpd = "derived";
+    throw ex;
+}
+
+void
+TestI::relayKnownPreservedAsBase(const RelayPrx& r, const ::Ice::Current&)
+{
+    r->knownPreservedAsBase();
+    test(false);
+}
+
+void
+TestI::relayKnownPreservedAsKnownPreserved(const RelayPrx& r, const ::Ice::Current&)
+{
+    r->knownPreservedAsKnownPreserved();
+    test(false);
+}
+
+void
+TestI::unknownPreservedAsBase(const ::Ice::Current&)
+{
+    SPreserved2 ex;
+    ex.b = "base";
+    ex.kp = "preserved";
+    ex.kpd = "derived";
+    ex.p1 = new SPreservedClass("bc", "spc");
+    ex.p2 = ex.p1;
+    throw ex;
+}
+
+void
+TestI::unknownPreservedAsKnownPreserved(const ::Ice::Current&)
+{
+    SPreserved2 ex;
+    ex.b = "base";
+    ex.kp = "preserved";
+    ex.kpd = "derived";
+    ex.p1 = new SPreservedClass("bc", "spc");
+    ex.p2 = ex.p1;
+    throw ex;
+}
+
+void
+TestI::relayUnknownPreservedAsBase(const RelayPrx& r, const ::Ice::Current&)
+{
+    r->unknownPreservedAsBase();
+    test(false);
+}
+
+void
+TestI::relayUnknownPreservedAsKnownPreserved(const RelayPrx& r, const ::Ice::Current&)
+{
+    r->unknownPreservedAsKnownPreserved();
+    test(false);
 }
 
 void

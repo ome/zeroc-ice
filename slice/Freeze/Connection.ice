@@ -1,16 +1,16 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
-#ifndef FREEZE_CONNECTION_ICE
-#define FREEZE_CONNECTION_ICE
+#pragma once
 
 #include <Freeze/Transaction.ice>
+#include <Ice/Version.ice>
 #include <Ice/CommunicatorF.ice>
 
 [["cpp:header-ext:h"]]
@@ -92,6 +92,13 @@ local interface Connection
 
     /**
      *
+     * Returns the encoding version used to encode the data.
+     *
+     **/
+    ["cpp:const"] Ice::EncodingVersion getEncoding();
+
+    /**
+     *
      * The name of the connected system (for example, the Berkeley DB
      * environment).
      *
@@ -102,4 +109,3 @@ local interface Connection
 
 };
 
-#endif

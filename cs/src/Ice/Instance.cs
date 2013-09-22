@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -19,6 +19,49 @@ namespace IceInternal
 
     public sealed class Instance
     {
+        private class ObserverUpdaterI : Ice.Instrumentation.ObserverUpdater
+        {
+            public ObserverUpdaterI(Instance instance)
+            {
+                _instance = instance;
+            }
+            
+            public void updateConnectionObservers()
+            {
+                try
+                {
+                    _instance.outgoingConnectionFactory().updateConnectionObservers();
+                    _instance.objectAdapterFactory().updateConnectionObservers();
+                }
+                catch(Ice.CommunicatorDestroyedException)
+                {
+                }
+            }
+
+            public void updateThreadObservers()
+            {
+                try
+                {
+                    _instance.clientThreadPool().updateObservers();
+                    ThreadPool serverThreadPool = _instance.serverThreadPool(false);
+                    if(serverThreadPool != null)
+                    {
+                        serverThreadPool.updateObservers();
+                    }
+                    _instance.objectAdapterFactory().updateThreadObservers();
+#if !SILVERLIGHT
+                    _instance.endpointHostResolver().updateObserver();
+#endif
+                    _instance.asyncIOThread().updateObserver();
+                }
+                catch(Ice.CommunicatorDestroyedException)
+                {
+                }
+            }
+            
+            private Instance _instance;
+        };
+
         public bool destroyed()
         {
             return _state == StateDestroyed;
@@ -49,7 +92,7 @@ namespace IceInternal
             return _defaultsAndOverrides;
         }
 
-#if COMPACT
+#if COMPACT || SILVERLIGHT
         public string[] factoryAssemblies()
         {
             return _factoryAssemblies;
@@ -170,15 +213,12 @@ namespace IceInternal
 
         public int protocolSupport()
         {
-            lock(this)
-            {
-                if(_state == StateDestroyed)
-                {
-                    throw new Ice.CommunicatorDestroyedException();
-                }
-                
-                return _protocolSupport;
-            }
+            return _protocolSupport;
+        }
+        
+        public bool preferIPv6()
+        {
+            return _preferIPv6;
         }
         
         public ThreadPool clientThreadPool()
@@ -195,7 +235,7 @@ namespace IceInternal
             }
         }
         
-        public ThreadPool serverThreadPool()
+        public ThreadPool serverThreadPool(bool create)
         {
             lock(this)
             {
@@ -204,7 +244,7 @@ namespace IceInternal
                     throw new Ice.CommunicatorDestroyedException();
                 }
                 
-                if(_serverThreadPool == null) // Lazy initialization.
+                if(_serverThreadPool == null && create) // Lazy initialization.
                 {
                     int timeout = _initData.properties.getPropertyAsInt("Ice.ServerIdleTime");
                     _serverThreadPool = new ThreadPool(this, "Ice.ThreadPool.Server", timeout);
@@ -233,6 +273,7 @@ namespace IceInternal
             }
         }
 
+#if !SILVERLIGHT
         public EndpointHostResolver endpointHostResolver()
         {
             lock(this)
@@ -246,7 +287,7 @@ namespace IceInternal
                 return _endpointHostResolver;
             }
         }
-
+#endif
         public RetryQueue
         retryQueue()
         {
@@ -493,7 +534,7 @@ namespace IceInternal
                     throw new Ice.CommunicatorDestroyedException();
                 }
             
-                if(_adminAdapter == null || (_adminFacetFilter.Count == 0 && !_adminFacetFilter.Contains(facet)))
+                if(_adminAdapter == null || (_adminFacetFilter.Count > 0 && !_adminFacetFilter.Contains(facet)))
                 {
                     if(_adminFacets.ContainsKey(facet))
                     {
@@ -508,7 +549,6 @@ namespace IceInternal
             }
         }
 
-
         public Ice.Object 
         removeAdminFacet(string facet)
         {
@@ -520,7 +560,7 @@ namespace IceInternal
                 }
                 
                 Ice.Object result = null;
-                if(_adminAdapter == null || (_adminFacetFilter.Count == 0 && !_adminFacetFilter.Contains(facet)))
+                if(_adminAdapter == null || (_adminFacetFilter.Count > 0 && !_adminFacetFilter.Contains(facet)))
                 {
                     try
                     {
@@ -536,6 +576,35 @@ namespace IceInternal
                 else
                 {
                     result = _adminAdapter.removeFacet(_adminIdentity, facet);
+                }
+                return result;
+            }
+        }
+
+        public Ice.Object 
+        findAdminFacet(string facet)
+        {
+            lock(this)
+            {
+                if(_state == StateDestroyed)
+                {
+                    throw new Ice.CommunicatorDestroyedException();
+                }
+                
+                Ice.Object result = null;
+                if(_adminAdapter == null || (_adminFacetFilter.Count > 0 && !_adminFacetFilter.Contains(facet)))
+                {
+                    try
+                    {
+                        result = _adminFacets[facet];
+                    }
+                    catch(KeyNotFoundException)
+                    {
+                    }
+                }
+                else
+                {
+                    result = _adminAdapter.findFacet(_adminIdentity, facet);
                 }
                 return result;
             }
@@ -601,7 +670,7 @@ namespace IceInternal
                 {
                     _initData.properties = Ice.Util.createProperties();
                 }
-
+#if !SILVERLIGHT && !UNITY
                 lock(_staticLock)
                 {
                     if(!_oneOffDone)
@@ -655,11 +724,14 @@ namespace IceInternal
                         _oneOffDone = true;
                     }
                 }
-                
+#endif
+
                 if(_initData.logger == null)
                 {
+#if !SILVERLIGHT && !UNITY
                     string logfile = _initData.properties.getProperty("Ice.LogFile");
-                    if(_initData.properties.getPropertyAsInt("Ice.UseSyslog") > 0)
+                    if(_initData.properties.getPropertyAsInt("Ice.UseSyslog") > 0 &&
+                       AssemblyUtil.platform_ != AssemblyUtil.Platform.Windows)
                     {
                         if(logfile.Length != 0)
                         {
@@ -668,17 +740,34 @@ namespace IceInternal
                         _initData.logger = new Ice.SysLoggerI(_initData.properties.getProperty("Ice.ProgramName"),
                             _initData.properties.getPropertyWithDefault("Ice.SyslogFacility", "LOG_USER"));
                     }
-                    else if(logfile.Length != 0 || Ice.Util.getProcessLogger() is Ice.LoggerI) 
+                    else if(logfile.Length != 0) 
+                    {
+                        
+                        _initData.logger =
+                            new Ice.FileLoggerI(_initData.properties.getProperty("Ice.ProgramName"), logfile);
+                    }
+                    else if(Ice.Util.getProcessLogger() is Ice.LoggerI)
                     {
                         //
-                        // Ice.ConsoleListener is enabled by default unless Ice.LogFile is set.
+                        // Ice.ConsoleListener is enabled by default.
                         //
-                        bool console = 
-                            _initData.properties.getPropertyAsIntWithDefault("Ice.ConsoleListener",
-                                                                             logfile.Length == 0 ? 1 : 0) > 0;
+#  if COMPACT
                         _initData.logger = 
-                            new Ice.TraceLoggerI(_initData.properties.getProperty("Ice.ProgramName"), logfile, console);
+                            new Ice.ConsoleLoggerI(_initData.properties.getProperty("Ice.ProgramName"));
+#  else
+                        bool console = 
+                            _initData.properties.getPropertyAsIntWithDefault("Ice.ConsoleListener", 1) == 1;
+                        _initData.logger =
+                            new Ice.TraceLoggerI(_initData.properties.getProperty("Ice.ProgramName"), console);
+#  endif
                     }
+#else
+                    if(Ice.Util.getProcessLogger() is Ice.LoggerI)
+                    {
+                        _initData.logger = 
+                            new Ice.ConsoleLoggerI(_initData.properties.getProperty("Ice.ProgramName"));
+                    }
+#endif
                     else
                     {
                         _initData.logger = Ice.Util.getProcessLogger();
@@ -689,10 +778,10 @@ namespace IceInternal
                 
                 _defaultsAndOverrides = new DefaultsAndOverrides(_initData.properties);
 
-#if COMPACT
-                _factoryAssemblies = _initData.properties.getPropertyAsList("Ice.FactoryAssemblies");
+#if COMPACT || SILVERLIGHT
+                char[] separators = { ' ', '\t', '\n', '\r' };
+                _factoryAssemblies = _initData.properties.getProperty("Ice.FactoryAssemblies").Split(separators);
 #endif
-
                 {
                     const int defaultMessageSizeMax = 1024;
                     int num = 
@@ -727,7 +816,7 @@ namespace IceInternal
                 _proxyFactory = new ProxyFactory(this);
                 
                 bool ipv4 = _initData.properties.getPropertyAsIntWithDefault("Ice.IPv4", 1) > 0;
-                bool ipv6 = _initData.properties.getPropertyAsIntWithDefault("Ice.IPv6", 0) > 0;
+                bool ipv6 = _initData.properties.getPropertyAsIntWithDefault("Ice.IPv6", 1) > 0;
                 if(!ipv4 && !ipv6)
                 {
                     throw new Ice.InitializationException("Both IPV4 and IPv6 support cannot be disabled.");
@@ -744,15 +833,18 @@ namespace IceInternal
                 {
                     _protocolSupport = Network.EnableIPv6;
                 }
+                _preferIPv6 = _initData.properties.getPropertyAsInt("Ice.PreferIPv6Address") > 0;
                 _endpointFactoryManager = new EndpointFactoryManager(this);
                 EndpointFactory tcpEndpointFactory = new TcpEndpointFactory(this);
                 _endpointFactoryManager.add(tcpEndpointFactory);
                 EndpointFactory udpEndpointFactory = new UdpEndpointFactory(this);
                 _endpointFactoryManager.add(udpEndpointFactory);
-                
-                _pluginManager = new Ice.PluginManagerI(communicator);
 
-                _outgoingConnectionFactory = new OutgoingConnectionFactory(this);
+#if !SILVERLIGHT
+                _pluginManager = new Ice.PluginManagerI(communicator);
+#endif
+
+                _outgoingConnectionFactory = new OutgoingConnectionFactory(communicator, this);
                 
                 _servantFactoryManager = new ObjectFactoryManager();
                 
@@ -768,8 +860,31 @@ namespace IceInternal
                         _adminFacetFilter.Add(s);
                     }
                 }
-                _adminFacets.Add("Properties", new PropertiesAdminI(_initData.properties));
+
                 _adminFacets.Add("Process", new ProcessI(communicator));
+
+                MetricsAdminI admin = new MetricsAdminI(_initData.properties, _initData.logger);
+                _adminFacets.Add("Metrics", admin);
+                
+                PropertiesAdminI props = new PropertiesAdminI("Properties", _initData.properties, _initData.logger);
+                _adminFacets.Add("Properties", props);
+
+                //
+                // Setup the communicator observer only if the user didn't already set an
+                // Ice observer resolver and if the admininistrative endpoints are set.
+                //
+                if(_initData.observer == null && 
+                   (_adminFacetFilter.Count == 0 || _adminFacetFilter.Contains("Metrics")) &&
+                   _initData.properties.getProperty("Ice.Admin.Endpoints").Length > 0)
+                {
+                    CommunicatorObserverI observer = new CommunicatorObserverI(admin);
+                    _initData.observer = observer;
+
+                    //
+                    // Make sure the admin plugin receives property updates.
+                    //
+                    props.addUpdateCallback(admin);
+                }
             }
             catch(Ice.LocalException)
             {
@@ -784,14 +899,25 @@ namespace IceInternal
             // Load plug-ins.
             //
             Debug.Assert(_serverThreadPool == null);
+#if !SILVERLIGHT
             Ice.PluginManagerI pluginManagerImpl = (Ice.PluginManagerI)_pluginManager;
             pluginManagerImpl.loadPlugins(ref args);
-            
+#endif
+
+            //
+            // Set observer updater
+            //
+            if(_initData.observer != null)
+            {
+                _initData.observer.setObserverUpdater(new ObserverUpdaterI(this));
+            }
+
             //
             // Create threads.
             //
             try
             {
+#if !SILVERLIGHT
                 if(initializationData().properties.getProperty("Ice.ThreadPriority").Length > 0)
                 {
                     ThreadPriority priority = IceInternal.Util.stringToThreadPriority(
@@ -802,6 +928,9 @@ namespace IceInternal
                 {
                     _timer = new Timer(this);
                 }
+#else
+                _timer = new Timer(this);
+#endif
             }
             catch(System.Exception ex)
             {
@@ -810,6 +939,7 @@ namespace IceInternal
                 throw;
             }
           
+#if !SILVERLIGHT
             try
             {
                 _endpointHostResolver = new EndpointHostResolver(this);
@@ -820,7 +950,7 @@ namespace IceInternal
                 _initData.logger.error(s);
                 throw;
             }
-
+#endif
             _clientThreadPool = new ThreadPool(this, "Ice.ThreadPool.Client", 0);
 
             //
@@ -843,6 +973,7 @@ namespace IceInternal
             //
             // Show process id if requested (but only once).
             //
+#if !SILVERLIGHT
             lock(this)
             {
                 if(!_printProcessIdDone && _initData.properties.getPropertyAsInt("Ice.PrintProcessId") > 0)
@@ -854,7 +985,7 @@ namespace IceInternal
                     _printProcessIdDone = true;
                 }
             }
-             
+#endif             
             //
             // Create the connection monitor and ensure the interval for
             // monitoring connections is appropriate for client & server
@@ -874,11 +1005,12 @@ namespace IceInternal
             // initialization until after it has interacted directly with the
             // plug-ins.
             //      
+#if !SILVERLIGHT
             if(_initData.properties.getPropertyAsIntWithDefault("Ice.InitPlugins", 1) > 0)
             {
                 pluginManagerImpl.initializePlugins();
             }
-
+#endif
             //
             // This must be done last as this call creates the Ice.Admin object adapter
             // and eventually registers a process proxy with the Ice locator (allowing 
@@ -943,8 +1075,10 @@ namespace IceInternal
             ThreadPool serverThreadPool = null;
             ThreadPool clientThreadPool = null;
             AsyncIOThread asyncIOThread = null;
-            EndpointHostResolver endpointHostResolver = null;
 
+#if !SILVERLIGHT
+            EndpointHostResolver endpointHostResolver = null;
+#endif
             lock(this)
             {
                 _objectAdapterFactory = null;
@@ -978,12 +1112,14 @@ namespace IceInternal
                     _asyncIOThread = null;
                 }
 
+#if !SILVERLIGHT
                 if(_endpointHostResolver != null)
                 {
                     _endpointHostResolver.destroy();
                     endpointHostResolver = _endpointHostResolver;
                     _endpointHostResolver = null;
                 }
+#endif
 
                 if(_timer != null)
                 {
@@ -997,11 +1133,9 @@ namespace IceInternal
                     _servantFactoryManager = null;
                 }
                 
-                if(_referenceFactory != null)
-                {
-                    _referenceFactory.destroy();
-                    _referenceFactory = null;
-                }
+                // No destroy function defined.
+                //_referenceFactory.destroy();
+                _referenceFactory = null;
                 
                 // No destroy function defined.
                 // _proxyFactory.destroy();
@@ -1052,18 +1186,19 @@ namespace IceInternal
             {
                 asyncIOThread.joinWithThread();
             }
+#if !SILVERLIGHT
             if(endpointHostResolver != null)
             {
                 endpointHostResolver.joinWithThread();
             }
-
+#endif
             if(_initData.properties.getPropertyAsInt("Ice.Warn.UnusedProperties") > 0)
             {
-                ArrayList unusedProperties = ((Ice.PropertiesI)_initData.properties).getUnusedProperties();
-                if(unusedProperties.Count != 0)
+                List<string> unusedProperties = ((Ice.PropertiesI)_initData.properties).getUnusedProperties();
+                if (unusedProperties.Count != 0)
                 {
                     StringBuilder message = new StringBuilder("The following properties were set but never read:");
-                    foreach(string s in unusedProperties)
+                    foreach (string s in unusedProperties)
                     {
                         message.Append("\n    ");
                         message.Append(s);
@@ -1082,7 +1217,7 @@ namespace IceInternal
         private Ice.InitializationData _initData; // Immutable, not reset by destroy().
         private TraceLevels _traceLevels; // Immutable, not reset by destroy().
         private DefaultsAndOverrides _defaultsAndOverrides; // Immutable, not reset by destroy().
-#if COMPACT
+#if COMPACT || SILVERLIGHT
         private string[] _factoryAssemblies; // Immutable, not reset by destroy().
 #endif
         private int _messageSizeMax; // Immutable, not reset by destroy().
@@ -1098,10 +1233,13 @@ namespace IceInternal
         private ObjectFactoryManager _servantFactoryManager;
         private ObjectAdapterFactory _objectAdapterFactory;
         private int _protocolSupport;
+        private bool _preferIPv6;
         private ThreadPool _clientThreadPool;
         private ThreadPool _serverThreadPool;
         private AsyncIOThread _asyncIOThread;
+#if !SILVERLIGHT
         private EndpointHostResolver _endpointHostResolver;
+#endif
         private Timer _timer;
         private RetryQueue _retryQueue;
         private EndpointFactoryManager _endpointFactoryManager;
@@ -1111,9 +1249,14 @@ namespace IceInternal
         private HashSet<string> _adminFacetFilter = new HashSet<string>();
         private Ice.Identity _adminIdentity;
 
+#if !SILVERLIGHT
         private static bool _printProcessIdDone = false;
+#endif
 
+#if !SILVERLIGHT && !UNITY
         private static bool _oneOffDone = false;
+#endif
+
         private static System.Object _staticLock = new System.Object();
     }
 }

@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -22,7 +22,7 @@ extern "C"
 {
 
 ICE_DECLSPEC_EXPORT ::Ice::Plugin*
-createFreezeDB(const Ice::CommunicatorPtr& communicator, const string& name, const Ice::StringSeq& args)
+createFreezeDB(const Ice::CommunicatorPtr& communicator, const string& /*name*/, const Ice::StringSeq& /*args*/)
 {
     return new IceStorm::FreezeDBPlugin(communicator);
 }
@@ -119,20 +119,20 @@ public:
 
 }
 
-FreezeDatabaseCache::FreezeDatabaseCache(const Ice::CommunicatorPtr& communicator, const string& envName) :
-    FreezeDB::DatabaseCache(communicator, envName)
+FreezeConnectionPool::FreezeConnectionPool(const Ice::CommunicatorPtr& communicator, const string& envName) :
+    FreezeDB::ConnectionPool(communicator, envName)
 {
 }
 
 LLUWrapperPtr
-FreezeDatabaseCache::getLLU(const IceDB::DatabaseConnectionPtr& connection)
+FreezeConnectionPool::getLLU(const IceDB::DatabaseConnectionPtr& connection)
 {
     FreezeDB::DatabaseConnection* c = dynamic_cast<FreezeDB::DatabaseConnection*>(connection.get());
     return new FreezeLLUWrapper(c->freezeConnection(), "llu");
 }
 
 SubscribersWrapperPtr
-FreezeDatabaseCache::getSubscribers(const IceDB::DatabaseConnectionPtr& connection)
+FreezeConnectionPool::getSubscribers(const IceDB::DatabaseConnectionPtr& connection)
 {
     FreezeDB::DatabaseConnection* c = dynamic_cast<FreezeDB::DatabaseConnection*>(connection.get());
     // COMPILERFIX: GCC 4.4 w/ -O2 emits strict aliasing warnings
@@ -155,8 +155,8 @@ FreezeDBPlugin::destroy()
 {
 }
 
-DatabaseCachePtr
-FreezeDBPlugin::getDatabaseCache(const string& name)
+ConnectionPoolPtr
+FreezeDBPlugin::getConnectionPool(const string& name)
 {
-    return new FreezeDatabaseCache(_communicator, name);
+    return new FreezeConnectionPool(_communicator, name);
 }

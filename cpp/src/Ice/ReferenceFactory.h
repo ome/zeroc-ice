@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -67,6 +67,7 @@ private:
 
     void checkForUnknownProperties(const std::string&);
     RoutableReferencePtr create(const ::Ice::Identity&, const ::std::string&, Reference::Mode, bool, 
+                                const Ice::ProtocolVersion&, const Ice::EncodingVersion&,
                                 const std::vector<EndpointIPtr>&, const std::string&, const std::string&);
 
     const InstancePtr _instance;

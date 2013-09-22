@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -14,6 +14,7 @@
 
 #include <IceStorm/Replica.h>
 #include <IceStorm/Election.h>
+#include <IceStorm/Instrumentation.h>
 
 #include <IceUtil/RecMutex.h>
 
@@ -26,8 +27,8 @@ namespace IceStorm
 class Instance;
 typedef IceUtil::Handle<Instance> InstancePtr;
 
-class DatabaseCache;
-typedef IceUtil::Handle<DatabaseCache> DatabaseCachePtr;
+class ConnectionPool;
+typedef IceUtil::Handle<ConnectionPool> ConnectionPoolPtr;
 
 class TopicImpl;
 typedef IceUtil::Handle<TopicImpl> TopicImplPtr;
@@ -35,7 +36,9 @@ typedef IceUtil::Handle<TopicImpl> TopicImplPtr;
 //
 // TopicManager implementation.
 //
-class TopicManagerImpl : public IceStormElection::Replica, public IceUtil::RecMutex
+class TopicManagerImpl : public IceStormElection::Replica,
+                         public IceStorm::Instrumentation::ObserverUpdater,
+                         public IceUtil::RecMutex
 {
 public:
 
@@ -73,11 +76,14 @@ public:
 
 private:
 
+    void updateTopicObservers();
+    void updateSubscriberObservers();
+
     TopicPrx installTopic(const std::string&, const Ice::Identity&, bool,
                           const IceStorm::SubscriberRecordSeq& = IceStorm::SubscriberRecordSeq());
 
     const InstancePtr _instance;
-    const DatabaseCachePtr _databaseCache;
+    const ConnectionPoolPtr _connectionPool;
 
     std::map<std::string, TopicImplPtr> _topics;
 

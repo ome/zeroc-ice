@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -37,8 +37,8 @@ class AdapterEditor extends CommunicatorChildEditor
 {
     AdapterEditor()
     {
-        _objects = new ArrayMapField(this, true, "Identity", "Type", "Property");
-        _allocatables = new ArrayMapField(this, true, "Identity", "Type", "Property");
+        _objects = new ArrayMapField(this, true, "Identity", "Type", "Property", "Proxy Options");
+        _allocatables = new ArrayMapField(this, true, "Identity", "Type", "Property", "Proxy Options");
 
         //
         // Create buttons
@@ -151,6 +151,9 @@ class AdapterEditor extends CommunicatorChildEditor
             + " ssl -h venus.foo.com (accepts SSL connections instead of plain TCP)"
             + "</html>");
 
+        _proxyOptions.getDocument().addDocumentListener(_updateListener);
+        _proxyOptions.setToolTipText("<html>The proxy options used for proxies created by the object adapter.</html>");
+
         _description.getDocument().addDocumentListener(_updateListener);
         _description.setToolTipText("An optional description for this object adapter");
 
@@ -238,6 +241,10 @@ class AdapterEditor extends CommunicatorChildEditor
         builder.append(_publishedEndpoints, 3);
         builder.nextLine();
 
+        builder.append("Proxy Options" );
+        builder.append(_proxyOptions, 3);
+        builder.nextLine();
+
         builder.append("", _registerProcess);
         builder.nextLine();
         builder.append("", _serverLifetime);
@@ -287,6 +294,7 @@ class AdapterEditor extends CommunicatorChildEditor
         {
             adapter.removeProperty(_oldName + ".Endpoints");
             adapter.removeProperty(_oldName + ".PublishedEndpoints");
+            adapter.removeProperty(_oldName + ".ProxyOptions");
             _oldName = name;
         }
 
@@ -300,6 +308,11 @@ class AdapterEditor extends CommunicatorChildEditor
         else
         {
             adapter.setProperty(name + ".PublishedEndpoints", published.toString().trim());
+        }
+
+        if(!_proxyOptions.getText().trim().isEmpty())
+        {
+            adapter.setProperty(name + ".ProxyOptions", _proxyOptions.getText().trim());
         }
 
         //
@@ -343,7 +356,7 @@ class AdapterEditor extends CommunicatorChildEditor
     private void refreshId()
     {
         Object id = _id.getSelectedItem();
-        _id.setModel(new DefaultComboBoxModel(new Object[]{DEFAULT_ADAPTER_ID}));
+        _id.setModel(new DefaultComboBoxModel<Object>(new Object[]{DEFAULT_ADAPTER_ID}));
         _id.setSelectedItem(id);
     }
 
@@ -516,6 +529,10 @@ class AdapterEditor extends CommunicatorChildEditor
         _publishedEndpoints.setEnabled(isEditable);
         _publishedEndpoints.setEditable(isEditable);
 
+        _proxyOptions.setEnabled(true);
+        _proxyOptions.setEditable(true);
+        _proxyOptions.setText(Utils.substitute(adapter.getProperty(oaPrefix + "ProxyOptions"), resolver));
+
         //
         // Objects
         //
@@ -549,7 +566,7 @@ class AdapterEditor extends CommunicatorChildEditor
         for(ObjectDescriptor p : objects)
         {
             String k = Ice.Util.identityToString(p.id);
-            result.put(k, new String[]{p.type, getAdapter().lookupPropertyValue(k)});
+            result.put(k, new String[]{p.type, getAdapter().lookupPropertyValue(k),p.proxyOptions});
         }
         return result;
     }
@@ -564,7 +581,7 @@ class AdapterEditor extends CommunicatorChildEditor
             {
                 Ice.Identity id = Ice.Util.stringToIdentity(p.getKey());
                 String[] val = p.getValue();
-                result.add(new ObjectDescriptor(id, val[0]));
+                result.add(new ObjectDescriptor(id, val[0], val[2]));
             }
             catch(Ice.IdentityParseException ex)
             {
@@ -603,14 +620,15 @@ class AdapterEditor extends CommunicatorChildEditor
     private JTextField _name = new JTextField(20);
     private JTextArea _description = new JTextArea(3, 20);
 
-    private JComboBox _id = new JComboBox(new Object[] {DEFAULT_ADAPTER_ID});
-    private JComboBox _replicaGroupId = new JComboBox();
+    private JComboBox<Object> _id = new JComboBox<Object>(new Object[] {DEFAULT_ADAPTER_ID});
+    private JComboBox<Object> _replicaGroupId = new JComboBox<Object>();
     private JButton _replicaGroupButton;
 
     private JTextField _priority = new JTextField(20);
 
     private JTextField _endpoints = new JTextField(20);
-    private JComboBox _publishedEndpoints = new JComboBox(new Object[]{PUBLISH_ACTUAL});
+    private JComboBox<Object> _publishedEndpoints = new JComboBox<Object>(new Object[]{PUBLISH_ACTUAL});
+    private JTextField _proxyOptions = new JTextField(20);
 
     private JTextField _currentStatus = new JTextField(20);
     private JTextField _currentEndpoints = new JTextField(20);

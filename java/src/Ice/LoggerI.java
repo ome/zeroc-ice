@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -33,21 +33,6 @@ public class LoggerI implements Logger
             catch(java.io.FileNotFoundException ex)
             {
                 throw new InitializationException("FileLogger: cannot open " + _file);
-            }
-        }
-    }
-
-    protected void
-    finalize()
-    {
-        if(_out != null)
-        {
-            try
-            {
-                _out.close();
-            }
-            catch(java.lang.Exception ex)
-            {
             }
         }
     }

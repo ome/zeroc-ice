@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -43,6 +43,56 @@ class explicit extends delegate implements decimal, case
 dictionary<string, break> while;
 ["clr:collection"] dictionary<string, as> finally;
 
+class optionalMembers
+{
+    optional(1) break for;
+    optional(2) as goto;
+    optional(3) explicit if;
+    optional(4) extern catch;
+    optional(5) while internal;
+    optional(6) finally is;
+    optional(7) string namespace;
+    optional(8) explicit* null;
+};
+
+["ami"]
+interface optionalParams
+{
+    optional(1) break for(optional(2) as goto,
+                          optional(3) explicit if,
+                          optional(4) extern catch,
+                          optional(5) while internal,
+                          optional(6) finally is,
+                          optional(7) string namespace,
+                          optional(8) explicit* null);
+
+    ["amd"]
+    optional(1) break continue(optional(2) as goto,
+                               optional(3) explicit if,
+                               optional(4) extern catch,
+                               optional(5) while internal,
+                               optional(6) finally is,
+                               optional(7) string namespace,
+                               optional(8) explicit* null);
+
+    optional(1) break in(out optional(2) as goto,
+                         out optional(3) explicit if,
+                         out optional(4) extern catch,
+                         out optional(5) while internal,
+                         out optional(6) finally is,
+                         out optional(7) string namespace,
+                         out optional(8) explicit* null);
+
+    ["amd"]
+    optional(1) break foreach(out optional(2) as goto,
+                              out optional(3) explicit if,
+                              out optional(4) extern catch,
+                              out optional(5) while internal,
+                              out optional(6) finally is,
+                              out optional(7) string namespace,
+                              out optional(8) explicit* null);
+};
+
 exception fixed
 {
     int for;
@@ -76,7 +126,7 @@ exception BaseMethods
 local interface implicit
 {
     as in(break internal, delegate is, explicit lock, case* namespace, decimal* new, delegate* null,
-                explicit* operator, int override, int params, int private)
+          explicit* operator, int override, int params, int private)
         throws fixed, foreach;
 };
 

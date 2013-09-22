@@ -1,13 +1,13 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
-#if defined(_MSC_VER) && (_MSC_VER > 1400)
+#ifdef _MSC_VER
 #  define _CRT_RAND_S
 #endif
 
@@ -25,7 +25,7 @@
 using namespace std;
 using namespace IceUtil;
 
-#if !defined(_WIN32) || !defined(_MSC_VER) || (_MSC_VER < 1400)
+#if !defined(_WIN32) || !defined(_MSC_VER)
 namespace
 {
 
@@ -44,7 +44,7 @@ namespace
 // 
 Mutex* staticMutex = 0;
 #ifdef _WIN32
-HCRYPTPROV context = NULL;
+HCRYPTPROV context = 0;
 #else
 int fd = -1;
 #endif
@@ -61,10 +61,10 @@ public:
     ~Init()
     {
 #ifdef _WIN32
-        if(context != NULL)
+        if(context != 0)
         {
             CryptReleaseContext(context, 0);
-            context = NULL;
+            context = 0;
         }
 #else
         if(fd != -1)
@@ -88,7 +88,7 @@ IceUtilInternal::generateRandom(char* buffer, int size)
 {
 #ifdef _WIN32
 
-#  if defined(_MSC_VER) && (_MSC_VER >= 1400)
+#  if defined(_MSC_VER)
     for(int i = 0; i < size; ++i)
     {
         buffer[i] = random(256);
@@ -97,12 +97,12 @@ IceUtilInternal::generateRandom(char* buffer, int size)
     //
     // It's not clear from the Microsoft documentation if CryptGenRandom 
     // can be called concurrently from several threads. To be on the safe
-    // side, we also serialize calls to to CryptGenRandom with the static 
+    // side, we also serialize calls to CryptGenRandom with the static 
     // mutex.
     //
 
     IceUtilInternal::MutexPtrLock<IceUtil::Mutex> lock(staticMutex);
-    if(context == NULL)
+    if(context == 0)
     {
         if(!CryptAcquireContext(&context, NULL, NULL, PROV_RSA_FULL, CRYPT_VERIFYCONTEXT))
         {
@@ -168,7 +168,7 @@ unsigned int
 IceUtilInternal::random(int limit)
 {
     unsigned int r;
-#if defined(_MSC_VER) && (_MSC_VER > 1400)
+#if defined(_MSC_VER)
     errno_t err = rand_s(&r);
     if(err != 0)
     {

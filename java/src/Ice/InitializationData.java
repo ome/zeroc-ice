@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -59,8 +59,14 @@ public final class InitializationData implements Cloneable
     public Logger logger;
 
     /**
+     * The communicator observer used by the Ice run-time.
+     **/
+    public Ice.Instrumentation.CommunicatorObserver observer;
+
+    /**
      * The <Stats> instance for the communicator.
      **/
+    @SuppressWarnings("deprecation")
     public Stats stats;
 
     /**
@@ -77,4 +83,9 @@ public final class InitializationData implements Cloneable
      * The call dispatcher for the communicator.
      **/
     public Dispatcher dispatcher;
+
+    /**
+     * The compact type ID resolver.
+     **/
+    public CompactIdResolver compactIdResolver;
 }

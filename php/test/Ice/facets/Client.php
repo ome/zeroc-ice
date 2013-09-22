@@ -1,7 +1,7 @@
 <?
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -43,6 +43,7 @@ function allTests($communicator)
     $d = $db->ice_checkedCast("::Test::D");
     test($d != null);
     test($d == $db);
+    test($db->ice_checkedCast("::Test::D", "bogus") == null);
     echo "ok\n";
 
     echo "testing non-facets A, B, C, and D... ";
@@ -89,7 +90,7 @@ function allTests($communicator)
     return $gf;
 }
 
-$communicator = Ice_initialize(&$argv);
+$communicator = Ice_initialize($argv);
 $g = allTests($communicator);
 $g->shutdown();
 $communicator->destroy();

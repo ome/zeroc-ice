@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -31,7 +31,7 @@ public class Client
             //
             // Create a proxy for the root directory
             //
-            Ice.ObjectPrx @base = communicator().stringToProxy("RootDir:default -p 10000");
+            Ice.ObjectPrx @base = communicator().stringToProxy("RootDir:default -h localhost -p 10000");
 
             //
             // Down-cast the proxy to a Directory proxy.

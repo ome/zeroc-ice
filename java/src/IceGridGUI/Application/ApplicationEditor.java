@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -100,7 +100,7 @@ class ApplicationEditor extends Editor
         //
         // Distrib
         //
-        _distrib = new JComboBox(new Object[]{NO_DISTRIB, DEFAULT_DISTRIB});
+        _distrib = new JComboBox<Object>(new Object[]{NO_DISTRIB, DEFAULT_DISTRIB});
         _distrib.setEditable(true);
         _distrib.setToolTipText("The proxy to the IcePatch2 server holding your files");
 
@@ -253,6 +253,6 @@ class ApplicationEditor extends Editor
     private JTextField _name = new JTextField(20);
     private JTextArea _description = new JTextArea(3, 20);
     private SimpleMapField _variables;
-    private JComboBox _distrib;
+    private JComboBox<Object> _distrib;
     private ListTextField _distribDirs = new ListTextField(20);
 }

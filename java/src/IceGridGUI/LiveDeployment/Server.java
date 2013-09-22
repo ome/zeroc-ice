@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -26,14 +26,14 @@ import java.util.Enumeration;
 import IceGrid.*;
 import IceGridGUI.*;
 
-class Server extends ListArrayTreeNode
+public class Server extends ListArrayTreeNode
 {
     //
     // Actions
     //
     public boolean[] getAvailableActions()
     {
-        boolean[] actions = new boolean[ACTION_COUNT];
+        boolean[] actions = new boolean[IceGridGUI.LiveDeployment.TreeNode.ACTION_COUNT];
 
         if(_state != null)
         {
@@ -74,22 +74,22 @@ class Server extends ListArrayTreeNode
         final String prefix = "Starting server '" + _id + "'...";
         getCoordinator().getStatusBar().setText(prefix);
 
-        AMI_Admin_startServer cb = new AMI_Admin_startServer()
+        Callback_Admin_startServer cb = new Callback_Admin_startServer()
             {
                 //
                 // Called by another thread!
                 //
-                public void ice_response()
+                public void response()
                 {
                     amiSuccess(prefix);
                 }
 
-                public void ice_exception(Ice.UserException e)
+                public void exception(Ice.UserException e)
                 {
                     amiFailure(prefix, "Failed to start " + _id, e);
                 }
 
-                public void ice_exception(Ice.LocalException e)
+                public void exception(Ice.LocalException e)
                 {
                     amiFailure(prefix, "Failed to start " + _id, e.toString());
                 }
@@ -98,7 +98,7 @@ class Server extends ListArrayTreeNode
         try
         {
             getCoordinator().getMainFrame().setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
-            getCoordinator().getAdmin().startServer_async(cb, _id);
+            getCoordinator().getAdmin().begin_startServer(_id, cb);
         }
         catch(Ice.LocalException e)
         {
@@ -115,22 +115,23 @@ class Server extends ListArrayTreeNode
         final String prefix = "Stopping server '" + _id + "'...";
         getCoordinator().getStatusBar().setText(prefix);
 
-        AMI_Admin_stopServer cb = new AMI_Admin_stopServer()
+        Callback_Admin_stopServer cb = new Callback_Admin_stopServer()
             {
                 //
                 // Called by another thread!
                 //
-                public void ice_response()
+                public void response()
                 {
                     amiSuccess(prefix);
+                    rebuild(Server.this, false);
                 }
 
-                public void ice_exception(Ice.UserException e)
+                public void exception(Ice.UserException e)
                 {
                     amiFailure(prefix, "Failed to stop " + _id, e);
                 }
 
-                public void ice_exception(Ice.LocalException e)
+                public void exception(Ice.LocalException e)
                 {
                     amiFailure(prefix, "Failed to stop " + _id, e.toString());
                 }
@@ -139,7 +140,7 @@ class Server extends ListArrayTreeNode
         try
         {
             getCoordinator().getMainFrame().setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
-            getCoordinator().getAdmin().stopServer_async(cb, _id);
+            getCoordinator().getAdmin().begin_stopServer(_id, cb);
         }
         catch(Ice.LocalException e)
         {
@@ -262,22 +263,22 @@ class Server extends ListArrayTreeNode
         final String prefix = "Sending '" + s + "' to server '" + _id + "'...";
         getCoordinator().getStatusBar().setText(prefix);
 
-        AMI_Admin_sendSignal cb = new AMI_Admin_sendSignal()
+        Callback_Admin_sendSignal cb = new Callback_Admin_sendSignal()
             {
                 //
                 // Called by another thread!
                 //
-                public void ice_response()
+                public void response()
                 {
                     amiSuccess(prefix);
                 }
 
-                public void ice_exception(Ice.UserException e)
+                public void exception(Ice.UserException e)
                 {
                     amiFailure(prefix, "Failed to deliver signal " + s + " to " + _id, e);
                 }
 
-                public void ice_exception(Ice.LocalException e)
+                public void exception(Ice.LocalException e)
                 {
                     amiFailure(prefix, "Failed to deliver signal " + s + " to " + _id, e.toString());
                 }
@@ -285,7 +286,7 @@ class Server extends ListArrayTreeNode
 
         try
         {
-            getCoordinator().getAdmin().sendSignal_async(cb, _id, s);
+            getCoordinator().getAdmin().begin_sendSignal(_id, s, cb);
         }
         catch(Ice.LocalException e)
         {
@@ -316,22 +317,22 @@ class Server extends ListArrayTreeNode
         final String prefix = "Patching server '" + _id + "'...";
         getCoordinator().getStatusBar().setText(prefix);
 
-        AMI_Admin_patchServer cb = new AMI_Admin_patchServer()
+        Callback_Admin_patchServer cb = new Callback_Admin_patchServer()
             {
                 //
                 // Called by another thread!
                 //
-                public void ice_response()
+                public void response()
                 {
                     amiSuccess(prefix);
                 }
 
-                public void ice_exception(Ice.UserException e)
+                public void exception(Ice.UserException e)
                 {
                     amiFailure(prefix, "Failed to patch " + _id, e);
                 }
 
-                public void ice_exception(Ice.LocalException e)
+                public void exception(Ice.LocalException e)
                 {
                     amiFailure(prefix, "Failed to patch " + _id, e.toString());
                 }
@@ -340,7 +341,7 @@ class Server extends ListArrayTreeNode
         try
         {
             getCoordinator().getMainFrame().setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
-            getCoordinator().getAdmin().patchServer_async(cb, _id, shutdown == JOptionPane.YES_OPTION);
+            getCoordinator().getAdmin().begin_patchServer(_id, shutdown == JOptionPane.YES_OPTION, cb);
         }
         catch(Ice.LocalException e)
         {
@@ -360,22 +361,22 @@ class Server extends ListArrayTreeNode
 
         getCoordinator().getStatusBar().setText(prefix);
 
-        AMI_Admin_enableServer cb = new AMI_Admin_enableServer()
+        Callback_Admin_enableServer cb = new Callback_Admin_enableServer()
             {
                 //
                 // Called by another thread!
                 //
-                public void ice_response()
+                public void response()
                 {
                     amiSuccess(prefix);
                 }
 
-                public void ice_exception(Ice.UserException e)
+                public void exception(Ice.UserException e)
                 {
                     amiFailure(prefix, "Failed to " + action + " " + _id, e);
                 }
 
-                public void ice_exception(Ice.LocalException e)
+                public void exception(Ice.LocalException e)
                 {
                     amiFailure(prefix, "Failed to " + action + " " + _id, e.toString());
                 }
@@ -384,7 +385,7 @@ class Server extends ListArrayTreeNode
         try
         {
             getCoordinator().getMainFrame().setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
-            getCoordinator().getAdmin().enableServer_async(cb, _id, enable);
+            getCoordinator().getAdmin().begin_enableServer(_id, enable, cb);
         }
         catch(Ice.LocalException e)
         {
@@ -393,6 +394,80 @@ class Server extends ListArrayTreeNode
         finally
         {
             getCoordinator().getMainFrame().setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
+        }
+    }
+
+    public void fetchMetricsViewNames()
+    {
+        if(_metricsRetrieved)
+        {
+            return; // Already loaded.
+        }
+
+        Ice.ObjectPrx admin = getServerAdmin();
+        if(admin == null)
+        {
+            return;
+        }
+        _metricsRetrieved = true;
+        final IceMX.MetricsAdminPrx metricsAdmin = 
+                IceMX.MetricsAdminPrxHelper.uncheckedCast(admin.ice_facet("Metrics"));
+        IceMX.Callback_MetricsAdmin_getMetricsViewNames cb = new IceMX.Callback_MetricsAdmin_getMetricsViewNames()
+            {
+                public void response(final String[] enabledViews, final String[] disabledViews)
+                {
+                    SwingUtilities.invokeLater(new Runnable()
+                        {
+                            public void run()
+                            {
+                                for(String name : enabledViews)
+                                {
+                                    insertSortedChild(new MetricsView(Server.this, name, metricsAdmin, true), _metrics, null);
+                                }
+                                for(String name : disabledViews)
+                                {
+                                    insertSortedChild(new MetricsView(Server.this, name, metricsAdmin, false), _metrics, null);
+                                }
+                                rebuild(Server.this, false);
+                            }
+                        });
+                }
+
+                public void exception(final Ice.LocalException e)
+                {
+                    SwingUtilities.invokeLater(new Runnable()
+                        {
+                            public void run()
+                            {
+                                _metricsRetrieved = false;
+                                if(e instanceof Ice.ObjectNotExistException)
+                                {
+                                    // Server is down.
+                                }
+                                else if(e instanceof Ice.FacetNotExistException)
+                                {
+                                    // MetricsAdmin facet not present. Old server version?
+                                }
+                                else
+                                {
+                                    e.printStackTrace();
+                                    JOptionPane.showMessageDialog(getCoordinator().getMainFrame(), 
+                                                                  "Error: " + e.toString(), "Error",
+                                                                  JOptionPane.ERROR_MESSAGE);
+                                }
+                            }
+                        });
+                }
+            };
+        try
+        {
+            metricsAdmin.begin_getMetricsViewNames(cb);
+        }
+        catch(Ice.LocalException e)
+        {
+            _metricsRetrieved = false;
+            JOptionPane.showMessageDialog(getCoordinator().getMainFrame(), "Error: " + e.toString(), "Error",
+                                          JOptionPane.ERROR_MESSAGE);
         }
     }
 
@@ -406,9 +481,9 @@ class Server extends ListArrayTreeNode
         }
         else
         {
-            Ice.AMI_PropertiesAdmin_getPropertiesForPrefix cb = new Ice.AMI_PropertiesAdmin_getPropertiesForPrefix()
+            Ice.Callback_PropertiesAdmin_getPropertiesForPrefix cb = new Ice.Callback_PropertiesAdmin_getPropertiesForPrefix()
                 {
-                    public void ice_response(final java.util.Map<String, String> properties)
+                    public void response(final java.util.Map<String, String> properties)
                     {
                         SwingUtilities.invokeLater(new Runnable()
                             {
@@ -420,7 +495,7 @@ class Server extends ListArrayTreeNode
                             });
                     }
 
-                    public void ice_exception(final Ice.LocalException e)
+                    public void exception(final Ice.LocalException e)
                     {
                         SwingUtilities.invokeLater(new Runnable()
                             {
@@ -451,7 +526,7 @@ class Server extends ListArrayTreeNode
             {
                 Ice.PropertiesAdminPrx propAdmin =
                     Ice.PropertiesAdminPrxHelper.uncheckedCast(serverAdmin.ice_facet("Properties"));
-                propAdmin.getPropertiesForPrefix_async(cb, "");
+                propAdmin.begin_getPropertiesForPrefix("", cb);
             }
             catch(Ice.LocalException e)
             {
@@ -541,69 +616,69 @@ class Server extends ListArrayTreeNode
             //
             _icons = new Icon[8][2][2];
             _icons[0][0][0] = Utils.getIcon("/icons/16x16/server_unknown.png");
-            _icons[ServerState.Inactive.ordinal() + 1][0][0] = Utils.getIcon("/icons/16x16/server_inactive.png");
-            _icons[ServerState.Activating.ordinal() + 1][0][0] = Utils.getIcon("/icons/16x16/server_activating.png");
-            _icons[ServerState.ActivationTimedOut.ordinal() + 1][0][0] =
+            _icons[ServerState.Inactive.value() + 1][0][0] = Utils.getIcon("/icons/16x16/server_inactive.png");
+            _icons[ServerState.Activating.value() + 1][0][0] = Utils.getIcon("/icons/16x16/server_activating.png");
+            _icons[ServerState.ActivationTimedOut.value() + 1][0][0] =
                 Utils.getIcon("/icons/16x16/server_activating.png");
-            _icons[ServerState.Active.ordinal() + 1][0][0] = Utils.getIcon("/icons/16x16/server_active.png");
-            _icons[ServerState.Deactivating.ordinal() + 1][0][0] =
+            _icons[ServerState.Active.value() + 1][0][0] = Utils.getIcon("/icons/16x16/server_active.png");
+            _icons[ServerState.Deactivating.value() + 1][0][0] =
                 Utils.getIcon("/icons/16x16/server_deactivating.png");
-            _icons[ServerState.Destroying.ordinal() + 1][0][0] = Utils.getIcon("/icons/16x16/server_destroying.png");
-            _icons[ServerState.Destroyed.ordinal() + 1][0][0] = Utils.getIcon("/icons/16x16/server_destroyed.png");
+            _icons[ServerState.Destroying.value() + 1][0][0] = Utils.getIcon("/icons/16x16/server_destroying.png");
+            _icons[ServerState.Destroyed.value() + 1][0][0] = Utils.getIcon("/icons/16x16/server_destroyed.png");
 
             //
             // IceBox servers
             //
             _icons[0][1][0] = Utils.getIcon("/icons/16x16/icebox_server_unknown.png");
-            _icons[ServerState.Inactive.ordinal() + 1][1][0] = 
+            _icons[ServerState.Inactive.value() + 1][1][0] = 
                 Utils.getIcon("/icons/16x16/icebox_server_inactive.png");
-            _icons[ServerState.Activating.ordinal() + 1][1][0] =
+            _icons[ServerState.Activating.value() + 1][1][0] =
                 Utils.getIcon("/icons/16x16/icebox_server_activating.png");
-            _icons[ServerState.ActivationTimedOut.ordinal() + 1][1][0] =
+            _icons[ServerState.ActivationTimedOut.value() + 1][1][0] =
                 Utils.getIcon("/icons/16x16/icebox_server_activating.png");
-            _icons[ServerState.Active.ordinal() + 1][1][0] = Utils.getIcon("/icons/16x16/icebox_server_active.png");
-            _icons[ServerState.Deactivating.ordinal() + 1][1][0] =
+            _icons[ServerState.Active.value() + 1][1][0] = Utils.getIcon("/icons/16x16/icebox_server_active.png");
+            _icons[ServerState.Deactivating.value() + 1][1][0] =
                 Utils.getIcon("/icons/16x16/icebox_server_deactivating.png");
-            _icons[ServerState.Destroying.ordinal() + 1][1][0] =
+            _icons[ServerState.Destroying.value() + 1][1][0] =
                 Utils.getIcon("/icons/16x16/icebox_server_destroying.png");
-            _icons[ServerState.Destroyed.ordinal() + 1][1][0] =
+            _icons[ServerState.Destroyed.value() + 1][1][0] =
                 Utils.getIcon("/icons/16x16/icebox_server_destroyed.png");
 
             //
             // Regular servers (disabled)
             //
             _icons[0][0][1] = Utils.getIcon("/icons/16x16/server_unknown.png");
-            _icons[ServerState.Inactive.ordinal() + 1][0][1] =
+            _icons[ServerState.Inactive.value() + 1][0][1] =
                 Utils.getIcon("/icons/16x16/server_disabled_inactive.png");
-            _icons[ServerState.Activating.ordinal() + 1][0][1] =
+            _icons[ServerState.Activating.value() + 1][0][1] =
                 Utils.getIcon("/icons/16x16/server_disabled_activating.png");
-            _icons[ServerState.ActivationTimedOut.ordinal() + 1][0][1] =
+            _icons[ServerState.ActivationTimedOut.value() + 1][0][1] =
                 Utils.getIcon("/icons/16x16/server_disabled_activating.png");
-            _icons[ServerState.Active.ordinal() + 1][0][1] = Utils.getIcon("/icons/16x16/server_disabled_active.png");
-            _icons[ServerState.Deactivating.ordinal() + 1][0][1] =
+            _icons[ServerState.Active.value() + 1][0][1] = Utils.getIcon("/icons/16x16/server_disabled_active.png");
+            _icons[ServerState.Deactivating.value() + 1][0][1] =
                 Utils.getIcon("/icons/16x16/server_disabled_deactivating.png");
-            _icons[ServerState.Destroying.ordinal() + 1][0][1] =
+            _icons[ServerState.Destroying.value() + 1][0][1] =
                 Utils.getIcon("/icons/16x16/server_disabled_destroying.png");
-            _icons[ServerState.Destroyed.ordinal() + 1][0][1] =
+            _icons[ServerState.Destroyed.value() + 1][0][1] =
                 Utils.getIcon("/icons/16x16/server_disabled_destroyed.png");
 
             //
             // IceBox servers (disabled)
             //
             _icons[0][1][1] = Utils.getIcon("/icons/16x16/icebox_server_unknown.png");
-            _icons[ServerState.Inactive.ordinal() + 1][1][1]
+            _icons[ServerState.Inactive.value() + 1][1][1]
                 = Utils.getIcon("/icons/16x16/icebox_server_disabled_inactive.png");
-            _icons[ServerState.Activating.ordinal() + 1][1][1] =
+            _icons[ServerState.Activating.value() + 1][1][1] =
                 Utils.getIcon("/icons/16x16/icebox_server_disabled_activating.png");
-            _icons[ServerState.ActivationTimedOut.ordinal() + 1][1][1] =
+            _icons[ServerState.ActivationTimedOut.value() + 1][1][1] =
                 Utils.getIcon("/icons/16x16/icebox_server_disabled_activating.png");
-            _icons[ServerState.Active.ordinal() + 1][1][1] =
+            _icons[ServerState.Active.value() + 1][1][1] =
                 Utils.getIcon("/icons/16x16/icebox_server_disabled_active.png");
-            _icons[ServerState.Deactivating.ordinal() + 1][1][1] =
+            _icons[ServerState.Deactivating.value() + 1][1][1] =
                 Utils.getIcon("/icons/16x16/icebox_server_disabled_deactivating.png");
-            _icons[ServerState.Destroying.ordinal() + 1][1][1] =
+            _icons[ServerState.Destroying.value() + 1][1][1] =
                 Utils.getIcon("/icons/16x16/icebox_server_disabled_destroying.png");
-            _icons[ServerState.Destroyed.ordinal() + 1][1][1] =
+            _icons[ServerState.Destroyed.value() + 1][1][1] =
                 Utils.getIcon("/icons/16x16/icebox_server_disabled_destroyed.png");
         }
 
@@ -627,7 +702,7 @@ class Server extends ListArrayTreeNode
            ServerDescriptor serverDescriptor, ApplicationDescriptor application, ServerState state, int pid,
            boolean enabled)
     {
-        super(parent, serverId, 3);
+        super(parent, serverId, 4);
         _resolver = resolver;
 
         _instanceDescriptor = instanceDescriptor;
@@ -637,6 +712,7 @@ class Server extends ListArrayTreeNode
         _childrenArray[0] = _adapters;
         _childrenArray[1] = _dbEnvs;
         _childrenArray[2] = _services;
+        _childrenArray[3] = _metrics;
 
         update(state, pid, enabled, false);
 
@@ -709,7 +785,16 @@ class Server extends ListArrayTreeNode
         }
     }
 
-    void rebuild(Server server)
+    void updateMetrics()
+    {
+        _metricsRetrieved = false;
+        if(getRoot().getTree().isExpanded(getPath()))
+        {
+            fetchMetricsViewNames();
+        }
+    }
+
+    void rebuild(Server server, boolean fetchMetrics)
     {
         _resolver = server._resolver;
         _instanceDescriptor = server._instanceDescriptor;
@@ -719,10 +804,12 @@ class Server extends ListArrayTreeNode
         _adapters = server._adapters;
         _dbEnvs = server._dbEnvs;
         _services = server._services;
+        _metrics = server._metrics;
 
         _childrenArray[0] = _adapters;
         _childrenArray[1] = _dbEnvs;
         _childrenArray[2] = _services;
+        _childrenArray[3] = _metrics;
 
         //
         // Need to re-parent all the children
@@ -742,9 +829,19 @@ class Server extends ListArrayTreeNode
             service.reparent(this);
         }
 
-        updateServices();
+        for(MetricsView metrics: _metrics)
+        {
+            metrics.reparent(this);
+        }
 
+        updateServices();
+        
         getRoot().getTreeModel().nodeStructureChanged(this);
+
+        if(fetchMetrics)
+        {
+            updateMetrics();
+        }
     }
 
     void rebuild(Utils.Resolver resolver, boolean variablesChanged, java.util.Set<String> serviceTemplates,
@@ -778,17 +875,22 @@ class Server extends ListArrayTreeNode
             createServices();
             updateServices();
 
+            _metrics.clear();
+
             getRoot().getTreeModel().nodeStructureChanged(this);
+            updateMetrics();
         }
         else if(serviceTemplates != null && serviceTemplates.size() > 0 &&
                 _serverDescriptor instanceof IceBoxDescriptor)
         {
+            _metrics.clear();
             _services.clear();
             _servicePropertySets.clear();
             createServices();
             updateServices();
 
             getRoot().getTreeModel().nodeStructureChanged(this);
+            updateMetrics();
         }
     }
 
@@ -807,7 +909,21 @@ class Server extends ListArrayTreeNode
             }
             else
             {
-                _stateIconIndex = _state.ordinal() + 1;
+                _stateIconIndex = _state.value() + 1;
+            }
+            
+            if(_state == ServerState.Active && getRoot().getTree().isExpanded(getPath()))
+            {
+                fetchMetricsViewNames();
+            }
+            else
+            {
+                _metricsRetrieved = false;
+                if(!_metrics.isEmpty())
+                {
+                    _metrics.clear();
+                    rebuild(this, false);
+                }
             }
 
             if(_serverDescriptor instanceof IceBoxDescriptor)
@@ -881,7 +997,6 @@ class Server extends ListArrayTreeNode
                                     JOptionPane.ERROR_MESSAGE);
                             }
                         }
-
                     }
 
                     if(_serviceObserver != null)
@@ -891,14 +1006,14 @@ class Server extends ListArrayTreeNode
                         // Note that duplicate registrations are ignored
                         //
 
-                        IceBox.AMI_ServiceManager_addObserver cb = new IceBox.AMI_ServiceManager_addObserver()
+                        IceBox.Callback_ServiceManager_addObserver cb = new IceBox.Callback_ServiceManager_addObserver()
                             {
-                                public void ice_response()
+                                public void response()
                                 {
                                     // all is good
                                 }
 
-                                public void ice_exception(Ice.LocalException e)
+                                public void exception(Ice.LocalException e)
                                 {
                                     JOptionPane.showMessageDialog(
                                         getCoordinator().getMainFrame(),
@@ -917,7 +1032,7 @@ class Server extends ListArrayTreeNode
 
                             try
                             {
-                                serviceManager.addObserver_async(cb, _serviceObserver);
+                                serviceManager.begin_addObserver(_serviceObserver, cb);
                             }
                             catch(Ice.LocalException ex)
                             {
@@ -928,6 +1043,13 @@ class Server extends ListArrayTreeNode
                                     JOptionPane.ERROR_MESSAGE);
                             }
                         }
+                    }
+                }
+                else if(_state == ServerState.Inactive)
+                {
+                    for(Service service: _services)
+                    {
+                        service.stopped();
                     }
                 }
             }
@@ -1126,7 +1248,6 @@ class Server extends ListArrayTreeNode
         {
             return null;
         }
-
         AdminPrx admin = getCoordinator().getAdmin();
         if(admin == null)
         {
@@ -1155,6 +1276,12 @@ class Server extends ListArrayTreeNode
         return result;
     }
 
+    public java.util.List<MetricsView>
+    getMetrics()
+    {
+        return new java.util.ArrayList<MetricsView>(_metrics);
+    }
+
     private ServerInstanceDescriptor _instanceDescriptor;
     private java.util.Map<String, PropertySetDescriptor> _servicePropertySets =
         new java.util.HashMap<String, PropertySetDescriptor>(); // with substituted names!
@@ -1166,6 +1293,7 @@ class Server extends ListArrayTreeNode
     private java.util.List<Adapter> _adapters = new java.util.LinkedList<Adapter>();
     private java.util.List<DbEnv> _dbEnvs = new java.util.LinkedList<DbEnv>();
     private java.util.List<Service> _services = new java.util.LinkedList<Service>();
+    private java.util.List<MetricsView> _metrics = new java.util.LinkedList<MetricsView>();
 
     private java.util.Set<String> _startedServices = new java.util.HashSet<String>();
 
@@ -1174,6 +1302,7 @@ class Server extends ListArrayTreeNode
     private int _stateIconIndex;
     private int _pid;
     private String _toolTip;
+    private boolean _metricsRetrieved = false;
 
     private IceBox.ServiceObserverPrx _serviceObserver;
 

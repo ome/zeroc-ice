@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -17,22 +17,9 @@ namespace Ice
 {
 
 class Object;
-
-}
-
-namespace IceInternal
-{
-
-ICE_API IceUtil::Shared* upCast(::Ice::Object*);
-
-}
-
-namespace Ice
-{
-
+ICE_API Object* upCast(Object*);
 typedef IceInternal::Handle< Object > ObjectPtr;
-
-void ICE_API __patch__ObjectPtr(void*, ObjectPtr&);
+ICE_API void __patch(ObjectPtr&, const ObjectPtr&);
 
 }
 

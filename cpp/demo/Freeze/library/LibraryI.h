@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -45,6 +45,10 @@ private:
 
 typedef IceUtil::Handle<LibraryI> LibraryIPtr;
 
+#ifdef __SUNPRO_CC
+#   pragma error_messages(off,hidef)
+#endif
+
 class BookI : public Demo::Book, public IceUtil::AbstractMutexI<IceUtil::Mutex>
 {
 public:
@@ -62,5 +66,9 @@ private:
     const LibraryIPtr _library;
     bool _destroyed;
 };
+
+#ifdef __SUNPRO_CC
+#   pragma error_messages(default,hidef)
+#endif
 
 #endif

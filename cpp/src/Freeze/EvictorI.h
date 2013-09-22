@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -95,6 +95,7 @@ public:
  
     DeactivateController& deactivateController();
     const Ice::CommunicatorPtr& communicator() const;
+    const Ice::EncodingVersion& encoding() const;
     const SharedDbEnvPtr& dbEnv() const;
     const std::string& filename() const;
 
@@ -132,6 +133,7 @@ protected:
 
     Ice::ObjectAdapterPtr _adapter;
     Ice::CommunicatorPtr _communicator;
+    Ice::EncodingVersion _encoding;
 
     ServantInitializerPtr _initializer;
     
@@ -217,12 +219,7 @@ protected:
                     facetType = ft->second;
                 }
                 ObjectStore<T>* store = new ObjectStore<T>(facet, facetType,_createDb, this, storeIndices, populateEmptyIndices);
-
-#if defined(__BCPLUSPLUS__) || (defined(_MSC_VER) && (_MSC_VER < 1300))
-                _storeMap.insert(StoreMap::value_type(facet, store));
-#else
                 _storeMap.insert(typename StoreMap::value_type(facet, store));
-#endif
             }
         }
     
@@ -233,12 +230,9 @@ protected:
             {
                 facet = "";
             }
-#if defined(__BCPLUSPLUS__) || (defined(_MSC_VER) && (_MSC_VER < 1300))
-            std::pair<StoreMap::iterator, bool> ir = 
-                _storeMap.insert(StoreMap::value_type(facet, 0));
-#elif (defined(_MSC_VER) && (_MSC_VER >= 1600))
-	    std::pair<typename StoreMap::iterator, bool> ir = 
-                _storeMap.insert(typename StoreMap::value_type(facet, nullptr));
+#if (defined(_MSC_VER) && (_MSC_VER >= 1600))
+            std::pair<typename StoreMap::iterator, bool> ir = 
+                _storeMap.insert(typename StoreMap::value_type(facet, static_cast<ObjectStore<T>*>(nullptr)));
 #else
             std::pair<typename StoreMap::iterator, bool> ir = 
                 _storeMap.insert(typename StoreMap::value_type(facet, 0));
@@ -278,12 +272,7 @@ protected:
                 facetType = q->second;
             }
             os = new ObjectStore<T>(facet, facetType, true, this);
-
-#if defined(__BCPLUSPLUS__) || (defined(_MSC_VER) && (_MSC_VER < 1300))
-            _storeMap.insert(StoreMap::value_type(facet, os));
-#else
             _storeMap.insert(typename StoreMap::value_type(facet, os));
-#endif
         }
         return os;
     }
@@ -315,6 +304,12 @@ inline const Ice::CommunicatorPtr&
 EvictorIBase::communicator() const
 {
     return _communicator;
+}
+
+inline const Ice::EncodingVersion& 
+EvictorIBase::encoding() const
+{
+    return _encoding;
 }
 
 inline const SharedDbEnvPtr&

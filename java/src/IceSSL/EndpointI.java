@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -14,11 +14,11 @@ final class EndpointI extends IceInternal.EndpointI
     public
     EndpointI(Instance instance, String ho, int po, int ti, String conId, boolean co)
     {
+        super(conId);
         _instance = instance;
         _host = ho;
         _port = po;
         _timeout = ti;
-        _connectionId = conId;
         _compress = co;
         calcHashValue();
     }
@@ -26,6 +26,7 @@ final class EndpointI extends IceInternal.EndpointI
     public
     EndpointI(Instance instance, String str, boolean oaEndpoint)
     {
+        super("");
         _instance = instance;
         _host = null;
         _port = 0;
@@ -168,6 +169,7 @@ final class EndpointI extends IceInternal.EndpointI
     public
     EndpointI(Instance instance, IceInternal.BasicStream s)
     {
+        super("");
         _instance = instance;
         s.startReadEncaps();
         _host = s.readString();
@@ -268,6 +270,15 @@ final class EndpointI extends IceInternal.EndpointI
     type()
     {
         return EndpointType.value;
+    }
+
+    //
+    // Return the protocol name
+    //
+    public String
+    protocol()
+    {
+        return "ssl";
     }
 
     //
@@ -379,15 +390,16 @@ final class EndpointI extends IceInternal.EndpointI
     // is available.
     //
     public java.util.List<IceInternal.Connector>
-    connectors()
+    connectors(Ice.EndpointSelectionType selType)
     {
-        return connectors(IceInternal.Network.getAddresses(_host, _port, _instance.protocolSupport()));
+        return connectors(IceInternal.Network.getAddresses(_host, _port, _instance.protocolSupport(), selType,
+                                                           _instance.preferIPv6()));
     }
 
     public void
-    connectors_async(IceInternal.EndpointI_connectors callback)
+    connectors_async(Ice.EndpointSelectionType selType, IceInternal.EndpointI_connectors callback)
     {
-        _instance.endpointHostResolver().resolve(_host, _port, this, callback);
+        _instance.endpointHostResolver().resolve(_host, _port, selType, this, callback);
     }
 
     //
@@ -401,8 +413,7 @@ final class EndpointI extends IceInternal.EndpointI
     acceptor(IceInternal.EndpointIHolder endpoint, String adapterName)
     {
         AcceptorI p = new AcceptorI(_instance, adapterName, _host, _port);
-        endpoint.value = 
-            new EndpointI(_instance, _host, p.effectivePort(), _timeout, _connectionId, _compress);
+        endpoint.value = new EndpointI(_instance, _host, p.effectivePort(), _timeout, _connectionId, _compress);
         return p;
     }
 
@@ -436,15 +447,11 @@ final class EndpointI extends IceInternal.EndpointI
     public boolean
     equivalent(IceInternal.EndpointI endpoint)
     {
-        EndpointI sslEndpointI = null;
-        try
-        {
-            sslEndpointI = (EndpointI)endpoint;
-        }
-        catch(ClassCastException ex)
+        if(!(endpoint instanceof EndpointI))
         {
             return false;
         }
+        EndpointI sslEndpointI = (EndpointI)endpoint;
         return sslEndpointI._host.equals(_host) && sslEndpointI._port == _port;
     }
 
@@ -457,37 +464,26 @@ final class EndpointI extends IceInternal.EndpointI
     //
     // Compare endpoints for sorting purposes
     //
-    public boolean
-    equals(java.lang.Object obj)
-    {
-        try
-        {
-            return compareTo((IceInternal.EndpointI)obj) == 0;
-        }
-        catch(ClassCastException ee)
-        {
-            assert(false);
-            return false;
-        }
-    }
-
     public int
     compareTo(IceInternal.EndpointI obj) // From java.lang.Comparable
     {
-        EndpointI p = null;
-
-        try
-        {
-            p = (EndpointI)obj;
-        }
-        catch(ClassCastException ex)
+        if(!(obj instanceof EndpointI))
         {
             return type() < obj.type() ? -1 : 1;
         }
 
+        EndpointI p = (EndpointI)obj;
         if(this == p)
         {
             return 0;
+        }
+        else
+        {
+            int r = super.compareTo(p);
+            if(r != 0)
+            {
+                return r;
+            }
         }
 
         if(_port < p._port)
@@ -497,11 +493,6 @@ final class EndpointI extends IceInternal.EndpointI
         else if(p._port < _port)
         {
             return 1;
-        }
-
-        if(!_connectionId.equals(p._connectionId))
-        {
-            return _connectionId.compareTo(p._connectionId);
         }
 
         if(_timeout < p._timeout)
@@ -539,18 +530,20 @@ final class EndpointI extends IceInternal.EndpointI
     private void
     calcHashValue()
     {
-        _hashCode = _host.hashCode();
-        _hashCode = 5 * _hashCode + _port;
-        _hashCode = 5 * _hashCode + _timeout;
-        _hashCode = 5 * _hashCode + _connectionId.hashCode();
-        _hashCode = 5 * _hashCode + (_compress ? 1 : 0);
+        int h = 5381;
+        h = IceInternal.HashUtil.hashAdd(h, EndpointType.value);
+        h = IceInternal.HashUtil.hashAdd(h, _host);
+        h = IceInternal.HashUtil.hashAdd(h, _port);
+        h = IceInternal.HashUtil.hashAdd(h, _timeout);
+        h = IceInternal.HashUtil.hashAdd(h, _connectionId);
+        h = IceInternal.HashUtil.hashAdd(h, _compress);
+        _hashCode = h;
     }
 
     private Instance _instance;
     private String _host;
     private int _port;
     private int _timeout;
-    private String _connectionId = "";
     private boolean _compress;
     private int _hashCode;
 }

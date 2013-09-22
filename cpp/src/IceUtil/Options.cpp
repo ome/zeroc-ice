@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -42,7 +42,7 @@ IceUtilInternal::APIException::ice_print(ostream& out) const
     }
 }
 
-IceUtil::Exception*
+IceUtilInternal::APIException*
 IceUtilInternal::APIException::ice_clone() const
 {
     return new APIException(*this);
@@ -88,7 +88,7 @@ IceUtilInternal::BadOptException::ice_print(ostream& out) const
     }
 }
 
-IceUtil::Exception*
+IceUtilInternal::BadOptException*
 IceUtilInternal::BadOptException::ice_clone() const
 {
     return new BadOptException(*this);

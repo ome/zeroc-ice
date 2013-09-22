@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -38,7 +38,17 @@ final class ThreadPoolWorkQueue extends EventHandler
     finalize()
         throws Throwable
     {
-        IceUtilInternal.Assert.FinalizerAssert(_destroyed);
+        try
+        {
+            IceUtilInternal.Assert.FinalizerAssert(_destroyed);
+        }
+        catch(java.lang.Exception ex)
+        {
+        }
+        finally
+        {
+            super.finalize();
+        }
     }
 
     public synchronized void

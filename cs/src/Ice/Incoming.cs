@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -23,7 +23,10 @@ namespace IceInternal
             instance_ = instance;
             response_ = response;
             compress_ = compress;
-            os_ = new BasicStream(instance);
+            if(response_)
+            {
+                os_ = new BasicStream(instance, Ice.Util.currentProtocolEncoding);
+            }
             connection_ = connection;
 
             current_ = new Ice.Current();
@@ -63,6 +66,9 @@ namespace IceInternal
             instance_ = inc.instance_;
             //inc.instance_ = null; // Don't reset instance_.
 
+            observer_ = inc.observer_;
+            inc.observer_ = null;
+
             servant_ = inc.servant_;
             inc.servant_ = null;
 
@@ -88,6 +94,81 @@ namespace IceInternal
             inc.connection_ = null;
         }
 
+        public BasicStream startWriteParams__(Ice.FormatType format)
+        {
+            if(response_)
+            {
+                Debug.Assert(os_.size() == Protocol.headerSize + 4); // Reply status position.
+                os_.writeByte((byte)0);
+                os_.startWriteEncaps(current_.encoding, format);
+            }
+            
+            //
+            // We still return the stream even if no response is expected. The
+            // servant code might still write some out parameters if for
+            // example a method with out parameters somehow and erroneously
+            // invoked as oneway (or if the invocation is invoked on a 
+            // blobject and the blobject erroneously writes a response).
+            //
+            return os_;
+        }
+        
+        public void endWriteParams__(bool ok)
+        {
+            if(!ok && observer_ != null)
+            {
+                observer_.userException();
+            }
+
+            if(response_)
+            {
+                int save = os_.pos();
+                os_.pos(Protocol.headerSize + 4); // Reply status position.
+                os_.writeByte(ok ? ReplyStatus.replyOK : ReplyStatus.replyUserException);
+                os_.pos(save);
+                os_.endWriteEncaps();
+            }
+        }
+        
+        public void writeEmptyParams__()
+        {
+            if(response_)
+            {
+                Debug.Assert(os_.size() == Protocol.headerSize + 4); // Reply status position.
+                os_.writeByte(ReplyStatus.replyOK);
+                os_.writeEmptyEncaps(current_.encoding);
+            }
+        }
+        
+        public void writeParamEncaps__(byte[] v, bool ok)
+        {
+            if(!ok && observer_ != null)
+            {
+                observer_.userException();
+            }
+
+            if(response_)
+            {
+                Debug.Assert(os_.size() == Protocol.headerSize + 4); // Reply status position.
+                os_.writeByte(ok ? ReplyStatus.replyOK : ReplyStatus.replyUserException);
+                if(v == null || v.Length == 0)
+                {
+                    os_.writeEmptyEncaps(current_.encoding);
+                }
+                else
+                {
+                    os_.writeEncaps(v);
+                }
+            }
+        }
+
+        public void writeUserException__(Ice.UserException ex, Ice.FormatType format)
+        {
+            BasicStream os__ = startWriteParams__(format);
+            os__.writeUserException(ex);
+            endWriteParams__(false);
+        }
+        
         //
         // These functions allow this object to be reused, rather than reallocated.
         //
@@ -111,9 +192,9 @@ namespace IceInternal
 
             compress_ = compress;
 
-            if(os_ == null)
+            if(response_ && os_ == null)
             {
-                os_ = new BasicStream(instance);
+                os_ = new BasicStream(instance, Ice.Util.currentProtocolEncoding);
             }
 
             connection_ = connection;
@@ -128,12 +209,14 @@ namespace IceInternal
 
             cookie_ = null;
 
+            observer_ = null;
+
             if(os_ != null)
             {
                 os_.reset();
             }
 
-	    interceptorAsyncCallbackList_ = null;
+            interceptorAsyncCallbackList_ = null;
         }
 
         protected internal void warning__(System.Exception ex)
@@ -176,17 +259,25 @@ namespace IceInternal
             {
                 Debug.Assert(connection_ != null);
 
+                if(observer_ != null)
+                {
+                    observer_.userException();
+                } 
+
                 //
                 // The operation may have already marshaled a reply; we must overwrite that reply.
                 //
                 if(response_)
                 {
-                    os_.endWriteEncaps();
                     os_.resize(Protocol.headerSize + 4, false); // Reply status position.
                     os_.writeByte(ReplyStatus.replyUserException);
                     os_.startWriteEncaps();
                     os_.writeUserException(ex);
                     os_.endWriteEncaps();
+                    if(observer_ != null)
+                    {
+                        observer_.reply(os_.size() - Protocol.headerSize - 4);
+                    }
                     connection_.sendResponse(os_, compress_);
                 }
                 else
@@ -194,6 +285,11 @@ namespace IceInternal
                     connection_.sendNoResponse();
                 }
 
+                if(observer_ != null)
+                {
+                    observer_.detach();
+                    observer_ = null;
+                }
                 connection_ = null;
             }
             catch(System.Exception ex)
@@ -234,9 +330,13 @@ namespace IceInternal
                     warning__(ex);
                 }
 
+                if(observer_ != null)
+                {
+                    observer_.failed(ex.ice_name());
+                } 
+
                 if(response_)
                 {
-                    os_.endWriteEncaps();
                     os_.resize(Protocol.headerSize + 4, false); // Reply status position.
                     if(ex is Ice.ObjectNotExistException)
                     {
@@ -271,6 +371,10 @@ namespace IceInternal
 
                     os_.writeString(ex.operation);
 
+                    if(observer_ != null)
+                    {
+                        observer_.reply(os_.size() - Protocol.headerSize - 4);
+                    }
                     connection_.sendResponse(os_, compress_);
                 }
                 else
@@ -286,12 +390,20 @@ namespace IceInternal
                     warning__(ex);
                 }
 
+                if(observer_ != null)
+                {
+                    observer_.failed(ex.ice_name());
+                } 
+
                 if(response_)
                 {
-                    os_.endWriteEncaps();
                     os_.resize(Protocol.headerSize + 4, false); // Reply status position.
                     os_.writeByte(ReplyStatus.replyUnknownLocalException);
                     os_.writeString(ex.unknown);
+                    if(observer_ != null)
+                    {
+                        observer_.reply(os_.size() - Protocol.headerSize - 4);
+                    }
                     connection_.sendResponse(os_, compress_);
                 }
                 else
@@ -307,12 +419,20 @@ namespace IceInternal
                     warning__(ex);
                 }
 
+                if(observer_ != null)
+                {
+                    observer_.failed(ex.ice_name());
+                } 
+
                 if(response_)
                 {
-                    os_.endWriteEncaps();
                     os_.resize(Protocol.headerSize + 4, false); // Reply status position.
                     os_.writeByte(ReplyStatus.replyUnknownUserException);
                     os_.writeString(ex.unknown);
+                    if(observer_ != null)
+                    {
+                        observer_.reply(os_.size() - Protocol.headerSize - 4);
+                    }
                     connection_.sendResponse(os_, compress_);
                 }
                 else
@@ -328,12 +448,20 @@ namespace IceInternal
                     warning__(ex);
                 }
 
+                if(observer_ != null)
+                {
+                    observer_.failed(ex.ice_name());
+                } 
+
                 if(response_)
                 {
-                    os_.endWriteEncaps();
                     os_.resize(Protocol.headerSize + 4, false); // Reply status position.
                     os_.writeByte(ReplyStatus.replyUnknownException);
                     os_.writeString(ex.unknown);
+                    if(observer_ != null)
+                    {
+                        observer_.reply(os_.size() - Protocol.headerSize - 4);
+                    }
                     connection_.sendResponse(os_, compress_);
                 }
                 else
@@ -349,12 +477,20 @@ namespace IceInternal
                     warning__(ex);
                 }
 
+                if(observer_ != null)
+                {
+                    observer_.failed(ex.ice_name());
+                } 
+
                 if(response_)
                 {
-                    os_.endWriteEncaps();
                     os_.resize(Protocol.headerSize + 4, false); // Reply status position.
                     os_.writeByte(ReplyStatus.replyUnknownLocalException);
                     os_.writeString(ex.ice_name() + "\n" + ex.StackTrace);
+                    if(observer_ != null)
+                    {
+                        observer_.reply(os_.size() - Protocol.headerSize - 4);
+                    }
                     connection_.sendResponse(os_, compress_);
                 }
                 else
@@ -370,12 +506,20 @@ namespace IceInternal
                     warning__(ex);
                 }
 
+                if(observer_ != null)
+                {
+                    observer_.failed(ex.ice_name());
+                } 
+
                 if(response_)
                 {
-                    os_.endWriteEncaps();
                     os_.resize(Protocol.headerSize + 4, false); // Reply status position.
                     os_.writeByte(ReplyStatus.replyUnknownUserException);
                     os_.writeString(ex.ice_name() + "\n" + ex.StackTrace);
+                    if(observer_ != null)
+                    {
+                        observer_.reply(os_.size() - Protocol.headerSize - 4);
+                    }
                     connection_.sendResponse(os_, compress_);
                 }
                 else
@@ -391,12 +535,20 @@ namespace IceInternal
                     warning__(ex);
                 }
 
+                if(observer_ != null)
+                {
+                    observer_.failed(ex.GetType().FullName);
+                } 
+
                 if(response_)
                 {
-                    os_.endWriteEncaps();
                     os_.resize(Protocol.headerSize + 4, false); // Reply status position.
                     os_.writeByte(ReplyStatus.replyUnknownException);
                     os_.writeString(ex.ToString());
+                    if(observer_ != null)
+                    {
+                        observer_.reply(os_.size() - Protocol.headerSize - 4);
+                    }
                     connection_.sendResponse(os_, compress_);
                 }
                 else
@@ -405,6 +557,11 @@ namespace IceInternal
                 }
             }
 
+            if(observer_ != null)
+            {
+                observer_.detach();
+                observer_ = null;
+            }
             connection_ = null;
         }
 
@@ -413,6 +570,7 @@ namespace IceInternal
         protected internal Ice.Object servant_;
         protected internal Ice.ServantLocator locator_;
         protected internal System.Object cookie_;
+        protected internal Ice.Instrumentation.DispatchObserver observer_;
 
         protected internal bool response_;
         protected internal byte compress_;
@@ -430,7 +588,18 @@ namespace IceInternal
                         bool response, byte compress, int requestId)
              : base(instance, connection, adapter, response, compress, requestId)
         {
-            _is = new BasicStream(instance);
+            //
+            // Prepare the response if necessary.
+            //
+            if(response)
+            {
+                os_.writeBlob(IceInternal.Protocol.replyHdr);
+                
+                //
+                // Add the request ID.
+                //
+                os_.writeInt(requestId);
+            }
         }
 
         //
@@ -457,28 +626,36 @@ namespace IceInternal
             _cb = null;
             _inParamPos = -1;
 
-            if(_is == null)
-            {
-                _is = new BasicStream(instance);
-            }
-
             base.reset(instance, connection, adapter, response, compress, requestId);
+
+            //
+            // Prepare the response if necessary.
+            //
+            if(response)
+            {
+                os_.writeBlob(IceInternal.Protocol.replyHdr);
+                
+                //
+                // Add the request ID.
+                //
+                os_.writeInt(requestId);
+            }
         }
 
         public override void reclaim()
         {
             _cb = null;
             _inParamPos = -1;
-            if(_is != null)
-            {
-                _is.reset();
-            }
 
             base.reclaim();
         }
 
-        public void invoke(ServantManager servantManager)
+        public void invoke(ServantManager servantManager, BasicStream stream)
         {
+            _is = stream;
+
+            int start = _is.pos();
+
             //
             // Read the current.
             //
@@ -512,15 +689,19 @@ namespace IceInternal
                 current_.ctx[first] = second;
             }
 
-            if(response_)
+            Ice.Instrumentation.CommunicatorObserver obsv = instance_.initializationData().observer;
+            if(obsv != null)
             {
-                Debug.Assert(os_.size() == Protocol.headerSize + 4); // Reply status position.
-                os_.writeByte(ReplyStatus.replyOK);
-                os_.startWriteEncaps();
+                // Read the encapsulation size.
+                int size = _is.readInt();
+                _is.pos(_is.pos() - 4);
+                
+                observer_ = obsv.getDispatchObserver(current_, _is.pos() - start + size);
+                if(observer_ != null)
+                {
+                    observer_.attach();
+                }
             }
-
-            byte replyStatus = ReplyStatus.replyOK;
-            Ice.DispatchStatus dispatchStatus = Ice.DispatchStatus.DispatchOK;
 
             //
             // Don't put the code above into the try block below. Exceptions
@@ -547,11 +728,41 @@ namespace IceInternal
                         }
                         catch(Ice.UserException ex)
                         {
-                            os_.writeUserException(ex);
-                            replyStatus = ReplyStatus.replyUserException;
+                            Ice.EncodingVersion encoding = _is.skipEncaps(); // Required for batch requests.
+                            
+                            if(observer_ != null)
+                            {
+                                observer_.userException();
+                            }
+
+                            if(response_)
+                            {
+                                os_.writeByte(ReplyStatus.replyUserException);
+                                os_.startWriteEncaps(encoding, Ice.FormatType.DefaultFormat);
+                                os_.writeUserException(ex);
+                                os_.endWriteEncaps();
+                                if(observer_ != null)
+                                {
+                                    observer_.reply(os_.size() - Protocol.headerSize - 4);
+                                }
+                                connection_.sendResponse(os_, compress_);
+                            }
+                            else
+                            {
+                                connection_.sendNoResponse();
+                            }
+
+                            if(observer_ != null)
+                            {
+                                observer_.detach();
+                                observer_ = null;
+                            }
+                            connection_ = null;
+                            return;
                         }
                         catch(System.Exception ex)
                         {
+                            _is.skipEncaps(); // Required for batch requests.
                             handleException__(ex);
                             return;
                         }
@@ -559,45 +770,53 @@ namespace IceInternal
                 }
             }
 
-            if(servant_ != null)
+            try
             {
-                try
+                if(servant_ != null)
                 {
-                    Debug.Assert(replyStatus == ReplyStatus.replyOK);
-                    dispatchStatus = servant_.dispatch__(this, current_);
-                    if(dispatchStatus == Ice.DispatchStatus.DispatchUserException)
+                    //
+                    // DispatchAsync is a "pseudo dispatch status", used internally only
+                    // to indicate async dispatch.
+                    //
+                    if(servant_.dispatch__(this, current_) == Ice.DispatchStatus.DispatchAsync)
                     {
-                        replyStatus = ReplyStatus.replyUserException;
+                        //
+                        // If this was an asynchronous dispatch, we're done here.
+                        //
+                        return;
                     }
 
-                    if(dispatchStatus != Ice.DispatchStatus.DispatchAsync)
-                    {
-                        if(locator_ != null && !servantLocatorFinished__())
-                        {
-                            return;
-                        }
-                    }
-                }
-                catch(System.Exception ex)
-                {
                     if(locator_ != null && !servantLocatorFinished__())
                     {
                         return;
                     }
-                    handleException__(ex);
-                    return;
-                }
-            }
-            else if(replyStatus == ReplyStatus.replyOK)
-            {
-                if(servantManager != null && servantManager.hasServant(current_.id))
-                {
-                    replyStatus = ReplyStatus.replyFacetNotExist;
                 }
                 else
                 {
-                    replyStatus = ReplyStatus.replyObjectNotExist;
+                    //
+                    // Skip the input parameters, this is required for reading
+                    // the next batch request if dispatching batch requests.
+                    //
+                    _is.skipEncaps(); 
+
+                    if(servantManager != null && servantManager.hasServant(current_.id))
+                    {
+                        throw new Ice.FacetNotExistException(current_.id, current_.facet, current_.operation);
+                    }
+                    else
+                    {
+                        throw new Ice.ObjectNotExistException(current_.id, current_.facet, current_.operation);
+                    }
                 }
+            }
+            catch(System.Exception ex)
+            {
+                if(servant_ != null && locator_ != null && !servantLocatorFinished__())
+                {
+                    return;
+                }
+                handleException__(ex);
+                return;
             }
 
             //
@@ -606,57 +825,14 @@ namespace IceInternal
             // the caller of this operation.
             //
 
-            //
-            // Async dispatch
-            //
-            if(dispatchStatus == Ice.DispatchStatus.DispatchAsync)
-            {
-                //
-                // If this was an asynchronous dispatch, we're done
-                // here.
-                //
-                return;
-            }
-
             Debug.Assert(connection_ != null);
 
             if(response_)
             {
-                os_.endWriteEncaps();
-
-                if(replyStatus != ReplyStatus.replyOK && replyStatus != ReplyStatus.replyUserException)
+                if(observer_ != null)
                 {
-                    Debug.Assert(replyStatus == ReplyStatus.replyObjectNotExist ||
-                                 replyStatus == ReplyStatus.replyFacetNotExist);
-
-                    os_.resize(Protocol.headerSize + 4, false); // Reply status position.
-                    os_.writeByte(replyStatus);
-
-                    current_.id.write__(os_);
-
-                    //
-                    // For compatibility with the old FacetPath.
-                    //
-                    if(current_.facet == null || current_.facet.Length == 0)
-                    {
-                        os_.writeStringSeq(null);
-                    }
-                    else
-                    {
-                        string[] facetPath2 = { current_.facet };
-                        os_.writeStringSeq(facetPath2);
-                    }
-
-                    os_.writeString(current_.operation);
+                    observer_.reply(os_.size() - Protocol.headerSize - 4);
                 }
-                else
-                {
-                    int save = os_.pos();
-                    os_.pos(Protocol.headerSize + 4); // Reply status position.
-                    os_.writeByte(replyStatus);
-                    os_.pos(save);
-                }
-
                 connection_.sendResponse(os_, compress_);
             }
             else
@@ -664,17 +840,12 @@ namespace IceInternal
                 connection_.sendNoResponse();
             }
 
+            if(observer_ != null)
+            {
+                observer_.detach();
+                observer_ = null;
+            }
             connection_ = null;
-        }
-
-        public BasicStream istr()
-        {
-            return _is;
-        }
-
-        public BasicStream ostr()
-        {
-            return os_;
         }
 
         public void push(Ice.DispatchInterceptorAsyncCallback cb)
@@ -710,13 +881,9 @@ namespace IceInternal
                 // Let's rewind _is and clean-up os_
                 //
                 _is.pos(_inParamPos);
-
                 if(response_)
                 {
-                    os_.endWriteEncaps();
                     os_.resize(Protocol.headerSize + 4, false);
-                    os_.writeByte(ReplyStatus.replyOK);
-                    os_.startWriteEncaps();
                 }
             }
         }
@@ -734,6 +901,31 @@ namespace IceInternal
                 _cb.deactivate__(this);
                 _cb = null;
             }
+        }
+
+        public BasicStream startReadParams()
+        {
+            //
+            // Remember the encoding used by the input parameters, we'll
+            // encode the response parameters with the same encoding.
+            //
+            current_.encoding = _is.startReadEncaps();
+            return _is;
+        }
+    
+        public void endReadParams()
+        {
+            _is.endReadEncaps();
+        }
+
+        public void readEmptyParams()
+        {
+            current_.encoding = _is.skipEmptyEncaps();
+        }
+
+        public byte[] readParamEncaps()
+        {
+            return _is.readEncaps(out current_.encoding);
         }
 
         internal void setActive(IncomingAsync cb)

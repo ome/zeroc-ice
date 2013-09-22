@@ -1,6 +1,6 @@
 # **********************************************************************
 #
-# Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -11,7 +11,7 @@
 Ice module
 """
 
-import sys, exceptions, string, imp, os, threading, warnings, datetime
+import sys, string, imp, os, threading, warnings, datetime
 
 #
 # RTTI problems can occur in C++ code unless we modify Python's dlopen flags.
@@ -53,14 +53,28 @@ if _dlopenflags >= 0:
     sys.setdlopenflags(_dlopenflags)
 
 #
+# Give the extension an opportunity to clean up before a graceful exit.
+#
+import atexit
+atexit.register(IcePy.cleanup)
+
+#
 # Add some symbols to the Ice module.
 #
 ObjectPrx = IcePy.ObjectPrx
 stringVersion = IcePy.stringVersion
 intVersion = IcePy.intVersion
+currentProtocol = IcePy.currentProtocol
+currentProtocolEncoding = IcePy.currentProtocolEncoding
+currentEncoding = IcePy.currentEncoding
+stringToProtocolVersion = IcePy.stringToProtocolVersion
+protocolVersionToString = IcePy.protocolVersionToString
+stringToEncodingVersion = IcePy.stringToEncodingVersion
+encodingVersionToString = IcePy.encodingVersionToString
 generateUUID = IcePy.generateUUID
 loadSlice = IcePy.loadSlice
 AsyncResult = IcePy.AsyncResult
+Unset = IcePy.Unset
 
 #
 # This value is used as the default value for struct types in the constructors
@@ -157,7 +171,7 @@ object.
 #
 # Exceptions.
 #
-class Exception(exceptions.Exception):
+class Exception(Exception):     # Derives from built-in base 'Exception' class.
     '''The base class for all Ice exceptions.'''
     def __str__(self):
         return self.__class__.__name__
@@ -173,6 +187,107 @@ class LocalException(Exception):
 
 class UserException(Exception):
     '''The base class for all user-defined exceptions.'''
+    pass
+
+class EnumBase(object):
+    def __init__(self, _n, _v):
+        self._name = _n
+        self._value = _v
+
+    def __str__(self):
+        return self._name
+
+    __repr__ = __str__
+
+    def __hash__(self):
+        return self._value
+
+    def __lt__(self, other):
+        if isinstance(other, self.__class__):
+            return self._value < other._value;
+        elif other == None:
+            return False
+        return NotImplemented
+
+    def __le__(self, other):
+        if isinstance(other, self.__class__):
+            return self._value <= other._value;
+        elif other == None:
+            return False
+        return NotImplemented
+
+    def __eq__(self, other):
+        if isinstance(other, self.__class__):
+            return self._value == other._value;
+        elif other == None:
+            return False
+        return NotImplemented
+
+    def __ne__(self, other):
+        if isinstance(other, self.__class__):
+            return self._value != other._value;
+        elif other == None:
+            return False
+        return NotImplemented
+
+    def __gt__(self, other):
+        if isinstance(other, self.__class__):
+            return self._value > other._value;
+        elif other == None:
+            return False
+        return NotImplemented
+
+    def __ge__(self, other):
+        if isinstance(other, self.__class__):
+            return self._value >= other._value;
+        elif other == None:
+            return False
+        return NotImplemented
+
+    def _getName(self):
+        return self._name
+
+    def _getValue(self):
+        return self._value
+
+    name = property(_getName)
+    value = property(_getValue)
+
+class SlicedData(object):
+    #
+    # Members:
+    #
+    # slices - tuple of SliceInfo
+    #
+    pass
+
+class SliceInfo(object):
+    #
+    # Members:
+    #
+    # typeId - string
+    # compactId - int
+    # bytes - string
+    # objects - tuple of Ice.Object
+    pass
+
+#
+# Native PropertiesAdmin admin facet.
+#
+NativePropertiesAdmin = IcePy.NativePropertiesAdmin
+
+class PropertiesAdminUpdateCallback(object):
+    '''Callback class to get notifications of property updates passed
+    through the Properties admin facet'''
+
+    def updated(self, props):
+        pass
+
+class UnknownSlicedObject(Object):
+    #
+    # Members:
+    #
+    # unknownTypeId - string
     pass
 
 def getSliceDir():
@@ -209,6 +324,14 @@ def getSliceDir():
         if os.path.exists(dir):
             return dir
 
+    elif sys.platform == "darwin":
+        #
+        # Check the default OS X location.
+        #
+        dir = os.path.join("/", "Library", "Developer", "Ice-" + iceVer, "slice")
+        if os.path.exists(dir):
+            return dir
+
     return None
 
 #
@@ -218,9 +341,10 @@ def getSliceDir():
 _pendingModules = {}
 
 def openModule(name):
-    if sys.modules.has_key(name):
+    global _pendingModules
+    if name in sys.modules:
         result = sys.modules[name]
-    elif _pendingModules.has_key(name):
+    elif name in _pendingModules:
         result = _pendingModules[name]
     else:
         result = createModule(name)
@@ -228,16 +352,17 @@ def openModule(name):
     return result
 
 def createModule(name):
-    l = string.split(name, ".")
+    global _pendingModules
+    l = name.split(".")
     curr = ''
     mod = None
 
     for s in l:
         curr = curr + s
 
-        if sys.modules.has_key(curr):
+        if curr in sys.modules:
             mod = sys.modules[curr]
-        elif _pendingModules.has_key(curr):
+        elif curr in _pendingModules:
             mod = _pendingModules[curr]
         else:
             nmod = imp.new_module(curr)
@@ -249,23 +374,34 @@ def createModule(name):
     return mod
 
 def updateModule(name):
-    if _pendingModules.has_key(name):
+    global _pendingModules
+    if name in _pendingModules:
         pendingModule = _pendingModules[name]
         mod = sys.modules[name]
         mod.__dict__.update(pendingModule.__dict__)
         del _pendingModules[name]
 
 def updateModules():
+    global _pendingModules
     for name in _pendingModules.keys():
-        if sys.modules.has_key(name):
+        if name in sys.modules:
             sys.modules[name].__dict__.update(_pendingModules[name].__dict__)
         else:
             sys.modules[name] = _pendingModules[name]
-        del _pendingModules[name]
+    _pendingModules = {}
 
 def createTempClass():
     class __temp: pass
     return __temp
+
+class FormatType(object):
+    def __init__(self, val):
+        assert(val >= 0 and val < 3)
+        self.value = val
+
+FormatType.DefaultFormat = FormatType(0)
+FormatType.CompactFormat = FormatType(1)
+FormatType.SlicedFormat = FormatType(2)
 
 #
 # Forward declarations.
@@ -302,10 +438,14 @@ import Ice_Locator_ice
 import Ice_Logger_ice
 import Ice_ObjectAdapter_ice
 import Ice_ObjectFactory_ice
+import Ice_Process_ice
 import Ice_Properties_ice
 import Ice_Router_ice
 import Ice_ServantLocator_ice
 import Ice_Connection_ice
+import Ice_Version_ice
+import Ice_Instrumentation_ice
+import Ice_Metrics_ice
 
 #
 # Replace EndpointInfo with our implementation.
@@ -481,6 +621,9 @@ class CommunicatorI(Communicator):
 
     def addAdminFacet(self, servant, facet):
         self._impl.addAdminFacet(servant, facet)
+
+    def findAdminFacet(self, facet):
+        return self._impl.findAdminFacet(facet)
 
     def removeAdminFacet(self, facet):
         return self._impl.removeAdminFacet(facet)
@@ -795,9 +938,9 @@ class CtrlCHandler(threading.Thread):
         #
         # Setup and install signal handlers
         #
-        if signal.__dict__.has_key('SIGHUP'):
+        if 'SIGHUP' in signal.__dict__:
             signal.signal(signal.SIGHUP, CtrlCHandler.signalHandler)
-        if signal.__dict__.has_key('SIGBREAK'):
+        if 'SIGBREAK' in signal.__dict__:
             signal.signal(signal.SIGBREAK, CtrlCHandler.signalHandler)
         signal.signal(signal.SIGINT, CtrlCHandler.signalHandler)
         signal.signal(signal.SIGTERM, CtrlCHandler.signalHandler)
@@ -832,9 +975,9 @@ class CtrlCHandler(threading.Thread):
         #
         # Cleanup any state set by the CtrlCHandler.
         #
-        if signal.__dict__.has_key('SIGHUP'):
+        if 'SIGHUP' in signal.__dict__:
             signal.signal(signal.SIGHUP, signal.SIG_DFL)
-        if signal.__dict__.has_key('SIGBREAK'):
+        if 'SIGBREAK' in signal.__dict__:
             signal.signal(signal.SIGBREAK, signal.SIG_DFL)
         signal.signal(signal.SIGINT, signal.SIG_DFL)
         signal.signal(signal.SIGTERM, signal.SIG_DFL)
@@ -1272,16 +1415,19 @@ signal, or False otherwise.'''
 #
 # Define Ice::Object and Ice::ObjectPrx.
 #
-IcePy._t_Object = IcePy.defineClass('::Ice::Object', Object, (), False, None, (), ())
+IcePy._t_Object = IcePy.defineClass('::Ice::Object', Object, -1, (), False, False, None, (), ())
 IcePy._t_ObjectPrx = IcePy.defineProxy('::Ice::Object', ObjectPrx)
 Object._ice_type = IcePy._t_Object
 
-Object._op_ice_isA = IcePy.Operation('ice_isA', OperationMode.Idempotent, OperationMode.Nonmutating, False, (), (((), IcePy._t_string),), (), IcePy._t_bool, ())
-Object._op_ice_ping = IcePy.Operation('ice_ping', OperationMode.Idempotent, OperationMode.Nonmutating, False, (), (), (), None, ())
-Object._op_ice_ids = IcePy.Operation('ice_ids', OperationMode.Idempotent, OperationMode.Nonmutating, False, (), (), (), _t_StringSeq, ())
-Object._op_ice_id = IcePy.Operation('ice_id', OperationMode.Idempotent, OperationMode.Nonmutating, False, (), (), (), IcePy._t_string, ())
+Object._op_ice_isA = IcePy.Operation('ice_isA', OperationMode.Idempotent, OperationMode.Nonmutating, False, None, (), (((), IcePy._t_string, False, 0),), (), ((), IcePy._t_bool, False, 0), ())
+Object._op_ice_ping = IcePy.Operation('ice_ping', OperationMode.Idempotent, OperationMode.Nonmutating, False, None, (), (), (), None, ())
+Object._op_ice_ids = IcePy.Operation('ice_ids', OperationMode.Idempotent, OperationMode.Nonmutating, False, None, (), (), (), ((), _t_StringSeq, False, 0), ())
+Object._op_ice_id = IcePy.Operation('ice_id', OperationMode.Idempotent, OperationMode.Nonmutating, False, None, (), (), (), ((), IcePy._t_string, False, 0), ())
 
-IcePy._t_LocalObject = IcePy.defineClass('::Ice::LocalObject', object, (), False, None, (), ())
+IcePy._t_LocalObject = IcePy.defineClass('::Ice::LocalObject', object, -1, (), False, False, None, (), ())
+
+IcePy._t_UnknownSlicedObject = IcePy.defineClass('::Ice::UnknownSlicedObject', UnknownSlicedObject, -1, (), False, True, None, (), ())
+UnknownSlicedObject._ice_type = IcePy._t_UnknownSlicedObject
 
 #
 # Annotate some exceptions.
@@ -1326,13 +1472,15 @@ def proxyIdentityCompare(lhs, rhs):
     if (lhs and not isinstance(lhs, ObjectPrx)) or (rhs and not isinstance(rhs, ObjectPrx)):
         raise ValueError('argument is not a proxy')
     if not lhs and not rhs:
-        return True
+        return 0
     elif not lhs and rhs:
         return -1
     elif lhs and not rhs:
         return 1
     else:
-        return cmp(lhs.ice_getIdentity(), rhs.ice_getIdentity())
+        lid = lhs.ice_getIdentity()
+        rid = rhs.ice_getIdentity()
+        return (lid > rid) - (lid < rid)
 
 def proxyIdentityAndFacetEqual(lhs, rhs):
     '''Determines whether the identities and facets of two
@@ -1344,12 +1492,38 @@ def proxyIdentityAndFacetCompare(lhs, rhs):
     if (lhs and not isinstance(lhs, ObjectPrx)) or (rhs and not isinstance(rhs, ObjectPrx)):
         raise ValueError('argument is not a proxy')
     if not lhs and not rhs:
-        return True
+        return 0
     elif not lhs and rhs:
         return -1
     elif lhs and not rhs:
         return 1
     elif lhs.ice_getIdentity() != rhs.ice_getIdentity():
-        return cmp(lhs.ice_getIdentity(), rhs.ice_getIdentity())
+        lid = lhs.ice_getIdentity()
+        rid = rhs.ice_getIdentity()
+        return (lid > rid) - (lid < rid)
     else:
-        return cmp(lhs.ice_getFacet(), rhs.ice_getFacet())
+        lf = lhs.ice_getFacet()
+        rf = rhs.ice_getFacet()
+        return (lf > rf) - (lf < rf)
+
+#
+# Used by generated code. Defining these in the Ice module means the generated code
+# can avoid the need to qualify the type() and hash() functions with their module
+# names. Since the functions are in the __builtin__ module (for Python 2.x) and the
+# builtins module (for Python 3.x), it's easier to define them here.
+#
+def getType(o):
+    return type(o)
+
+#
+# Used by generated code. Defining this in the Ice module means the generated code
+# can avoid the need to qualify the hash() function with its module name. Since
+# the function is in the __builtin__ module (for Python 2.x) and the builtins
+# module (for Python 3.x), it's easier to define it here.
+#
+def getHash(o):
+    return hash(o)
+
+Protocol_1_0 = ProtocolVersion(1, 0)
+Encoding_1_0 = EncodingVersion(1, 0)
+Encoding_1_1 = EncodingVersion(1, 1)

@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -227,7 +227,11 @@ class BackgroundSaveEvictorI extends EvictorI implements BackgroundSaveEvictor, 
                 EvictorElement element = new EvictorElement(ident, store);
                 element.status = dead;
                 element.rec = new ObjectRecord();
-                element.rec.stats = new Statistics();
+
+                if(store.keepStats())
+                {
+                    element.rec.stats = new Statistics();
+                }
 
                 Object o = store.cache().putIfAbsent(ident, element);
 
@@ -276,9 +280,13 @@ class BackgroundSaveEvictorI extends EvictorI implements BackgroundSaveEvictor, 
                                 ObjectRecord rec = element.rec;
 
                                 rec.servant = servant;
-                                rec.stats.creationTime = IceInternal.Time.currentMonotonicTimeMillis();
-                                rec.stats.lastSaveTime = 0;
-                                rec.stats.avgSaveTime = 0;
+                                
+                                if(store.keepStats())
+                                {
+                                    rec.stats.creationTime = IceInternal.Time.currentMonotonicTimeMillis();
+                                    rec.stats.lastSaveTime = 0;
+                                    rec.stats.avgSaveTime = 0;
+                                }
 
                                 addToModifiedQueue(element);
                                 break;
@@ -1168,7 +1176,11 @@ class BackgroundSaveEvictorI extends EvictorI implements BackgroundSaveEvictor, 
                             txSize = streamedObjectQueue.size();
                         }
 
-                        long saveStart = IceInternal.Time.currentMonotonicTimeMillis();
+                        long saveStart = 0;
+                        if(_trace >= 1)
+                        {
+                            saveStart = IceInternal.Time.currentMonotonicTimeMillis();
+                        }
                         String txnId = null;
 
                         try
@@ -1450,12 +1462,17 @@ class BackgroundSaveEvictorI extends EvictorI implements BackgroundSaveEvictor, 
 
         obj.status = element.status;
         obj.store = element.store;
-        obj.key = ObjectStore.marshalKey(element.identity, _communicator);
+        obj.key = ObjectStore.marshalKey(element.identity, _communicator, _encoding);
 
         if(element.status != destroyed)
         {
-            updateStats(element.rec.stats, streamStart);
-            obj.value = ObjectStore.marshalValue(element.rec, _communicator);
+            boolean keepStats = obj.store.keepStats();
+
+            if(keepStats)
+            {
+                updateStats(element.rec.stats, streamStart);
+            }
+            obj.value = ObjectStore.marshalValue(element.rec, _communicator, _encoding, keepStats);
         }
         return obj;
     }

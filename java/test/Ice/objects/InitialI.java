@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -18,7 +18,11 @@ import test.Ice.objects.Test.DHolder;
 import test.Ice.objects.Test.E;
 import test.Ice.objects.Test.F;
 import test.Ice.objects.Test.I;
+import test.Ice.objects.Test.Base;
+import test.Ice.objects.Test.BaseSeqHolder;
 import test.Ice.objects.Test.Initial;
+import test.Ice.objects.Test.Compact;
+import test.Ice.objects.Test.CompactExt;
 
 
 public final class InitialI extends Initial
@@ -132,6 +136,19 @@ public final class InitialI extends Initial
     public void
     setI(I theI, Ice.Current current)
     {
+    }
+
+    public Base[]
+    opBaseSeq(Base[] inS, BaseSeqHolder outS, Ice.Current current)
+    {
+        outS.value = inS;
+        return inS;
+    }
+
+    public Compact
+    getCompact(Ice.Current current)
+    {
+        return new CompactExt();
     }
 
     public void

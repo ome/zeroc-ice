@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -16,9 +16,12 @@
 #include <Ice/LoggerF.h>
 #include <Ice/StreamF.h>
 #include <Ice/StatsF.h>
+#include <Ice/InstrumentationF.h>
 #include <Ice/Dispatcher.h>
 #include <Ice/StringConverter.h>
+#include <Ice/FactoryTable.h>
 #include <Ice/BuiltinSequences.h>
+#include <Ice/Version.h>
 
 namespace Ice
 {
@@ -84,10 +87,12 @@ struct InitializationData
     PropertiesPtr properties;
     LoggerPtr logger;
     StatsPtr stats;
+    Instrumentation::CommunicatorObserverPtr observer;
     StringConverterPtr stringConverter;
     WstringConverterPtr wstringConverter;
     ThreadNotificationPtr threadHook;
     DispatcherPtr dispatcher;
+    CompactIdResolverPtr compactIdResolver;
 };
 
 ICE_API CommunicatorPtr initialize(int&, char*[], const InitializationData& = InitializationData(),
@@ -101,9 +106,23 @@ ICE_API CommunicatorPtr initialize(const InitializationData& = InitializationDat
 
 
 ICE_API InputStreamPtr createInputStream(const CommunicatorPtr&, const ::std::vector< Byte >&);
+ICE_API InputStreamPtr createInputStream(const CommunicatorPtr&, const ::std::vector< Byte >&,
+                                         const EncodingVersion&);
+ICE_API InputStreamPtr wrapInputStream(const CommunicatorPtr&, const ::std::vector< Byte >&);
+ICE_API InputStreamPtr wrapInputStream(const CommunicatorPtr&, const ::std::vector< Byte >&, const EncodingVersion&);
 ICE_API InputStreamPtr createInputStream(const CommunicatorPtr&,
                                          const ::std::pair< const Ice::Byte*, const Ice::Byte*>&);
+ICE_API InputStreamPtr createInputStream(const CommunicatorPtr&,
+                                         const ::std::pair< const Ice::Byte*, const Ice::Byte*>&,
+                                         const EncodingVersion&);
+ICE_API InputStreamPtr wrapInputStream(const CommunicatorPtr&,
+                                       const ::std::pair< const Ice::Byte*, const Ice::Byte*>&);
+ICE_API InputStreamPtr wrapInputStream(const CommunicatorPtr&,
+                                       const ::std::pair< const Ice::Byte*, const Ice::Byte*>&, 
+                                       const EncodingVersion&);
+
 ICE_API OutputStreamPtr createOutputStream(const CommunicatorPtr&);
+ICE_API OutputStreamPtr createOutputStream(const CommunicatorPtr&, const EncodingVersion&);
 
 ICE_API LoggerPtr getProcessLogger();
 ICE_API void setProcessLogger(const LoggerPtr&);

@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -17,16 +17,16 @@
 namespace IceStorm
 {
 
-class FreezeDatabaseCache : public FreezeDB::DatabaseCache, public DatabaseCache
+class FreezeConnectionPool : public FreezeDB::ConnectionPool, public ConnectionPool
 {
 public:
 
-    FreezeDatabaseCache(const Ice::CommunicatorPtr&, const std::string&);
+    FreezeConnectionPool(const Ice::CommunicatorPtr&, const std::string&);
 
     virtual LLUWrapperPtr getLLU(const IceDB::DatabaseConnectionPtr&);
     virtual SubscribersWrapperPtr getSubscribers(const IceDB::DatabaseConnectionPtr&);
 };
-typedef IceUtil::Handle<FreezeDatabaseCache> FreezeDatabaseCachePtr;
+typedef IceUtil::Handle<FreezeConnectionPool> FreezeConnectionPoolPtr;
 
 class FreezeDBPlugin : public DatabasePlugin
 {
@@ -37,7 +37,7 @@ public:
     void initialize();
     void destroy();
     
-    DatabaseCachePtr getDatabaseCache(const std::string&);
+    ConnectionPoolPtr getConnectionPool(const std::string&);
 
 private:
 

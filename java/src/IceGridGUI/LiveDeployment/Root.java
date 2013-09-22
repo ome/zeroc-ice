@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -20,6 +20,8 @@ import javax.swing.JTree;
 import javax.swing.tree.DefaultTreeCellRenderer;
 import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreePath;
+
+import javax.swing.JComponent;
 
 import java.util.Enumeration;
 import java.util.prefs.Preferences;
@@ -171,6 +173,18 @@ public class Root extends ListArrayTreeNode
             {
                 public void treeWillExpand(javax.swing.event.TreeExpansionEvent event)
                 {
+                    //
+                    // Fetch metrics when Server node is expanded.
+                    //
+                    TreeNode node = (TreeNode)event.getPath().getLastPathComponent();
+                    if(node instanceof Server)
+                    {
+                        ((Server)node).fetchMetricsViewNames();
+                    }
+                    else if(node instanceof Service)
+                    {
+                        ((Service)node).fetchMetricsViewNames();
+                    }
                 }
 
                 public void treeWillCollapse(javax.swing.event.TreeExpansionEvent event)
@@ -188,7 +202,7 @@ public class Root extends ListArrayTreeNode
 
     public boolean[] getAvailableActions()
     {
-        boolean[] actions = new boolean[ACTION_COUNT];
+        boolean[] actions = new boolean[IceGridGUI.LiveDeployment.TreeNode.ACTION_COUNT];
         actions[ADD_OBJECT] = _coordinator.connectedToMaster();
         actions[SHUTDOWN_REGISTRY] = true;
         actions[RETRIEVE_STDOUT] = true;
@@ -201,22 +215,22 @@ public class Root extends ListArrayTreeNode
         final String prefix = "Shutting down registry '" + _replicaName + "'...";
         getCoordinator().getStatusBar().setText(prefix);
 
-        AMI_Admin_shutdownRegistry cb = new AMI_Admin_shutdownRegistry()
+        Callback_Admin_shutdownRegistry cb = new Callback_Admin_shutdownRegistry()
             {
                 //
                 // Called by another thread!
                 //
-                public void ice_response()
+                public void response()
                 {
                     amiSuccess(prefix);
                 }
 
-                public void ice_exception(Ice.UserException e)
+                public void exception(Ice.UserException e)
                 {
                     amiFailure(prefix, "Failed to shutdown " + _replicaName, e);
                 }
 
-                public void ice_exception(Ice.LocalException e)
+                public void exception(Ice.LocalException e)
                 {
                     amiFailure(prefix, "Failed to shutdown " + _replicaName,
                                e.toString());
@@ -227,7 +241,7 @@ public class Root extends ListArrayTreeNode
         {
             _coordinator.getMainFrame().setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
 
-            _coordinator.getAdmin().shutdownRegistry_async(cb, _replicaName);
+            _coordinator.getAdmin().begin_shutdownRegistry(_replicaName, cb);
         }
         catch(Ice.LocalException e)
         {
@@ -370,23 +384,23 @@ public class Root extends ListArrayTreeNode
         final String prefix = "Patching application '" + applicationName + "'...";
 
         _coordinator.getStatusBar().setText(prefix);
-        AMI_Admin_patchApplication cb = new AMI_Admin_patchApplication()
+        Callback_Admin_patchApplication cb = new Callback_Admin_patchApplication()
             {
                 //
                 // Called by another thread!
                 //
-                public void ice_response()
+                public void response()
                 {
                     amiSuccess(prefix);
                 }
 
-                public void ice_exception(Ice.UserException e)
+                public void exception(Ice.UserException e)
                 {
                     amiFailure(prefix, "Failed to patch '"
                                + applicationName + "'", e);
                 }
 
-                public void ice_exception(Ice.LocalException e)
+                public void exception(Ice.LocalException e)
                 {
                     amiFailure(prefix, "Failed to patch '" +
                                applicationName + "'", e.toString());
@@ -396,7 +410,7 @@ public class Root extends ListArrayTreeNode
         try
         {
             _coordinator.getMainFrame().setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
-            _coordinator.getAdmin().patchApplication_async(cb, applicationName, shutdown == JOptionPane.YES_OPTION);
+            _coordinator.getAdmin().begin_patchApplication(applicationName, shutdown == JOptionPane.YES_OPTION, cb);
         }
         catch(Ice.LocalException e)
         {
@@ -925,22 +939,22 @@ public class Root extends ListArrayTreeNode
         final String prefix = "Removing well-known object '" + strIdentity + "'...";
         _coordinator.getStatusBar().setText(prefix);
 
-        AMI_Admin_removeObject cb = new AMI_Admin_removeObject()
+        Callback_Admin_removeObject cb = new Callback_Admin_removeObject()
             {
                 //
                 // Called by another thread!
                 //
-                public void ice_response()
+                public void response()
                 {
                     amiSuccess(prefix);
                 }
 
-                public void ice_exception(Ice.UserException e)
+                public void exception(Ice.UserException e)
                 {
                     amiFailure(prefix, "Failed to remove object '" + strIdentity + "'", e);
                 }
 
-                public void ice_exception(Ice.LocalException e)
+                public void exception(Ice.LocalException e)
                 {
                     amiFailure(prefix, "Failed to remove object '" + strIdentity + "'",
                                e.toString());
@@ -950,7 +964,7 @@ public class Root extends ListArrayTreeNode
         try
         {
             _coordinator.getMainFrame().setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
-            _coordinator.getAdmin().removeObject_async(cb, identity);
+            _coordinator.getAdmin().begin_removeObject(identity, cb);
         }
         catch(Ice.LocalException e)
         {
@@ -967,22 +981,22 @@ public class Root extends ListArrayTreeNode
         final String prefix = "Removing adapter '" + adapterId + "'...";
         _coordinator.getStatusBar().setText(prefix);
 
-        AMI_Admin_removeAdapter cb = new AMI_Admin_removeAdapter()
+        Callback_Admin_removeAdapter cb = new Callback_Admin_removeAdapter()
             {
                 //
                 // Called by another thread!
                 //
-                public void ice_response()
+                public void response()
                 {
                     amiSuccess(prefix);
                 }
 
-                public void ice_exception(Ice.UserException e)
+                public void exception(Ice.UserException e)
                 {
                     amiFailure(prefix, "Failed to remove adapter '" + adapterId + "'", e);
                 }
 
-                public void ice_exception(Ice.LocalException e)
+                public void exception(Ice.LocalException e)
                 {
                     amiFailure(prefix, "Failed to remove adapter '" + adapterId + "'",
                                e.toString());
@@ -992,7 +1006,7 @@ public class Root extends ListArrayTreeNode
         try
         {
             _coordinator.getMainFrame().setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
-            _coordinator.getAdmin().removeAdapter_async(cb, adapterId);
+            _coordinator.getAdmin().begin_removeAdapter(adapterId, cb);
         }
         catch(Ice.LocalException e)
         {

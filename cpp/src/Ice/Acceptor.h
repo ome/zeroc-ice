@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -25,7 +25,7 @@ public:
     virtual NativeInfoPtr getNativeInfo() = 0;
     virtual void close() = 0;
     virtual void listen() = 0;
-#ifdef ICE_USE_IOCP
+#if defined(ICE_USE_IOCP) || defined(ICE_OS_WINRT)
     virtual void startAccept() = 0;
     virtual void finishAccept() = 0;
 #endif

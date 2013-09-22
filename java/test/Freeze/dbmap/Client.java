@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -448,6 +448,7 @@ public class Client
             }
 
             m.clear();
+            test(m.size() == 0);
             try
             {
                 nm.firstKey();
@@ -767,6 +768,15 @@ public class Client
             test(e != null);
             test(e.getValue().intValue() == -1);
 
+            System.out.println("ok");
+        }
+
+        {
+            System.out.print("testing clear... ");
+            System.out.flush();
+            test(m.size() > 0);
+            m.clear();
+            test(m.size() == 0);
             System.out.println("ok");
         }
 

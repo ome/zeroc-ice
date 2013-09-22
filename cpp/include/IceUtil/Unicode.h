@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -47,7 +47,7 @@ public:
     UTFConversionException(const char*, int, ConversionError);
     virtual std::string ice_name() const;
     virtual void ice_print(std::ostream&) const;
-    virtual Exception* ice_clone() const;
+    virtual UTFConversionException* ice_clone() const;
     virtual void ice_throw() const;
 
     ConversionError conversionError() const;

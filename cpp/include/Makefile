@@ -1,6 +1,6 @@
 # **********************************************************************
 #
-# Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -11,17 +11,22 @@ top_srcdir	= ..
 
 include $(top_srcdir)/config/Make.rules
 
-SUBDIRS		= Freeze \
-		  Glacier2 \
-		  Ice \
-		  IceBox \
-		  IceGrid \
-		  IcePatch2 \
+SUBDIRS		= Ice \
 		  IceSSL \
-		  IceStorm \
 		  IceUtil \
-		  IceXML \
 		  Slice
+
+ifeq ($(findstring MINGW,$(UNAME)),)
+SUBDIRS		:= $(SUBDIRS) \
+		Freeze \
+		Glacier2 \
+		IceBox \
+		IceGrid \
+		IcePatch2 \
+		IceStorm \
+		IceXML
+endif
+
 
 $(EVERYTHING)::
 	@for subdir in $(SUBDIRS); \

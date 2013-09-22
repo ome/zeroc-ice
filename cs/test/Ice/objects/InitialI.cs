@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -93,6 +93,17 @@ public sealed class InitialI : Initial
     {
     }
     
+    public override Base[] opBaseSeq(Base[] inS, out Base[] outS, Ice.Current current)
+    {
+        outS = inS;
+        return inS;
+    }
+
+    public override Compact getCompact(Ice.Current current)
+    {
+        return new CompactExt();
+    }
+
     public override void shutdown(Ice.Current current)
     {
         _adapter.getCommunicator().shutdown();

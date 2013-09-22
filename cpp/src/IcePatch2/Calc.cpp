@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -111,8 +111,7 @@ usage(const string& appName)
         ;
 }
 
-//COMPILERFIX: Borland C++ 2010 doesn't support wmain for console applications.
-#if defined(_WIN32 ) && !defined(__BCPLUSPLUS__)
+#ifdef _WIN32
 
 int
 wmain(int argc, wchar_t* argv[])
@@ -197,7 +196,6 @@ main(int argc, char* argv[])
 
     try
     {
-        StringSeq::iterator p;
         string absDataDir = dataDir;
     
         string cwd;
@@ -211,7 +209,7 @@ main(int argc, char* argv[])
             absDataDir = simplify(cwd + '/' + absDataDir);
         }
         
-        for(p = fileSeq.begin(); p != fileSeq.end(); ++p)
+        for(StringSeq::iterator p = fileSeq.begin(); p != fileSeq.end(); ++p)
         {
             if(!IceUtilInternal::isAbsolutePath(*p))
             {
@@ -226,7 +224,7 @@ main(int argc, char* argv[])
         //
         string absDataDirWithSlash = simplify(absDataDir + '/');
 
-        for(p = fileSeq.begin(); p != fileSeq.end(); ++p)
+        for(StringSeq::iterator p = fileSeq.begin(); p != fileSeq.end(); ++p)
         {
             if(p->compare(0, absDataDirWithSlash.size(), absDataDirWithSlash) != 0)
             {
@@ -250,7 +248,7 @@ main(int argc, char* argv[])
         {
             loadFileInfoSeq(absDataDir, infoSeq);
 
-            for(p = fileSeq.begin(); p != fileSeq.end(); ++p)
+            for(StringSeq::iterator p = fileSeq.begin(); p != fileSeq.end(); ++p)
             {
                 FileInfoSeq partialInfoSeq;
 

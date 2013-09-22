@@ -1,6 +1,6 @@
 # **********************************************************************
 #
-# Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -31,7 +31,7 @@ certs            = $dir                     # Where issued certs are kept.
 RANDFILE         = $dir/.rand               # Private random number file.
 
 default_days     = 1825                     # How long certs are valid.
-default_md       = md5                      # The Message Digest type.
+default_md       = sha256                   # The Message Digest type.
 preserve         = yes                      # Keep passed DN ordering?
 
 policy           = ca_policy
@@ -54,12 +54,12 @@ basicConstraints = CA:false
 subjectKeyIdentifier = hash
 authorityKeyIdentifier = keyid:always,issuer:always
 
-subjectAltName = DNS:server, IP:127.0.0.1
+subjectAltName = DNS:127.0.0.1, IP:127.0.0.1
 
 [ req ]
 default_bits        = 1024
 default_keyfile     = s_rsa1024_priv.pem
-default_md          = md5
+default_md          = sha256
 prompt              = no
 distinguished_name  = root_ca_distinguished_name
 x509_extensions     = root_ca_extensions
@@ -71,7 +71,7 @@ stateOrProvinceName    = Florida
 localityName           = Palm Beach Gardens
 organizationName       = ZeroC, Inc.
 organizationalUnitName = Ice
-commonName             = Server
+commonName             = 127.0.0.1
 emailAddress           = info@zeroc.com
 
 

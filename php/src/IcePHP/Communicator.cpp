@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -11,6 +11,7 @@
 #include <Logger.h>
 #include <Properties.h>
 #include <Proxy.h>
+#include <Types.h>
 #include <Util.h>
 #include <IceUtil/Options.h>
 #include <IceUtil/MutexPtrLock.h>
@@ -496,6 +497,11 @@ ZEND_METHOD(Ice_Communicator, getProperties)
 
 ZEND_METHOD(Ice_Communicator, getLogger)
 {
+    if(ZEND_NUM_ARGS() > 0)
+    {
+        WRONG_PARAM_COUNT;
+    }
+    
     CommunicatorInfoIPtr _this = Wrapper<CommunicatorInfoIPtr>::value(getThis() TSRMLS_CC);
     assert(_this);
 
@@ -716,7 +722,8 @@ handleFreeStorage(void* p TSRMLS_DC)
 {
     Wrapper<CommunicatorInfoIPtr>* obj = static_cast<Wrapper<CommunicatorInfoIPtr>*>(p);
     delete obj->ptr;
-    zend_objects_free_object_storage(static_cast<zend_object*>(p) TSRMLS_CC);
+    zend_object_std_dtor(static_cast<zend_object*>(p) TSRMLS_CC);
+    efree(p);
 }
 
 #ifdef _WIN32
@@ -834,6 +841,7 @@ ZEND_FUNCTION(Ice_initialize)
 
     Ice::StringSeq seq;
     Ice::InitializationData initData;
+    zval* zvargs = 0;
     zval* zvinit = 0;
 
     //
@@ -853,6 +861,7 @@ ZEND_FUNCTION(Ice_initialize)
             {
                 RETURN_NULL();
             }
+            zvargs = *args[0];
             hasArgs = true;
             if(ZEND_NUM_ARGS() > 1)
             {
@@ -908,10 +917,21 @@ ZEND_FUNCTION(Ice_initialize)
         }
     }
 
+    initData.compactIdResolver = new IdResolver(TSRMLS_C);
+
     CommunicatorInfoIPtr info = initializeCommunicator(return_value, seq, hasArgs, initData TSRMLS_CC);
     if(!info)
     {
         RETURN_NULL();
+    }
+
+    if(zvargs && PZVAL_IS_REF(zvargs))
+    {
+        zval_dtor(zvargs);
+        if(!createStringArray(zvargs, seq TSRMLS_CC))
+        {
+            RETURN_NULL();
+        }
     }
 }
 
@@ -1089,14 +1109,23 @@ ZEND_FUNCTION(Ice_getProperties)
     }
 }
 
+
+//
+// Necessary to suppress warnings from zend_function_entry in php-5.2
+// and INI_STR macro.
+//
+#ifdef __GNUC__
+#   pragma GCC diagnostic ignored "-Wwrite-strings"
+#endif
+
 //
 // Predefined methods for Communicator.
 //
-static function_entry _interfaceMethods[] =
+static zend_function_entry _interfaceMethods[] =
 {
     {0, 0, 0}
 };
-static function_entry _classMethods[] =
+static zend_function_entry _classMethods[] =
 {
     ZEND_ME(Ice_Communicator, __construct, NULL, ZEND_ACC_PRIVATE|ZEND_ACC_CTOR)
     ZEND_ME(Ice_Communicator, destroy, NULL, ZEND_ACC_PUBLIC)
@@ -1332,12 +1361,12 @@ IcePHP::communicatorInit(TSRMLS_D)
     // Create the profiles from configuration settings.
     //
     const char* empty = "";
-    const char* config = INI_STR("ice.config");
+    const char* config = INI_STR("ice.config"); // Needs to be a string literal!
     if(!config)
     {
         config = empty;
     }
-    const char* options = INI_STR("ice.options");
+    const char* options = INI_STR("ice.options"); // Needs to be a string literal!
     if(!options)
     {
         options = empty;
@@ -1347,7 +1376,7 @@ IcePHP::communicatorInit(TSRMLS_D)
         return false;
     }
 
-    const char* profiles = INI_STR("ice.profiles");
+    const char* profiles = INI_STR("ice.profiles"); // Needs to be a string literal!
     if(!profiles)
     {
         profiles = empty;
@@ -1575,7 +1604,20 @@ IcePHP::ObjectFactoryI::create(const string& id)
     //
     // Get the type information.
     //
-    ClassInfoPtr cls = getClassInfoById(id TSRMLS_CC);
+    ClassInfoPtr cls;
+    if(id == Ice::Object::ice_staticId())
+    {
+        //
+        // When the ID is that of Ice::Object, it indicates that the stream has not
+        // found a factory and is providing us an opportunity to preserve the object.
+        //
+        cls = getClassInfoById("::Ice::UnknownSlicedObject" TSRMLS_CC);
+    }
+    else
+    {
+        cls = getClassInfoById(id TSRMLS_CC);
+    }
+
     if(!cls)
     {
         return 0;
@@ -1635,7 +1677,7 @@ IcePHP::ObjectFactoryI::create(const string& id)
     MAKE_STD_ZVAL(obj);
     AutoDestroy destroy(obj);
 
-    if(object_init_ex(obj, cls->zce) != SUCCESS)
+    if(object_init_ex(obj, const_cast<zend_class_entry*>(cls->zce)) != SUCCESS)
     {
         throw AbortMarshaling();
     }

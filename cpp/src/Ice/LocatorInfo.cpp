@@ -1,12 +1,13 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
+#include <IceUtil/DisableWarnings.h>
 #include <Ice/LocatorInfo.h>
 #include <Ice/Locator.h>
 #include <Ice/LocalException.h>
@@ -30,7 +31,7 @@ IceUtil::Shared* IceInternal::upCast(LocatorTable* p) { return p; }
 namespace
 {
 
-class ObjectRequest : public LocatorInfo::Request, public Ice::AMI_Locator_findObjectById
+class ObjectRequest : public LocatorInfo::Request
 {
 public:
     
@@ -39,37 +40,31 @@ public:
         assert(ref->isWellKnown());
     }
 
-    virtual void ice_response(const Ice::ObjectPrx& proxy)
-    {
-        response(proxy);
-    }
-
-    virtual void ice_exception(const Ice::Exception& ex)
-    {
-        exception(ex);
-    }
-
     virtual void send(bool async)
     {
         try
         {
             if(async)
             {
-                _locatorInfo->getLocator()->findObjectById_async(this, _ref->getIdentity());
+                _locatorInfo->getLocator()->begin_findObjectById(
+                    _ref->getIdentity(), 
+                    newCallback_Locator_findObjectById(static_cast<LocatorInfo::Request*>(this),
+                                                       &LocatorInfo::Request::response, 
+                                                       &LocatorInfo::Request::exception));
             }
             else
             {
-                ice_response(_locatorInfo->getLocator()->findObjectById(_ref->getIdentity()));
+                response(_locatorInfo->getLocator()->findObjectById(_ref->getIdentity()));
             }
         }
         catch(const Ice::Exception& ex)
         {
-            ice_exception(ex);
+            exception(ex);
         }
     }
 };
 
-class AdapterRequest : public LocatorInfo::Request, public Ice::AMI_Locator_findAdapterById
+class AdapterRequest : public LocatorInfo::Request
 {
 public:
     
@@ -78,32 +73,26 @@ public:
         assert(ref->isIndirect() && !ref->isWellKnown());
     }
     
-    virtual void ice_response(const Ice::ObjectPrx& proxy)
-    {
-        response(proxy);
-    }
-
-    virtual void ice_exception(const Ice::Exception& ex)
-    {
-        exception(ex);
-    }
-
     virtual void send(bool async)
     {
         try
         {
             if(async)
             {
-                _locatorInfo->getLocator()->findAdapterById_async(this, _ref->getAdapterId());
+                _locatorInfo->getLocator()->begin_findAdapterById(
+                    _ref->getAdapterId(),
+                    newCallback_Locator_findAdapterById(static_cast<LocatorInfo::Request*>(this),
+                                                        &LocatorInfo::Request::response, 
+                                                        &LocatorInfo::Request::exception));
             }
             else
             {
-                ice_response(_locatorInfo->getLocator()->findAdapterById(_ref->getAdapterId()));
+                response(_locatorInfo->getLocator()->findAdapterById(_ref->getAdapterId()));
             }
         }
         catch(const Ice::Exception& ex)
         {
-            ice_exception(ex);
+            exception(ex);
         }
     }
 };
@@ -167,16 +156,17 @@ IceInternal::LocatorManager::get(const LocatorPrx& loc)
         // have only one table per locator (not one per locator
         // proxy).
         //
-        map<Identity, LocatorTablePtr>::iterator t = _locatorTables.find(locator->ice_getIdentity());
+        pair<Identity, EncodingVersion> locatorKey(locator->ice_getIdentity(), locator->ice_getEncodingVersion());
+        map<pair<Identity, EncodingVersion>, LocatorTablePtr>::iterator t = _locatorTables.find(locatorKey);
         if(t == _locatorTables.end())
         {
             t = _locatorTables.insert(_locatorTables.begin(),
-                                      pair<const Identity, LocatorTablePtr>(locator->ice_getIdentity(), 
-                                                                            new LocatorTable()));
+                                      pair<const pair<Identity, EncodingVersion>, LocatorTablePtr>(
+                                          locatorKey, new LocatorTable()));
         }
 
-        _tableHint = _table.insert(_tableHint, 
-                                   pair<const LocatorPrx, LocatorInfoPtr>(locator, 
+        _tableHint = _table.insert(_tableHint,
+                                   pair<const LocatorPrx, LocatorInfoPtr>(locator,
                                                                           new LocatorInfo(locator, t->second,
                                                                                           _background)));
     }
@@ -331,7 +321,15 @@ IceInternal::LocatorInfo::RequestCallback::response(const LocatorInfoPtr& locato
     if(proxy)
     {
         ReferencePtr r = proxy->__reference();
-        if(!r->isIndirect())
+        if(_ref->isWellKnown() && !isSupported(_ref->getEncoding(), r->getEncoding()))
+        {
+            //
+            // If a well-known proxy and the returned proxy encoding
+            // isn't supported, we're done: there's no compatible
+            // endpoint we can use.
+            //
+        }
+        else if(!r->isIndirect())
         {
             endpoints = r->getEndpoints();
         }
@@ -545,15 +543,6 @@ bool
 IceInternal::LocatorInfo::operator<(const LocatorInfo& rhs) const
 {
     return _locator < rhs._locator;
-}
-
-LocatorPrx
-IceInternal::LocatorInfo::getLocator() const
-{
-    //
-    // No mutex lock necessary, _locator is immutable.
-    //
-    return _locator;
 }
 
 LocatorRegistryPrx
@@ -778,8 +767,7 @@ IceInternal::LocatorInfo::getEndpointsException(const ReferencePtr& ref, const I
     {
         if(ref->getInstance()->traceLevels()->location >= 1)
         {
-            Trace out(ref->getInstance()->initializationData().logger,
-                      ref->getInstance()->traceLevels()->locationCat);
+            Trace out(ref->getInstance()->initializationData().logger, ref->getInstance()->traceLevels()->locationCat);
             out << "couldn't contact the locator to retrieve adapter endpoints\n";
             if(ref->getAdapterId().empty())
             {

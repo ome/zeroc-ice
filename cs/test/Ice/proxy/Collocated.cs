@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -36,16 +36,13 @@ public class Collocated
         int status = 0;
         Ice.Communicator communicator = null;
 
-#if !COMPACT
-        Debug.Listeners.Add(new ConsoleTraceListener());
-#endif
-
         try
         {
             Ice.InitializationData initData = new Ice.InitializationData();
             initData.properties = Ice.Util.createProperties(ref args);
             initData.properties.setProperty("Ice.ThreadPool.Client.Size", "2"); // For nested AMI.
             initData.properties.setProperty("Ice.ThreadPool.Client.SizeWarn", "0");
+            initData.properties.setProperty("Ice.Warn.Dispatch", "0");
 
             communicator = Ice.Util.initialize(ref args, initData);
             status = run(args, communicator);

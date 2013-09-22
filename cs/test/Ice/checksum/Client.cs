@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -23,10 +23,6 @@ public class Client
     {
         int status = 0;
         Ice.Communicator communicator = null;
-
-#if !COMPACT
-        Debug.Listeners.Add(new ConsoleTraceListener());
-#endif
 
         try
         {

@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -30,7 +30,7 @@ public class Service extends ListArrayTreeNode
     //
     public boolean[] getAvailableActions()
     {
-        boolean[] actions = new boolean[ACTION_COUNT];
+        boolean[] actions = new boolean[IceGridGUI.LiveDeployment.TreeNode.ACTION_COUNT];
 
         ServerState serverState = ((Server)_parent).getState();
 
@@ -64,17 +64,17 @@ public class Service extends ListArrayTreeNode
             final String prefix = "Starting service '" + _id + "'...";
             getCoordinator().getStatusBar().setText(prefix);
 
-            IceBox.AMI_ServiceManager_startService cb = new IceBox.AMI_ServiceManager_startService()
+            IceBox.Callback_ServiceManager_startService cb = new IceBox.Callback_ServiceManager_startService()
             {
                 //
                 // Called by another thread!
                 //
-                public void ice_response()
+                public void response()
                 {
                     amiSuccess(prefix);
                 }
 
-                public void ice_exception(Ice.UserException e)
+                public void exception(Ice.UserException e)
                 {
                     if(e instanceof IceBox.AlreadyStartedException)
                     {
@@ -86,7 +86,7 @@ public class Service extends ListArrayTreeNode
                     }
                 }
 
-                public void ice_exception(Ice.LocalException e)
+                public void exception(Ice.LocalException e)
                 {
                     amiFailure(prefix, "Failed to start service " + _id, e.toString());
                 }
@@ -97,7 +97,7 @@ public class Service extends ListArrayTreeNode
 
             try
             {
-                serviceManager.startService_async(cb, _id);
+                serviceManager.begin_startService(_id, cb);
             }
             catch(Ice.LocalException e)
             {
@@ -115,17 +115,17 @@ public class Service extends ListArrayTreeNode
             final String prefix = "Stopping service '" + _id + "'...";
             getCoordinator().getStatusBar().setText(prefix);
 
-            IceBox.AMI_ServiceManager_stopService cb = new IceBox.AMI_ServiceManager_stopService()
+            IceBox.Callback_ServiceManager_stopService cb = new IceBox.Callback_ServiceManager_stopService()
             {
                 //
                 // Called by another thread!
                 //
-                public void ice_response()
+                public void response()
                 {
                     amiSuccess(prefix);
                 }
 
-                public void ice_exception(Ice.UserException e)
+                public void exception(Ice.UserException e)
                 {
                     if(e instanceof IceBox.AlreadyStoppedException)
                     {
@@ -137,7 +137,7 @@ public class Service extends ListArrayTreeNode
                     }
                 }
 
-                public void ice_exception(Ice.LocalException e)
+                public void exception(Ice.LocalException e)
                 {
                     amiFailure(prefix, "Failed to stop service " + _id, e.toString());
                 }
@@ -148,7 +148,7 @@ public class Service extends ListArrayTreeNode
 
             try
             {
-                serviceManager.stopService_async(cb, _id);
+                serviceManager.begin_stopService(_id, cb);
             }
             catch(Ice.LocalException e)
             {
@@ -272,7 +272,7 @@ public class Service extends ListArrayTreeNode
     Service(Server parent, String serviceName, Utils.Resolver resolver, ServiceInstanceDescriptor descriptor,
             ServiceDescriptor serviceDescriptor, PropertySetDescriptor serverInstancePSDescriptor)
     {
-        super(parent, serviceName, 2);
+        super(parent, serviceName, 3);
         _resolver = resolver;
 
         _instanceDescriptor = descriptor;
@@ -281,6 +281,7 @@ public class Service extends ListArrayTreeNode
 
         _childrenArray[0] = _adapters;
         _childrenArray[1] = _dbEnvs;
+        _childrenArray[2] = _metrics;
 
         createAdapters();
         createDbEnvs();
@@ -331,6 +332,10 @@ public class Service extends ListArrayTreeNode
         if(!_started)
         {
             _started = true;
+            if(getRoot().getTree().isExpanded(getPath()))
+            {
+                fetchMetricsViewNames();
+            }
             getRoot().getTreeModel().nodeChanged(this);
         }
     }
@@ -340,6 +345,12 @@ public class Service extends ListArrayTreeNode
         if(_started)
         {
             _started = false;
+            _metricsRetrieved = false;
+            if(!_metrics.isEmpty())
+            {
+                _metrics.clear();
+                rebuild(this);
+            }
             getRoot().getTreeModel().nodeChanged(this);
         }
     }
@@ -354,9 +365,9 @@ public class Service extends ListArrayTreeNode
         }
         else
         {
-            Ice.AMI_PropertiesAdmin_getPropertiesForPrefix cb = new Ice.AMI_PropertiesAdmin_getPropertiesForPrefix()
+            Ice.Callback_PropertiesAdmin_getPropertiesForPrefix cb = new Ice.Callback_PropertiesAdmin_getPropertiesForPrefix()
                 {
-                    public void ice_response(final java.util.Map<String, String> properties)
+                    public void response(final java.util.Map<String, String> properties)
                     {
                         SwingUtilities.invokeLater(new Runnable()
                             {
@@ -368,7 +379,7 @@ public class Service extends ListArrayTreeNode
                             });
                     }
 
-                    public void ice_exception(final Ice.LocalException e)
+                    public void exception(final Ice.LocalException e)
                     {
                         SwingUtilities.invokeLater(new Runnable()
                             {
@@ -397,7 +408,7 @@ public class Service extends ListArrayTreeNode
                 Ice.PropertiesAdminPrx propAdmin =
                     Ice.PropertiesAdminPrxHelper.uncheckedCast(serverAdmin.ice_facet("IceBox.Service." + _id +
                         ".Properties"));
-                propAdmin.getPropertiesForPrefix_async(cb, "");
+                propAdmin.begin_getPropertiesForPrefix("", cb);
             }
             catch(Ice.LocalException e)
             {
@@ -470,15 +481,123 @@ public class Service extends ListArrayTreeNode
         }
     }
 
+    public void fetchMetricsViewNames()
+    {
+        if(_metricsRetrieved)
+        {
+            return; // Already loaded.
+        }
+
+        Ice.ObjectPrx serverAdmin = ((Server)_parent).getServerAdmin();
+        if(serverAdmin == null)
+        {
+            return;
+        }
+        _metricsRetrieved = true;
+        final IceMX.MetricsAdminPrx metricsAdmin =
+                    IceMX.MetricsAdminPrxHelper.uncheckedCast(serverAdmin.ice_facet("IceBox.Service." + _id +
+                        ".Metrics"));
+
+        IceMX.Callback_MetricsAdmin_getMetricsViewNames cb = new IceMX.Callback_MetricsAdmin_getMetricsViewNames()
+            {
+                public void response(final String[] enabledViews, final String[] disabledViews)
+                {
+                    SwingUtilities.invokeLater(new Runnable()
+                        {
+                            public void run()
+                            {
+                                for(String name : enabledViews)
+                                {
+                                    insertSortedChild(new MetricsView(Service.this, name, metricsAdmin, true), _metrics, null);
+                                }
+                                for(String name : disabledViews)
+                                {
+                                    insertSortedChild(new MetricsView(Service.this, name, metricsAdmin, false), _metrics, null);
+                                }
+                                rebuild(Service.this);
+                            }
+                        });
+                }
+
+                public void exception(final Ice.LocalException e)
+                {
+                    SwingUtilities.invokeLater(new Runnable()
+                        {
+                            public void run()
+                            {
+                                _metricsRetrieved = false;
+                                if(e instanceof Ice.ObjectNotExistException)
+                                {
+                                    // Server is down.
+                                }
+                                else if(e instanceof Ice.FacetNotExistException)
+                                {
+                                    // MetricsAdmin facet not present. Old server version?
+                                }
+                                else
+                                {
+                                    e.printStackTrace();
+                                    JOptionPane.showMessageDialog(getCoordinator().getMainFrame(), 
+                                                                  "Error: " + e.toString(), "Error",
+                                                                  JOptionPane.ERROR_MESSAGE);
+                                }
+                            }
+                        });
+                }
+            };
+        try
+        {
+            metricsAdmin.begin_getMetricsViewNames(cb);
+        }
+        catch(Ice.LocalException e)
+        {
+            _metricsRetrieved = false;
+            JOptionPane.showMessageDialog(getCoordinator().getMainFrame(), "Error: " + e.toString(), "Error",
+                                          JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    void rebuild(Service service)
+    {
+        _adapters = service._adapters;
+        _dbEnvs = service._dbEnvs;
+        _metrics = service._metrics;
+
+        _childrenArray[0] = _adapters;
+        _childrenArray[1] = _dbEnvs;
+        _childrenArray[2] = _metrics;
+
+        //
+        // Need to re-parent all the children
+        //
+        for(Adapter adapter: _adapters)
+        {
+            adapter.reparent(this);
+        }
+
+        for(DbEnv dbEnv: _dbEnvs)
+        {
+            dbEnv.reparent(this);
+        }
+
+        for(MetricsView metrics: _metrics)
+        {
+            metrics.reparent(this);
+        }
+        getRoot().getTreeModel().nodeStructureChanged(this);
+    }
+
     private final ServiceInstanceDescriptor _instanceDescriptor;
     private final ServiceDescriptor _serviceDescriptor;
     private final PropertySetDescriptor _serverInstancePSDescriptor;
     private final Utils.Resolver _resolver;
 
-    private final java.util.List<Adapter> _adapters = new java.util.LinkedList<Adapter>();
-    private final java.util.List<DbEnv> _dbEnvs = new java.util.LinkedList<DbEnv>();
+    private java.util.List<Adapter> _adapters = new java.util.LinkedList<Adapter>();
+    private java.util.List<DbEnv> _dbEnvs = new java.util.LinkedList<DbEnv>();
+    private java.util.List<MetricsView> _metrics = new java.util.LinkedList<MetricsView>();
 
     private boolean _started = false;
+    private boolean _metricsRetrieved = false;
 
     static private ServiceEditor _editor;
     static private DefaultTreeCellRenderer _cellRenderer;

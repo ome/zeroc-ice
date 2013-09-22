@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -41,6 +41,16 @@ namespace IceInternal
         public bool getSecure()
         {
             return secure_;
+        }
+
+        public Ice.ProtocolVersion getProtocol() 
+        {
+            return protocol_;
+        }
+
+        public Ice.EncodingVersion getEncoding() 
+        {
+            return encoding_;
         }
 
         public Ice.Identity getIdentity()
@@ -146,6 +156,17 @@ namespace IceInternal
             return r;
         }
 
+        public virtual Reference changeEncoding(Ice.EncodingVersion newEncoding)
+        {
+            if(newEncoding.Equals(encoding_))
+            {
+                return this;
+            }
+            Reference r = instance_.referenceFactory().copy(this);
+            r.encoding_ = newEncoding;
+            return r;
+        }
+
         public virtual Reference changeCompress(bool newCompress)
         {
             if(overrideCompress_ && compress_ == newCompress)
@@ -180,25 +201,22 @@ namespace IceInternal
                 {
                     return hashValue_;
                 }
-
-                int h = (int)mode_;
-
-                h = 5 * h + identity_.GetHashCode();
-
-                foreach(KeyValuePair<string, string> p in context_)
+                int h = 5381;
+                IceInternal.HashUtil.hashAdd(ref h, mode_);
+                IceInternal.HashUtil.hashAdd(ref h, secure_);
+                IceInternal.HashUtil.hashAdd(ref h, identity_);
+                IceInternal.HashUtil.hashAdd(ref h, context_);
+                IceInternal.HashUtil.hashAdd(ref h, facet_);
+                IceInternal.HashUtil.hashAdd(ref h, overrideCompress_);
+                if(overrideCompress_)
                 {
-                    h = 5 * h + p.Key.GetHashCode();
-                    h = 5 * h + p.Value.GetHashCode();
+                    IceInternal.HashUtil.hashAdd(ref h, compress_);
                 }
-
-                h = 5 * h + facet_.GetHashCode();
-
-                h = 5 * h + (secure_ ? 1 : 0);
-
+                IceInternal.HashUtil.hashAdd(ref h, protocol_);
+                IceInternal.HashUtil.hashAdd(ref h, encoding_);
                 hashValue_ = h;
                 hashInitialized_ = true;
-
-                return h;
+                return hashValue_;
             }
         }
 
@@ -231,6 +249,12 @@ namespace IceInternal
             s.writeByte((byte)mode_);
 
             s.writeBool(secure_);
+
+            if(!s.getWriteEncoding().Equals(Ice.Util.Encoding_1_0))
+            {
+                protocol_.write__(s);
+                encoding_.write__(s);
+            }
 
             // Derived class writes the remainder of the reference.
         }
@@ -325,6 +349,26 @@ namespace IceInternal
                 s.Append(" -s");
             }
 
+            if(!protocol_.Equals(Ice.Util.Protocol_1_0))
+            {
+                //
+                // We only print the protocol if it's not 1.0. It's fine as
+                // long as we don't add Ice.Default.ProtocolVersion, a
+                // stringified proxy will convert back to the same proxy with
+                // stringToProxy.
+                //
+                s.Append(" -p ");
+                s.Append(Ice.Util.protocolVersionToString(protocol_));
+            }
+
+            //
+            // Always print the encoding version to ensure a stringified proxy
+            // will convert back to a proxy with the same encoding with
+            // stringToProxy (and won't use Ice.Default.EncodingVersion).
+            // 
+            s.Append(" -e ");
+            s.Append(Ice.Util.encodingVersionToString(encoding_));
+
             return s.ToString();
 
             // Derived class writes the remainder of the string.
@@ -377,6 +421,16 @@ namespace IceInternal
                 return false;
             }
 
+            if(!protocol_.Equals(r.protocol_))
+            {
+                return false;
+            }
+
+            if(!encoding_.Equals(r.encoding_))
+            {
+                return false;
+            }
+
             return true;
         }
 
@@ -400,6 +454,8 @@ namespace IceInternal
         private Dictionary<string, string> context_;
         private string facet_;
         protected bool secure_;
+        private Ice.ProtocolVersion protocol_;
+        private Ice.EncodingVersion encoding_;
         protected bool overrideCompress_;
         protected bool compress_; // Only used if _overrideCompress == true
 
@@ -408,7 +464,9 @@ namespace IceInternal
                             Ice.Identity identity,
                             string facet,
                             Mode mode,
-                            bool secure)
+                            bool secure,
+                            Ice.ProtocolVersion protocol,
+                            Ice.EncodingVersion encoding)
         {
             //
             // Validate string arguments.
@@ -423,6 +481,8 @@ namespace IceInternal
             identity_ = identity;
             context_ = _emptyContext;
             facet_ = facet;
+            protocol_ = protocol;
+            encoding_ = encoding;
             secure_ = secure;
             hashInitialized_ = false;
             overrideCompress_ = false;
@@ -440,8 +500,9 @@ namespace IceInternal
                               string facet,
                               Reference.Mode mode,
                               bool secure,
+                              Ice.EncodingVersion encoding,
                               Ice.ConnectionI connection)
-            : base(instance, communicator, identity, facet, mode, secure)
+            : base(instance, communicator, identity, facet, mode, secure, Ice.Util.Protocol_1_0, encoding)
         {
             _fixedConnection = connection;
         }
@@ -473,7 +534,7 @@ namespace IceInternal
 
         public override bool getCacheConnection()
         {
-            return false;
+            return true;
         }
 
         public override bool getPreferSecure()
@@ -732,6 +793,21 @@ namespace IceInternal
         public override string getConnectionId()
         {
             return _connectionId;
+        }
+
+        public override Reference changeEncoding(Ice.EncodingVersion newEncoding)
+        {
+            RoutableReference r = (RoutableReference)base.changeEncoding(newEncoding);
+            if(r != this)
+            {
+                LocatorInfo locInfo = r._locatorInfo;
+                if(locInfo != null && !locInfo.getLocator().ice_getEncodingVersion().Equals(newEncoding))
+                {
+                    r._locatorInfo = getInstance().locatorManager().get(
+                        (Ice.LocatorPrx)locInfo.getLocator().ice_encodingVersion(newEncoding));
+                }
+            }
+            return r;
         }
 
         public override Reference changeCompress(bool newCompress)
@@ -1016,10 +1092,9 @@ namespace IceInternal
             {
                 if(!hashInitialized_)
                 {
-                    base.GetHashCode(); // Initializes hashValue_.
-
-                    // Add hash of adapter ID to base hash.
-                    hashValue_ = 5 * hashValue_ + _adapterId.GetHashCode();
+                    int h = base.GetHashCode(); // Initializes hashValue_.
+                    IceInternal.HashUtil.hashAdd(ref h, _adapterId);
+                    hashValue_ = h;
                 }
                 return hashValue_;
             }
@@ -1306,6 +1381,8 @@ namespace IceInternal
                                  string facet,
                                  Reference.Mode mode,
                                  bool secure,
+                                 Ice.ProtocolVersion protocol,
+                                 Ice.EncodingVersion encoding,
                                  EndpointI[] endpoints,
                                  string adapterId,
                                  LocatorInfo locatorInfo,
@@ -1315,7 +1392,7 @@ namespace IceInternal
                                  bool preferSecure,
                                  Ice.EndpointSelectionType endpointSelection,
                                  int locatorCacheTimeout)
-            : base(instance, communicator, identity, facet, mode, secure)
+            : base(instance, communicator, identity, facet, mode, secure, protocol, encoding)
         {
             _endpoints = endpoints;
             _adapterId = adapterId;
@@ -1360,7 +1437,7 @@ namespace IceInternal
 
         private EndpointI[] filterEndpoints(EndpointI[] allEndpoints)
         {
-            ArrayList endpoints = new ArrayList();
+            List<EndpointI> endpoints = new List<EndpointI>();
 
             //
             // Filter out unknown endpoints.
@@ -1385,7 +1462,7 @@ namespace IceInternal
                     //
                     // Filter out datagram endpoints.
                     //
-                    ArrayList tmp = new ArrayList();
+                    List<EndpointI> tmp = new List<EndpointI>();
                     foreach(EndpointI endpoint in endpoints)
                     {
                         if(!endpoint.datagram())
@@ -1403,7 +1480,7 @@ namespace IceInternal
                     //
                     // Filter out non-datagram endpoints.
                     //
-                    ArrayList tmp = new ArrayList();
+                    List<EndpointI> tmp = new List<EndpointI>();
                     foreach(EndpointI endpoint in endpoints)
                     {
                         if(endpoint.datagram())
@@ -1431,7 +1508,7 @@ namespace IceInternal
                             Debug.Assert(r >= i && r < endpoints.Count);
                             if(r != i)
                             {
-                                object tmp = endpoints[i];
+                                EndpointI tmp = endpoints[i];
                                 endpoints[i] = endpoints[r];
                                 endpoints[r] = tmp;
                             }
@@ -1461,7 +1538,7 @@ namespace IceInternal
             DefaultsAndOverrides overrides = getInstance().defaultsAndOverrides();
             if(overrides.overrideSecure ? overrides.overrideSecureValue : getSecure())
             {
-                ArrayList tmp = new ArrayList();
+                List<EndpointI> tmp = new List<EndpointI>();
                 foreach(EndpointI endpoint in endpoints)
                 {
                     if(endpoint.secure())
@@ -1473,11 +1550,11 @@ namespace IceInternal
             }
             else if(getPreferSecure())
             {
-                IceUtilInternal.Arrays.Sort(ref endpoints, _preferSecureEndpointComparator);
+                IceUtilInternal.Collections.Sort(ref endpoints, _preferSecureEndpointComparator);
             }
             else
             {
-                IceUtilInternal.Arrays.Sort(ref endpoints, _preferNonSecureEndpointComparator);
+                IceUtilInternal.Collections.Sort(ref endpoints, _preferNonSecureEndpointComparator);
             }
 
             EndpointI[] arr = new EndpointI[endpoints.Count];
@@ -1642,17 +1719,15 @@ namespace IceInternal
             }
         }
 
-        private class EndpointComparator : IComparer
+        private class EndpointComparator : IComparer<IceInternal.EndpointI>
         {
             public EndpointComparator(bool preferSecure)
             {
                 _preferSecure = preferSecure;
             }
 
-            public int Compare(object l, object r)
+            public int Compare(IceInternal.EndpointI le, IceInternal.EndpointI re)
             {
-                IceInternal.EndpointI le = (IceInternal.EndpointI)l;
-                IceInternal.EndpointI re = (IceInternal.EndpointI)r;
                 bool ls = le.secure();
                 bool rs = re.secure();
                 if((ls && rs) || (!ls && !rs))

@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -74,8 +74,8 @@ public:
     void syncObjects(const ObjectInfoSeq&);
 
     void addApplication(const ApplicationInfo&, AdminSessionI* = 0);
-    void updateApplication(const ApplicationUpdateInfo&, AdminSessionI* = 0);
-    void syncApplicationDescriptor(const ApplicationDescriptor&, AdminSessionI* = 0);
+    void updateApplication(const ApplicationUpdateInfo&, bool, AdminSessionI* = 0);
+    void syncApplicationDescriptor(const ApplicationDescriptor&, bool, AdminSessionI* = 0);
     void instantiateServer(const std::string&, const std::string&, const ServerInstanceDescriptor&, AdminSessionI* =0);
     void removeApplication(const std::string&, AdminSessionI* = 0);
     ApplicationInfo getApplicationInfo(const std::string&);
@@ -95,7 +95,7 @@ public:
     AllocatableObjectEntryPtr getAllocatableObject(const Ice::Identity&) const;
 
     void setAdapterDirectProxy(const std::string&, const std::string&, const Ice::ObjectPrx&);
-    Ice::ObjectPrx getAdapterDirectProxy(const std::string&);
+    Ice::ObjectPrx getAdapterDirectProxy(const std::string&, const Ice::EncodingVersion&);
 
     void removeAdapter(const std::string&);
     AdapterPrx getAdapterProxy(const std::string&, const std::string&, bool);
@@ -141,13 +141,15 @@ private:
 
     void load(const ApplicationHelper&, ServerEntrySeq&, const std::string&, int);
     void unload(const ApplicationHelper&, ServerEntrySeq&);
-    void reload(const ApplicationHelper&, const ApplicationHelper&, ServerEntrySeq&, const std::string&, int);
+    void reload(const ApplicationHelper&, const ApplicationHelper&, ServerEntrySeq&, const std::string&, int, bool);
+
+    void checkUpdate(const ApplicationHelper&, const ApplicationHelper&, const std::string&, int, bool);
 
     void saveApplication(const ApplicationInfo&, const IceDB::DatabaseConnectionPtr&);
     void removeApplication(const std::string&, const IceDB::DatabaseConnectionPtr&);
 
-    void finishApplicationUpdate(ServerEntrySeq&, const ApplicationUpdateInfo&, const ApplicationInfo&, 
-                                 const ApplicationDescriptor&, AdminSessionI*);
+    void finishApplicationUpdate(const ApplicationUpdateInfo&, const ApplicationInfo&, const ApplicationHelper&,
+                                 const ApplicationHelper&, AdminSessionI*, bool);
 
     void checkSessionLock(AdminSessionI*);
 
@@ -184,7 +186,7 @@ private:
     AdapterObserverTopicPtr _adapterObserverTopic;
     ObjectObserverTopicPtr _objectObserverTopic;
 
-    DatabaseCachePtr _databaseCache;
+    ConnectionPoolPtr _connectionPool;
     DatabasePluginPtr _databasePlugin;
     
     AdminSessionI* _lock;

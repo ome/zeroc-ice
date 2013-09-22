@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -34,6 +34,18 @@ public abstract class Reference implements Cloneable
     getSecure()
     {
         return _secure;
+    }
+
+    public final Ice.ProtocolVersion
+    getProtocol() 
+    {
+        return _protocol;
+    }
+
+    public final Ice.EncodingVersion
+    getEncoding() 
+    {
+        return _encoding;
     }
 
     public final Ice.Identity
@@ -150,6 +162,18 @@ public abstract class Reference implements Cloneable
     }
 
     public Reference
+    changeEncoding(Ice.EncodingVersion newEncoding)
+    {
+        if(newEncoding.equals(_encoding))
+        {
+            return this;
+        }
+        Reference r = _instance.referenceFactory().copy(this);
+        r._encoding = newEncoding;
+        return r;
+    }
+
+    public Reference
     changeCompress(boolean newCompress)
     {
         if(_overrideCompress && _compress == newCompress)
@@ -183,20 +207,24 @@ public abstract class Reference implements Cloneable
             return _hashValue;
         }
         
-        int h = _mode;
-
-        h = 5 * h + _identity.hashCode();
-
-        h = 5 * h + _context.hashCode();
-
-        h = 5 * h + _facet.hashCode();
-
-        h = 5 * h + (_secure ? 1 : 0);
+        int h = 5381;
+        h = IceInternal.HashUtil.hashAdd(h, _mode);
+        h = IceInternal.HashUtil.hashAdd(h, _secure);
+        h = IceInternal.HashUtil.hashAdd(h, _identity);
+        h = IceInternal.HashUtil.hashAdd(h, _context);
+        h = IceInternal.HashUtil.hashAdd(h, _facet);
+        h = IceInternal.HashUtil.hashAdd(h, _overrideCompress);
+        if(_overrideCompress)
+        {
+            h = IceInternal.HashUtil.hashAdd(h, _compress);
+        }
+        h = IceInternal.HashUtil.hashAdd(h, _protocol);
+        h = IceInternal.HashUtil.hashAdd(h, _encoding);
 
         _hashValue = h;
         _hashInitialized = true;
 
-        return h;
+        return _hashValue;
     }
 
     //
@@ -232,6 +260,12 @@ public abstract class Reference implements Cloneable
         s.writeByte((byte)_mode);
 
         s.writeBool(_secure);
+
+        if(!s.getWriteEncoding().equals(Ice.Util.Encoding_1_0))
+        {
+            _protocol.__write(s);
+            _encoding.__write(s);
+        }
 
         // Derived class writes the remainder of the reference.
     }
@@ -327,6 +361,26 @@ public abstract class Reference implements Cloneable
             s.append(" -s");
         }
 
+        if(!_protocol.equals(Ice.Util.Protocol_1_0))
+        {
+            //
+            // We only print the protocol if it's not 1.0. It's fine as
+            // long as we don't add Ice.Default.ProtocolVersion, a
+            // stringified proxy will convert back to the same proxy with
+            // stringToProxy.
+            //
+            s.append(" -p ");
+            s.append(Ice.Util.protocolVersionToString(_protocol));
+        }
+
+        //
+        // Always print the encoding version to ensure a stringified proxy
+        // will convert back to a proxy with the same encoding with
+        // stringToProxy (and won't use Ice.Default.EncodingVersion).
+        // 
+        s.append(" -e ");
+        s.append(Ice.Util.encodingVersionToString(_encoding));
+
         return s.toString();
 
         // Derived class writes the remainder of the string.
@@ -383,6 +437,16 @@ public abstract class Reference implements Cloneable
             return false;
         }
 
+        if(!_protocol.equals(r._protocol))
+        {
+            return false;
+        }
+
+        if(!_encoding.equals(r._encoding))
+        {
+            return false;
+        }
+
         return true;
     }
 
@@ -414,6 +478,8 @@ public abstract class Reference implements Cloneable
     private Ice.Identity _identity;
     private java.util.Map<String, String> _context;
     private String _facet;
+    private Ice.ProtocolVersion _protocol;
+    private Ice.EncodingVersion _encoding;
     protected boolean _overrideCompress;
     protected boolean _compress; // Only used if _overrideCompress == true
 
@@ -423,7 +489,9 @@ public abstract class Reference implements Cloneable
               Ice.Identity identity,
               String facet,
               int mode,
-              boolean secure)
+              boolean secure,
+              Ice.ProtocolVersion protocol,
+              Ice.EncodingVersion encoding)
     {
         //
         // Validate string arguments.
@@ -439,6 +507,8 @@ public abstract class Reference implements Cloneable
         _identity = identity;
         _context = _emptyContext;
         _facet = facet;
+        _protocol = protocol;
+        _encoding = encoding;
         _hashInitialized = false;
         _overrideCompress = false;
         _compress = false;

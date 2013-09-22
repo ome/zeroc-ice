@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -19,7 +19,7 @@
 #include <Ice/ProxyF.h>
 #include <Ice/BasicStream.h>
 
-#include <memory>
+#include <IceUtil/UniquePtr.h>
 #include <deque>
 
 namespace IceInternal
@@ -76,7 +76,7 @@ private:
 
     Ice::ConnectionIPtr _connection;
     bool _compress;
-    std::auto_ptr<Ice::LocalException> _exception;
+    IceUtil::UniquePtr<Ice::LocalException> _exception;
     bool _initialized;
     bool _flushing;
 

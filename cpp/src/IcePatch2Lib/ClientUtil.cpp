@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -14,7 +14,6 @@
 #define ICE_PATCH2_API_EXPORTS
 #include <IcePatch2/ClientUtil.h>
 #include <IcePatch2/Util.h>
-#include <IcePatch2/FileServerI.h>
 #include <list>
 #include <iterator>
 
@@ -146,16 +145,120 @@ private:
 
 }
 
+namespace
+{
+
+string
+getDataDir(const CommunicatorPtr& communicator, const string& defaultValue)
+{
+    const string property = "IcePatch2Client.Directory";
+    const string deprecatedProperty = "IcePatch2.Directory";
+
+    if(communicator->getProperties()->getProperty(property).empty() &&
+       communicator->getProperties()->getProperty(deprecatedProperty).empty())
+    {
+        return defaultValue;
+    }
+
+    string value = communicator->getProperties()->getProperty(property);
+    if(value.empty())
+    {
+        value = communicator->getProperties()->getProperty(deprecatedProperty);
+        ostringstream os;
+        os << "The property " << deprecatedProperty << " is deprecated, use " << property << " instead.";
+        communicator->getLogger()->warning(os.str());
+    }
+    assert(!value.empty());
+    return value;
+}
+
+int
+getThorough(const CommunicatorPtr& communicator, int defaultValue)
+{
+    const string property = "IcePatch2Client.Thorough";
+    const string deprecatedProperty = "IcePatch2.Thorough";
+
+    if(communicator->getProperties()->getProperty(property).empty() &&
+       communicator->getProperties()->getProperty(deprecatedProperty).empty())
+    {
+        return defaultValue;
+    }
+
+    if(!communicator->getProperties()->getProperty(property).empty())
+    {
+        return communicator->getProperties()->getPropertyAsInt(property);
+    }
+    else
+    {
+        ostringstream os;
+        os << "The property " << deprecatedProperty << " is deprecated, use " << property << " instead.";
+        communicator->getLogger()->warning(os.str());
+        return communicator->getProperties()->getPropertyAsInt(deprecatedProperty);
+    }
+}
+
+int
+getChunkSize(const CommunicatorPtr& communicator, int defaultValue)
+{
+    const string property = "IcePatch2Client.ChunkSize";
+    const string deprecatedProperty = "IcePatch2.ChunkSize";
+
+    if(communicator->getProperties()->getProperty(property).empty() &&
+       communicator->getProperties()->getProperty(deprecatedProperty).empty())
+    {
+        return defaultValue;
+    }
+
+    if(!communicator->getProperties()->getProperty(property).empty())
+    {
+        return communicator->getProperties()->getPropertyAsInt(property);
+    }
+    else
+    {
+        ostringstream os;
+        os << "The property " << deprecatedProperty << " is deprecated, use " << property << " instead.";
+        communicator->getLogger()->warning(os.str());
+        return communicator->getProperties()->getPropertyAsInt(deprecatedProperty);
+    }
+}
+
+int
+getRemove(const CommunicatorPtr& communicator, int defaultValue)
+{
+    const string property = "IcePatch2Client.Remove";
+    const string deprecatedProperty = "IcePatch2.Remove";
+
+    if(communicator->getProperties()->getProperty(property).empty() &&
+       communicator->getProperties()->getProperty(deprecatedProperty).empty())
+    {
+        return defaultValue;
+    }
+
+    if(!communicator->getProperties()->getProperty(property).empty())
+    {
+        return communicator->getProperties()->getPropertyAsInt(property);
+    }
+    else
+    {
+        ostringstream os;
+        os << "The property " << deprecatedProperty << " is deprecated, use " << property << " instead.";
+        communicator->getLogger()->warning(os.str());
+        return communicator->getProperties()->getPropertyAsInt(deprecatedProperty);
+    }
+}
+
+}
+
+
 IcePatch2::Patcher::Patcher(const CommunicatorPtr& communicator, const PatcherFeedbackPtr& feedback) :
     _feedback(feedback),
-    _dataDir(communicator->getProperties()->getPropertyWithDefault("IcePatch2.Directory", ".")),
-    _thorough(communicator->getProperties()->getPropertyAsInt("IcePatch2.Thorough") > 0),
-    _chunkSize(communicator->getProperties()->getPropertyAsIntWithDefault("IcePatch2.ChunkSize", 100)),
-    _remove(communicator->getProperties()->getPropertyAsIntWithDefault("IcePatch2.Remove", 1)),
+    _dataDir(getDataDir(communicator, ".")),
+    _thorough(getThorough(communicator, 0) > 0),
+    _chunkSize(getChunkSize(communicator, 100)),
+    _remove(getRemove(communicator, 1)),
     _log(0)
 {
-    PropertiesPtr properties = communicator->getProperties();
-
+    const PropertiesPtr properties = communicator->getProperties();
     const char* clientProxyProperty = "IcePatch2Client.Proxy";
     std::string clientProxy = properties->getProperty(clientProxyProperty);
     if(clientProxy.empty())
@@ -169,7 +272,9 @@ IcePatch2::Patcher::Patcher(const CommunicatorPtr& communicator, const PatcherFe
                << "' or `" << endpointsProperty << "'.";
             throw os.str();
         }
-
+        ostringstream os;
+        os << "The property " << endpointsProperty << " is deprecated, use " << clientProxyProperty << " instead.";
+        communicator->getLogger()->warning(os.str());
         Identity id;
         id.category = properties->getPropertyWithDefault("IcePatch2.InstanceName", "IcePatch2");
         id.name = "server";
@@ -241,66 +346,6 @@ private:
     const PatcherFeedbackPtr _feedback;
 };
 
-class AMIGetFileInfoSeq : public AMI_FileServer_getFileInfoSeq, public IceUtil::Monitor<IceUtil::Mutex>
-{
-public:
-
-    AMIGetFileInfoSeq() :
-        _done(false)
-    {
-    }
-
-    FileInfoSeq
-    getFileInfoSeq()
-    {
-        IceUtil::Monitor<IceUtil::Mutex>::Lock sync(*this);
-
-        while(!_done)
-        {
-            wait();
-        }
-
-        _done = false;
-
-        if(_exception.get())
-        {
-            auto_ptr<Exception> ex = _exception;
-            _fileInfoSeq.clear();
-            ex->ice_throw();
-        }
-
-        FileInfoSeq fileInfoSeq;
-        fileInfoSeq.swap(_fileInfoSeq);
-        return fileInfoSeq;
-    }
-
-    virtual void
-    ice_response(const FileInfoSeq& fileInfoSeq)
-    {
-        IceUtil::Monitor<IceUtil::Mutex>::Lock sync(*this);
-        _fileInfoSeq = fileInfoSeq;
-        _done = true;
-        notify();
-    }
-
-    virtual void
-    ice_exception(const Exception& ex)
-    {
-        IceUtil::Monitor<IceUtil::Mutex>::Lock sync(*this);
-        _exception.reset(ex.ice_clone());
-        _done = true;
-        notify();
-    }
-
-private:
-
-    bool _done;
-    FileInfoSeq _fileInfoSeq;
-    auto_ptr<Exception> _exception;
-};
-
-typedef IceUtil::Handle<AMIGetFileInfoSeq> AMIGetFileInfoSeqPtr;
-
 }
 
 bool
@@ -363,8 +408,8 @@ IcePatch2::Patcher::prepare()
             throw string("server returned illegal value");
         }
         
-        AMIGetFileInfoSeqPtr curCB;
-        AMIGetFileInfoSeqPtr nxtCB;
+        AsyncResultPtr curCB;
+        AsyncResultPtr nxtCB;
 
         for(int node0 = 0; node0 < 256; ++node0)
         {
@@ -373,9 +418,7 @@ IcePatch2::Patcher::prepare()
                 if(!curCB)
                 {
                     assert(!nxtCB);
-                    curCB = new AMIGetFileInfoSeq;
-                    nxtCB = new AMIGetFileInfoSeq;
-                    _serverCompress->getFileInfoSeq_async(curCB, node0);
+                    curCB = _serverCompress->begin_getFileInfoSeq(node0);
                 }
                 else
                 {
@@ -393,10 +436,10 @@ IcePatch2::Patcher::prepare()
 
                 if(node0Nxt < 256)
                 {
-                    _serverCompress->getFileInfoSeq_async(nxtCB, node0Nxt);
+                    nxtCB = _serverCompress->begin_getFileInfoSeq(node0Nxt);
                 }
 
-                FileInfoSeq files = curCB->getFileInfoSeq();
+                FileInfoSeq files = _serverCompress->end_getFileInfoSeq(curCB);
                 
                 sort(files.begin(), files.end(), FileInfoLess());
                 files.erase(unique(files.begin(), files.end(), FileInfoEqual()), files.end());
@@ -512,10 +555,8 @@ IcePatch2::Patcher::patch(const string& d)
     {
         string dirWithSlash = simplify(dir + '/');
 
-        FileInfoSeq::const_iterator p;
-
         FileInfoSeq remove;
-        for(p = _removeFiles.begin(); p != _removeFiles.end(); ++p)
+        for(FileInfoSeq::const_iterator p = _removeFiles.begin(); p != _removeFiles.end(); ++p)
         {
             if(p->path == dir)
             {
@@ -528,7 +569,7 @@ IcePatch2::Patcher::patch(const string& d)
         }
 
         FileInfoSeq update;
-        for(p = _updateFiles.begin(); p != _updateFiles.end(); ++p)
+        for(FileInfoSeq::const_iterator p = _updateFiles.begin(); p != _updateFiles.end(); ++p)
         {
             if(p->path == dir)
             {
@@ -541,7 +582,7 @@ IcePatch2::Patcher::patch(const string& d)
         }
 
         FileInfoSeq updateFlag;
-        for(p = _updateFlags.begin(); p != _updateFlags.end(); ++p)
+        for(FileInfoSeq::const_iterator p = _updateFlags.begin(); p != _updateFlags.end(); ++p)
         {
             if(p->path == dir)
             {
@@ -665,7 +706,7 @@ IcePatch2::Patcher::removeFiles(const FileInfoSeq& files)
         }
         catch(...)
         {
-            if(_remove < 2) // We ignore errors if IcePatch2.Remove >= 2.
+            if(_remove < 2) // We ignore errors if IcePatch2Client.Remove >= 2.
             {
                 throw;
             }
@@ -733,80 +774,13 @@ IcePatch2::Patcher::updateFiles(const FileInfoSeq& files)
     return result;
 }
 
-namespace
-{
-
-class AMIGetFileCompressed : public AMI_FileServer_getFileCompressed, public IceUtil::Monitor<IceUtil::Mutex>
-{
-public:
-
-    AMIGetFileCompressed() :
-        _done(false)
-    {
-    }
-
-    ByteSeq
-    getFileCompressed()
-    {
-        IceUtil::Monitor<IceUtil::Mutex>::Lock sync(*this);
-
-        while(!_done)
-        {
-            wait();
-        }
-
-        _done = false;
-
-        if(_exception.get())
-        {
-            auto_ptr<Exception> ex = _exception;
-            _bytes.clear();
-            ex->ice_throw();
-        }
-
-        ByteSeq bytes;
-        bytes.swap(_bytes);
-        return bytes;
-    }
-
-    virtual void
-    ice_response(const pair<const Ice::Byte*, const Ice::Byte*>& bytes)
-    {
-        IceUtil::Monitor<IceUtil::Mutex>::Lock sync(*this);
-        ByteSeq(bytes.first, bytes.second).swap(_bytes);
-        _done = true;
-        notify();
-    }
-
-    virtual void
-    ice_exception(const Exception& ex)
-    {
-        IceUtil::Monitor<IceUtil::Mutex>::Lock sync(*this);
-        _exception.reset(ex.ice_clone());
-        _done = true;
-        notify();
-    }
-
-private:
-
-    bool _done;
-    ByteSeq _bytes;
-    auto_ptr<Exception> _exception;
-};
-
-typedef IceUtil::Handle<AMIGetFileCompressed> AMIGetFileCompressedPtr;
-
-}
-
 bool
 IcePatch2::Patcher::updateFilesInternal(const FileInfoSeq& files, const DecompressorPtr& decompressor)
 {
-    FileInfoSeq::const_iterator p;
-    
     Long total = 0;
     Long updated = 0;
     
-    for(p = files.begin(); p != files.end(); ++p)
+    for(FileInfoSeq::const_iterator p = files.begin(); p != files.end(); ++p)
     {
         if(p->size > 0) // Regular, non-empty file?
         {
@@ -814,10 +788,10 @@ IcePatch2::Patcher::updateFilesInternal(const FileInfoSeq& files, const Decompre
         }
     }
     
-    AMIGetFileCompressedPtr curCB;
-    AMIGetFileCompressedPtr nxtCB;
+    AsyncResultPtr curCB;
+    AsyncResultPtr nxtCB;
 
-    for(p = files.begin(); p != files.end(); ++p)
+    for(FileInfoSeq::const_iterator p = files.begin(); p != files.end(); ++p)
     {
         if(p->size < 0) // Directory?
         {
@@ -877,9 +851,7 @@ IcePatch2::Patcher::updateFilesInternal(const FileInfoSeq& files, const Decompre
                         if(!curCB)
                         {
                             assert(!nxtCB);
-                            curCB = new AMIGetFileCompressed;
-                            nxtCB = new AMIGetFileCompressed;
-                            _serverNoCompress->getFileCompressed_async(curCB, p->path, pos, _chunkSize);
+                            curCB = _serverNoCompress->begin_getFileCompressed(p->path, pos, _chunkSize);
                         }
                         else
                         {
@@ -889,7 +861,7 @@ IcePatch2::Patcher::updateFilesInternal(const FileInfoSeq& files, const Decompre
 
                         if(pos + _chunkSize < p->size)
                         {
-                            _serverNoCompress->getFileCompressed_async(nxtCB, p->path, pos + _chunkSize, _chunkSize);
+                            nxtCB = _serverNoCompress->begin_getFileCompressed(p->path, pos + _chunkSize, _chunkSize);
                         }
                         else
                         {
@@ -902,7 +874,7 @@ IcePatch2::Patcher::updateFilesInternal(const FileInfoSeq& files, const Decompre
 
                             if(q != files.end())
                             {
-                                _serverNoCompress->getFileCompressed_async(nxtCB, q->path, 0, _chunkSize);
+                                nxtCB = _serverNoCompress->begin_getFileCompressed(q->path, 0, _chunkSize);
                             }
                         }
 
@@ -910,7 +882,7 @@ IcePatch2::Patcher::updateFilesInternal(const FileInfoSeq& files, const Decompre
 
                         try
                         {
-                            bytes = curCB->getFileCompressed();
+                            bytes = _serverNoCompress->end_getFileCompressed(curCB);
                         }
                         catch(const FileAccessException& ex)
                         {

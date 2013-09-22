@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -13,12 +13,6 @@
 #include <IceUtil/Shared.h>
 #include <Ice/ConnectorF.h>
 #include <Ice/TransceiverF.h>
-
-#ifdef _WIN32
-#   include <winsock2.h>
-#else
-#   define SOCKET int
-#endif
 
 namespace IceInternal
 {

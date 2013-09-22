@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -15,7 +15,7 @@
 using namespace std;
 
 Test::ChecksumPrx
-allTests(const Ice::CommunicatorPtr& communicator, bool collocated)
+allTests(const Ice::CommunicatorPtr& communicator, bool)
 {
     string ref = "test:default -p 12010";
     Ice::ObjectPrx base = communicator->stringToProxy(ref);

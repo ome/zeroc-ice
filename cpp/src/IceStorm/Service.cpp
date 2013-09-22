@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -85,7 +85,7 @@ createIceStorm(CommunicatorPtr communicator)
 }
 
 ServicePtr
-Service::create(const CommunicatorPtr& communicator,
+IceStormInternal::Service::create(const CommunicatorPtr& communicator,
                           const ObjectAdapterPtr& topicAdapter,
                           const ObjectAdapterPtr& publishAdapter,
                           const string& name,
@@ -110,7 +110,7 @@ void
 ServiceI::start(
     const string& name,
     const CommunicatorPtr& communicator,
-    const StringSeq& args)
+    const StringSeq& /*args*/)
 {
     PropertiesPtr properties = communicator->getProperties();
 
@@ -151,7 +151,7 @@ ServiceI::start(
         {
             _instance = 0;
 
-            ostringstream s;
+            LoggerOutputBase s;
             s << "exception while starting IceStorm service " << name << ":\n";
             s << ex;
 
@@ -182,7 +182,7 @@ ServiceI::start(
         }
         catch(const Ice::LocalException& ex)
         {
-            ostringstream s;
+            LoggerOutputBase s;
             s << "failed to load default Freeze database plugin:\n" << ex;
 
             IceBox::FailureException e(__FILE__, __LINE__);
@@ -200,11 +200,11 @@ ServiceI::start(
         e.reason = s.str();
         throw e;
     }
-    DatabaseCachePtr databaseCache = plugin->getDatabaseCache(name);
+    ConnectionPoolPtr connectionPool = plugin->getConnectionPool(name);
 
     if(id == -1) // No replication.
     {
-        _instance = new Instance(instanceName, name, communicator, databaseCache, publishAdapter, topicAdapter);
+        _instance = new Instance(instanceName, name, communicator, connectionPool, publishAdapter, topicAdapter);
 
         try
         {
@@ -215,7 +215,7 @@ ServiceI::start(
         {
             _instance = 0;
 
-            ostringstream s;
+            LoggerOutputBase s;
             s << "exception while starting IceStorm service " << name << ":\n";
             s << ex;
 
@@ -352,7 +352,7 @@ ServiceI::start(
             }
             Ice::ObjectAdapterPtr nodeAdapter = communicator->createObjectAdapter(name + ".Node");
 
-            _instance = new Instance(instanceName, name, communicator, databaseCache, publishAdapter, topicAdapter, 
+            _instance = new Instance(instanceName, name, communicator, connectionPool, publishAdapter, topicAdapter, 
                                      nodeAdapter, nodes[id]);
             _instance->observers()->setMajority(static_cast<unsigned int>(nodes.size())/2);
             
@@ -402,7 +402,7 @@ ServiceI::start(
         {
             _instance = 0;
 
-            ostringstream s;
+            LoggerOutputBase s;
             s << "exception while starting IceStorm service " << name << ":\n";
             s << ex;
 
@@ -422,7 +422,7 @@ ServiceI::start(const CommunicatorPtr& communicator,
                           const ObjectAdapterPtr& publishAdapter,
                           const string& name,
                           const Ice::Identity& id,
-                          const string& dbEnv)
+                          const string& /*dbEnv*/)
 {
     //
     // For IceGrid we don't validate the properties as all sorts of
@@ -443,7 +443,7 @@ ServiceI::start(const CommunicatorPtr& communicator,
     catch(const Ice::Exception& ex)
     {
         _instance = 0;
-        ostringstream s;
+        LoggerOutputBase s;
         s << "exception while starting IceStorm service " << name << ":\n";
         s << ex;
 
@@ -547,6 +547,7 @@ ServiceI::validateProperties(const string& name, const PropertiesPtr& properties
         "Send.Timeout",
         "Discard.Interval",
         "SQL.DatabaseType",
+        "SQL.EncodingVersion",
         "SQL.HostName",
         "SQL.Port",
         "SQL.DatabaseName",

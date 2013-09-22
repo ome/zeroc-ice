@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -70,6 +70,12 @@ public class TestI extends _TestIntfDisp
         boolean result = count == _batchCount;
         _batchCount = 0;
         return result;
+    }
+
+    public void
+    close(boolean force, Ice.Current current)
+    {
+        current.con.close(force);
     }
 
     public void

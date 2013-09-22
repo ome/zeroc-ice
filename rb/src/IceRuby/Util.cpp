@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -9,10 +9,134 @@
 
 #include <Util.h>
 #include <Ice/LocalException.h>
+#include <Ice/Protocol.h>
 #include <stdarg.h>
+
+#ifdef HAVE_RUBY_ENCODING_H
+#  include <ruby/encoding.h>
+#endif
 
 using namespace std;
 using namespace IceRuby;
+
+namespace
+{
+
+#ifndef NDEBUG
+bool
+checkIsInstance(VALUE p, const char* type)
+{
+    volatile VALUE rbType = callRuby(rb_path2class, type);
+    assert(!NIL_P(rbType));
+    return callRuby(rb_obj_is_instance_of, p, rbType) == Qtrue;
+}
+#endif
+
+template<typename T>
+bool
+setVersion(VALUE p, const T& version, const char* type)
+{
+    assert(checkIsInstance(p, type));
+
+    VALUE major = callRuby(rb_int2inum, version.major);
+    VALUE minor = callRuby(rb_int2inum, version.minor);
+    rb_ivar_set(p, rb_intern("@major"), major);
+    rb_ivar_set(p, rb_intern("@minor"), minor);
+
+    return true;
+}
+
+template<typename T>
+bool
+getVersion(VALUE p, T& v, const char* type)
+{
+    assert(checkIsInstance(p, type));
+    volatile VALUE major = callRuby(rb_ivar_get, p, rb_intern("@major"));
+    volatile VALUE minor = callRuby(rb_ivar_get, p, rb_intern("@minor"));
+
+    long m;
+
+    m = getInteger(major);
+    if(m < 0 || m > 255)
+    {
+        throw RubyException(rb_eTypeError, "version major must be a value between 0 and 255");
+        return false;
+    }
+    v.major = m;
+
+    m = getInteger(minor);
+    if(m < 0 || m > 255)
+    {
+        throw RubyException(rb_eTypeError, "version minor must be a value between 0 and 255");
+        return false;
+    }
+    v.minor = m;
+
+    return true;
+}
+
+template<typename T>
+VALUE
+createVersion(const T& version, const char* type)
+{
+    volatile VALUE rbType = callRuby(rb_path2class, type);
+    assert(!NIL_P(rbType));
+
+    volatile VALUE obj = callRuby(rb_class_new_instance, 0, static_cast<VALUE*>(0), rbType);
+
+    if(!setVersion<T>(obj, version, type))
+    {
+        return Qnil;
+    }
+
+    return obj;
+}
+
+template<typename T>
+VALUE
+versionToString(VALUE p, const char* type)
+{
+    volatile VALUE rbType = callRuby(rb_path2class, type);
+    assert(!NIL_P(rbType));
+    if(callRuby(rb_obj_is_instance_of, p, rbType) != Qtrue)
+    {
+        throw RubyException(rb_eTypeError, "argument is not an instance of %s", type);
+    }
+
+    T v;
+    if(!getVersion<T>(p, v, type))
+    {
+        return Qnil;
+    }
+
+    ICE_RUBY_TRY
+    {
+        string s = IceInternal::versionToString<T>(v);
+        return createString(s);
+    }
+    ICE_RUBY_CATCH
+    return Qnil;
+}
+
+template<typename T>
+VALUE
+stringToVersion(VALUE p, const char* type)
+{
+    string str = getString(p);
+
+    ICE_RUBY_TRY
+    {
+        T v = IceInternal::stringToVersion<T>(str);
+        return createVersion<T>(v, type);
+    }
+    ICE_RUBY_CATCH
+    return Qnil;
+}
+
+char Ice_ProtocolVersion[] = "Ice::ProtocolVersion";
+char Ice_EncodingVersion[] = "Ice::EncodingVersion";
+
+}
 
 extern "C"
 VALUE
@@ -39,11 +163,82 @@ IceRuby_intVersion(int /*argc*/, VALUE* /*argv*/, VALUE /*self*/)
     return Qnil;
 }
 
+extern "C"
+VALUE
+IceRuby_currentProtocol(int /*argc*/, VALUE* /*argv*/, VALUE /*self*/)
+{
+    ICE_RUBY_TRY
+    {
+        return createProtocolVersion(Ice::currentProtocol);
+    }
+    ICE_RUBY_CATCH
+    return Qnil;
+}
+
+extern "C"
+VALUE
+IceRuby_currentProtocolEncoding(int /*argc*/, VALUE* /*argv*/, VALUE /*self*/)
+{
+    ICE_RUBY_TRY
+    {
+        return createEncodingVersion(Ice::currentProtocolEncoding);
+    }
+    ICE_RUBY_CATCH
+    return Qnil;
+}
+
+extern "C"
+VALUE
+IceRuby_currentEncoding(int /*argc*/, VALUE* /*argv*/, VALUE /*self*/)
+{
+    ICE_RUBY_TRY
+    {
+        return createEncodingVersion(Ice::currentEncoding);
+    }
+    ICE_RUBY_CATCH
+    return Qnil;
+}
+
+extern "C"
+VALUE
+IceRuby_protocolVersionToString(VALUE /*self*/, VALUE v)
+{
+    return versionToString<Ice::ProtocolVersion>(v, Ice_ProtocolVersion);
+}
+
+extern "C"
+VALUE
+IceRuby_stringToProtocolVersion(VALUE /*self*/, VALUE v)
+{
+    return stringToVersion<Ice::ProtocolVersion>(v, Ice_ProtocolVersion);
+}
+
+extern "C"
+VALUE
+IceRuby_encodingVersionToString(VALUE /*self*/, VALUE v)
+{
+    return versionToString<Ice::EncodingVersion>(v, Ice_EncodingVersion);
+}
+
+extern "C"
+VALUE
+IceRuby_stringToEncodingVersion(VALUE /*self*/, VALUE v)
+{
+    return stringToVersion<Ice::EncodingVersion>(v, Ice_EncodingVersion);
+}
+
 void
 IceRuby::initUtil(VALUE iceModule)
 {
     rb_define_module_function(iceModule, "stringVersion", CAST_METHOD(IceRuby_stringVersion), -1);
     rb_define_module_function(iceModule, "intVersion", CAST_METHOD(IceRuby_intVersion), -1);
+    rb_define_module_function(iceModule, "currentProtocol", CAST_METHOD(IceRuby_currentProtocol), -1);
+    rb_define_module_function(iceModule, "currentProtocolEncoding", CAST_METHOD(IceRuby_currentProtocolEncoding), -1);
+    rb_define_module_function(iceModule, "currentEncoding", CAST_METHOD(IceRuby_currentEncoding), -1);
+    rb_define_module_function(iceModule, "protocolVersionToString", CAST_METHOD(IceRuby_protocolVersionToString), 1);
+    rb_define_module_function(iceModule, "stringToProtocolVersion", CAST_METHOD(IceRuby_stringToProtocolVersion), 1);
+    rb_define_module_function(iceModule, "encodingVersionToString", CAST_METHOD(IceRuby_encodingVersionToString), 1);
+    rb_define_module_function(iceModule, "stringToEncodingVersion", CAST_METHOD(IceRuby_stringToEncodingVersion), 1);
 }
 
 IceRuby::RubyException::RubyException()
@@ -106,7 +301,11 @@ IceRuby::getString(VALUE val)
 VALUE
 IceRuby::createString(const string& str)
 {
+#ifdef HAVE_RUBY_ENCODING_H
+    return callRuby(rb_enc_str_new, str.c_str(), static_cast<long>(str.size()), rb_utf8_encoding());
+#else
     return callRuby(rb_str_new, str.c_str(), static_cast<long>(str.size()));
+#endif
 }
 
 long
@@ -340,6 +539,37 @@ IceRuby::createIdentity(const Ice::Identity& id)
 }
 
 VALUE
+IceRuby::createProtocolVersion(const Ice::ProtocolVersion& v)
+{
+    return createVersion<Ice::ProtocolVersion>(v, Ice_ProtocolVersion);
+}
+
+VALUE
+IceRuby::createEncodingVersion(const Ice::EncodingVersion& v)
+{
+    return createVersion<Ice::EncodingVersion>(v, Ice_EncodingVersion);
+}
+
+bool
+IceRuby::getEncodingVersion(VALUE p, Ice::EncodingVersion& v)
+{
+    volatile VALUE cls = callRuby(rb_path2class, Ice_EncodingVersion);
+    assert(!NIL_P(cls));
+
+    if(callRuby(rb_obj_is_kind_of, p, cls) == Qfalse)
+    {
+        throw RubyException(rb_eTypeError, "value is not an Ice::EncodingVersion");
+    }
+
+    if(!getVersion<Ice::EncodingVersion>(p, v, Ice_EncodingVersion))
+    {
+        return false;
+    }
+
+    return true;
+}
+
+VALUE
 IceRuby::callProtected(RubyFunction func, VALUE arg)
 {
     int error = 0;
@@ -464,17 +694,19 @@ setExceptionMembers(const Ice::LocalException& ex, VALUE p)
     }
     catch(const Ice::UnsupportedProtocolException& e)
     {
-        callRuby(rb_iv_set, p, "@badMajor", INT2FIX(e.badMajor));
-        callRuby(rb_iv_set, p, "@badMinor", INT2FIX(e.badMinor));
-        callRuby(rb_iv_set, p, "@major", INT2FIX(e.major));
-        callRuby(rb_iv_set, p, "@minor", INT2FIX(e.minor));
+        VALUE m;
+        m = createProtocolVersion(e.bad);
+        callRuby(rb_iv_set, p, "@bad", m);
+        m = createProtocolVersion(e.supported);
+        callRuby(rb_iv_set, p, "@supported", m);
     }
     catch(const Ice::UnsupportedEncodingException& e)
     {
-        callRuby(rb_iv_set, p, "@badMajor", INT2FIX(e.badMajor));
-        callRuby(rb_iv_set, p, "@badMinor", INT2FIX(e.badMinor));
-        callRuby(rb_iv_set, p, "@major", INT2FIX(e.major));
-        callRuby(rb_iv_set, p, "@minor", INT2FIX(e.minor));
+        VALUE m;
+        m = createEncodingVersion(e.bad);
+        callRuby(rb_iv_set, p, "@bad", m);
+        m = createEncodingVersion(e.supported);
+        callRuby(rb_iv_set, p, "@supported", m);
     }
     catch(const Ice::NoObjectFactoryException& e)
     {

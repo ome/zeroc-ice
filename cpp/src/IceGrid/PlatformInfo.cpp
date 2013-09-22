@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -88,7 +88,7 @@ public:
     virtual void
     run()
     {
-	_platform.runUpdateLoadInfo();
+        _platform.runUpdateLoadInfo();
     }
 
 private:
@@ -216,33 +216,23 @@ PlatformInfo::PlatformInfo(const string& prefix,
 #endif
 
     //
-    // Get the number of processors.
+    // Get the number of cores/threads. E.g. a quad-core CPU with 2 threads per core will return 8.
     //
 #if defined(_WIN32)
     SYSTEM_INFO sysInfo;
     GetSystemInfo(&sysInfo);
-    _nProcessors = sysInfo.dwNumberOfProcessors;
-#elif defined(__APPLE__) || defined(__FreeBSD__)
+    _nProcessorThreads = sysInfo.dwNumberOfProcessors;
+#elif defined(__FreeBSD__)
     static int ncpu[2] = { CTL_HW, HW_NCPU };
-    size_t sz = sizeof(_nProcessors);
-    if(sysctl(ncpu, 2, &_nProcessors, &sz, 0, 0) == -1)
+    size_t sz = sizeof(_nProcessorThreads);
+    if(sysctl(ncpu, 2, &_nProcessorThreads, &sz, 0, 0) == -1)
     {
         Ice::SyscallException ex(__FILE__, __LINE__);
         ex.error = IceInternal::getSystemErrno();
         throw ex;
     }
-#elif defined(__hpux)
-    struct pst_dynamic dynInfo;
-    if(pstat_getdynamic(&dynInfo, sizeof(dynInfo), 1, 0) >= 0)
-    {
-        _nProcessors = dynInfo.psd_proc_cnt;
-    }
-    else
-    {
-        _nProcessors = 1;
-    }
 #else
-    _nProcessors = static_cast<int>(sysconf(_SC_NPROCESSORS_ONLN));
+    _nProcessorThreads = static_cast<int>(sysconf(_SC_NPROCESSORS_ONLN));
 #endif
 
     //
@@ -266,11 +256,7 @@ PlatformInfo::PlatformInfo(const string& prefix,
 
     switch(sysInfo.wProcessorArchitecture)
     {
-#if defined(_MSC_VER) && (_MSC_VER < 1300)
-    case 9: // PROCESSOR_ARCHITECTURE_AMD64
-#else
     case PROCESSOR_ARCHITECTURE_AMD64:
-#endif
         _machine = "x64";
         break;
     case PROCESSOR_ARCHITECTURE_IA64:
@@ -317,7 +303,8 @@ PlatformInfo::PlatformInfo(const string& prefix,
         }
         _nProcessorSockets = ids.size();
 #else
-        // Not supported.
+        // Not supported
+        _nProcessorSockets = 1;
 #endif
     }
 
@@ -386,9 +373,9 @@ PlatformInfo::stop()
 {
 #if defined(_WIN32)
     {
-	IceUtil::Monitor<IceUtil::Mutex>::Lock sync(_utilizationMonitor);
-	_terminated = true;
-	_utilizationMonitor.notify();
+        IceUtil::Monitor<IceUtil::Mutex>::Lock sync(_utilizationMonitor);
+        _terminated = true;
+        _utilizationMonitor.notify();
     }
 
     assert(_updateUtilizationThread);
@@ -419,7 +406,7 @@ PlatformInfo::getInternalNodeInfo() const
     info->release = _release;
     info->version = _version;
     info->machine = _machine;
-    info->nProcessors = _nProcessors;
+    info->nProcessors = _nProcessorThreads;
     info->dataDir = _dataDir;
     return info;
 }
@@ -556,7 +543,7 @@ PlatformInfo::runUpdateLoadInfo()
     }
     catch(const Ice::LocalException&)
     {
-	// No need to print a warning, it's taken care of by getLocalizedPerfName
+        // No need to print a warning, it's taken care of by getLocalizedPerfName
         PdhCloseQuery(query);
         return;
     }
@@ -576,14 +563,14 @@ PlatformInfo::runUpdateLoadInfo()
 
     while(true)
     {
-	IceUtil::Monitor<IceUtil::Mutex>::Lock sync(_utilizationMonitor);
-	_utilizationMonitor.timedWait(IceUtil::Time::seconds(5)); // 5 seconds.
-	if(_terminated)
-	{
-	    break;
-	}
+        IceUtil::Monitor<IceUtil::Mutex>::Lock sync(_utilizationMonitor);
+        _utilizationMonitor.timedWait(IceUtil::Time::seconds(5)); // 5 seconds.
+        if(_terminated)
+        {
+            break;
+        }
 
-	int usage = 100;
+        int usage = 100;
         PDH_STATUS err = PdhCollectQueryData(query);
         if(err == ERROR_SUCCESS)
         {
@@ -597,17 +584,17 @@ PlatformInfo::runUpdateLoadInfo()
             Ice::Warning out(_traceLevels->logger);
             out << "Could not collect performance counter data:\n" << pdhErrorToString(err);
         }
-	
-	_last1Total += usage - _usages1.back();
-	_last5Total += usage - _usages5.back();
-	_last15Total += usage - _usages15.back();
-	
-	_usages1.pop_back();
-	_usages5.pop_back();
-	_usages15.pop_back();
-	_usages1.push_front(usage);
-	_usages5.push_front(usage);
-	_usages15.push_front(usage);
+        
+        _last1Total += usage - _usages1.back();
+        _last5Total += usage - _usages5.back();
+        _last15Total += usage - _usages15.back();
+        
+        _usages1.pop_back();
+        _usages5.pop_back();
+        _usages15.pop_back();
+        _usages1.push_front(usage);
+        _usages5.push_front(usage);
+        _usages15.push_front(usage);
     }
 
     PdhCloseQuery(query);

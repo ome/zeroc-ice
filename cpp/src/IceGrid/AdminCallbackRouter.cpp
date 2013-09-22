@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -12,46 +12,32 @@
 using namespace Ice;
 using namespace std;
 
-namespace
+void
+IceGrid::AdminCallbackRouter::invokeResponse(bool ok, const std::pair<const Byte*, const Byte*>& outParams,
+                                             const InvokeCookiePtr& cookie)
 {
-
-class InvokeAMICallback : public AMI_Array_Object_ice_invoke
-{
-public:
-
-    InvokeAMICallback(const AMD_Object_ice_invokePtr& cb) :
-        _cb(cb)
-    {
-    }
-
-    virtual void ice_response(bool ok, const std::pair<const Byte*, const Byte*>& outParams)
-    {
-        _cb->ice_response(ok, outParams);
-    }
-    
-    virtual void ice_exception(const Ice::Exception&)
-    {
-        _cb->ice_exception(ObjectNotExistException(__FILE__, __LINE__)); // Callback object is unreachable.
-    }
-    
-private:
-    AMD_Object_ice_invokePtr _cb;
-};
-
+    cookie->cb()->ice_response(ok, outParams);
 }
 
+void
+IceGrid::AdminCallbackRouter::invokeException(const Ice::Exception&, const InvokeCookiePtr& cookie)
+{
+    // Callback object is unreachable.
+    cookie->cb()->ice_exception(ObjectNotExistException(__FILE__, __LINE__));
+}
 
 void
 IceGrid::AdminCallbackRouter::addMapping(const string& category, const ConnectionPtr& con)
 {
     IceUtil::Mutex::Lock sync(_mutex);
 
-#ifndef NDEBUG
+#ifdef NDEBUG
+    _categoryToConnection.insert(map<string, ConnectionPtr>::value_type(category, con));
+#else
     bool inserted =
-#endif
         _categoryToConnection.insert(map<string, ConnectionPtr>::value_type(category, con)).second;
-    
     assert(inserted == true);
+#endif
 }
 
 void
@@ -92,6 +78,11 @@ IceGrid::AdminCallbackRouter::ice_invoke_async(const AMD_Object_ice_invokePtr& c
     //
     // Call with AMI
     //
-    target->ice_invoke_async(new InvokeAMICallback(cb), current.operation, current.mode, inParams, current.ctx);
+    target->begin_ice_invoke(current.operation, current.mode, inParams, current.ctx, 
+                             newCallback_Object_ice_invoke(
+                                            this, 
+                                            &AdminCallbackRouter::invokeResponse, 
+                                            &AdminCallbackRouter::invokeException),
+                             new InvokeCookie(cb));
 }
 

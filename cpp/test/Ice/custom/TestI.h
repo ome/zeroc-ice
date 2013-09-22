@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -69,6 +69,20 @@ public:
     virtual std::list<bool> opBoolList(const std::list<bool>&,
                                        std::list<bool>&,
                                        const Ice::Current&);
+
+    virtual ::Test::BoolDequeList opBoolDequeList(const ::Test::BoolDequeList&, 
+                                                  ::Test::BoolDequeList&, 
+                                                  const Ice::Current&);
+
+    virtual ::Test::BoolDequeList opBoolDequeListArray(const ::std::pair<const std::deque<bool>*, 
+                                                                         const std::deque<bool>*>&, 
+                                                       ::Test::BoolDequeList&, 
+                                                       const ::Ice::Current&);
+
+    virtual ::Test::BoolDequeList opBoolDequeListRange(const ::std::pair< ::Test::BoolDequeList::const_iterator,
+                                                                          ::Test::BoolDequeList::const_iterator>&, 
+                                                       ::Test::BoolDequeList&, 
+                                                       const ::Ice::Current&);
 
     virtual std::deque< ::Ice::Byte> opByteSeq(const std::deque< ::Ice::Byte>&,
                                                std::deque< ::Ice::Byte>&,
@@ -148,6 +162,21 @@ public:
     virtual void opOutArrayByteSeq(const Test::ByteSeq&, Test::ByteSeq&, const Ice::Current&);
     
     virtual void opOutRangeByteSeq(const Test::ByteSeq&, Test::ByteSeq&, const Ice::Current&);
+
+
+    virtual Test::IntStringDict opIntStringDict(const Test::IntStringDict&, Test::IntStringDict&, 
+                                                const Ice::Current&);
+
+    virtual Test::CustomMap<Ice::Long, Ice::Long> opVarDict(const Test::CustomMap<std::string, Ice::Int>&,
+                                                            Test::CustomMap<std::string, Ice::Int>&,
+                                                            const Ice::Current&);
+
+    Test::ShortBuffer opShortBuffer(const Test::ShortBuffer&, Test::ShortBuffer&, const Ice::Current&);
+
+    Test::CustomBuffer<bool> opBoolBuffer(const Test::CustomBuffer<bool>&, Test::CustomBuffer<bool>&, 
+                                          const Ice::Current&);
+
+    Test::BufferStruct opBufferStruct(const Test::BufferStruct&, const Ice::Current&);
 
     virtual void shutdown(const Ice::Current&);
 

@@ -1,3 +1,11 @@
+// **********************************************************************
+//
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
+//
+// This copy of Ice is licensed to you under the terms described in the
+// ICE_LICENSE file included in this distribution.
+//
+// **********************************************************************
 
 #include <PriorityInversion.h>
 #include <IceUtil/Thread.h>
@@ -22,16 +30,16 @@ long fib_num ( long n)
 {
     if ( n == 0)
     {
-            return 0;
+        return 0;
     }
-
+    
     else if ( n == 1 )
     {
-            return 1;
+        return 1;
     }
     else
     {
-            return  fib_num( n -1) + fib_num(n-2);
+        return  fib_num( n -1) + fib_num(n-2);
     }
 }
 
@@ -45,19 +53,35 @@ public:
         _mediumBegin(0),
         _mediumEnd(0),
         _highBegin(0),
-        _highEnd(0),
         _cores(cores),
         _high(high),
         _medium(medium),
         _low(low),
+        _acquired(0),
         _monitor(monitor)
     {
+    }
+
+    void waitAcquired()
+    {
+        Monitor<Mutex>::Lock lock(_monitor);
+        while(_acquired == 0)
+        {
+            _monitor.wait();
+        }
+    }
+
+    void acquired()
+    {
+        Monitor<Mutex>::Lock lock(_monitor);
+        ++_acquired;
+        _monitor.notifyAll();
     }
 
     void waitAll()
     {
         Monitor<Mutex>::Lock lock(_monitor);
-        while(_mediumBegin < _cores)
+        while(_mediumBegin < _cores || _highBegin  == 0)
         {
             //Wait until all task are ready to compete by processors
             _monitor.wait();
@@ -117,11 +141,11 @@ private:
     int _mediumBegin;
     int _mediumEnd;
     int _highBegin;
-    int _highEnd;
     int _cores;
     int _high;
     int _medium;
     int _low;
+    int _acquired;
     Monitor<Mutex>& _monitor;
     IceUtil::Mutex _mutex;
 };
@@ -160,6 +184,7 @@ public:
     {
         taskCollector()->taskBegin(priority);
         Mutex::Lock lock(_mutex);
+        taskCollector()->acquired();
         taskCollector()->waitAll();
         fib_num(30);
         taskCollector()->taskEnd(priority);
@@ -184,8 +209,9 @@ public:
     {
         taskCollector()->taskBegin(priority);
         RecMutex::Lock lock(_mutex);
+        taskCollector()->acquired();
         taskCollector()->waitAll();
-        fib_num(30);
+        fib_num(40);
         taskCollector()->taskEnd(priority);
     }
 
@@ -227,6 +253,11 @@ public:
     virtual void run()
     {
         _shared->run(getPriority());
+    }
+
+    void waitAcquired()
+    {
+        _shared->taskCollector()->waitAcquired();
     }
 
 private:
@@ -286,7 +317,7 @@ void
 PriorityInversionTest::run()
 {
     int cores, high, medium, low, timeout;
-    timeout = 2;
+    timeout = 30;
 #ifdef _WIN32
     return; //Priority inversion is not supported by WIN32
 #else
@@ -298,7 +329,7 @@ PriorityInversionTest::run()
     {
         return; // Mutex protocol PrioInherit not supported
     }
-    cores = sysconf(_SC_NPROCESSORS_ONLN);
+    cores = static_cast<int>(sysconf(_SC_NPROCESSORS_ONLN));
     high = 45;
     medium = 35;
     low = 1;
@@ -307,21 +338,22 @@ PriorityInversionTest::run()
     {
         Monitor<Mutex> monitor;
         TaskCollectorPtr collector = new TaskCollector(cores, high, medium, low, monitor);
-                vector<ThreadControl> threads;
-
+        vector<ThreadControl> threads;
+                
         SharedResourcePtr shared = new SharedResourceMutex(collector);
 
         //
         // Create one low priority thread.
         //
-        ThreadPtr lowThread = new Task(shared);
+        TaskPtr lowThread = new Task(shared);
         threads.push_back(lowThread->start(128, low));
+        lowThread->waitAcquired();
 
         //
         // Create one high priority thread that use the same shared resource
         // as the previous low priority thread
         //
-        ThreadPtr highThread = new Task(shared);
+        TaskPtr highThread = new Task(shared);
         threads.push_back(highThread->start(128, high));
 
         //
@@ -363,8 +395,9 @@ PriorityInversionTest::run()
         //
         // Create one low priority thread.
         //
-        ThreadPtr lowThread = new Task(shared);
+        TaskPtr lowThread = new Task(shared);
         threads.push_back(lowThread->start(128, low));
+        lowThread->waitAcquired();
 
         //
         // Create one high priority thread that use the same shared resource

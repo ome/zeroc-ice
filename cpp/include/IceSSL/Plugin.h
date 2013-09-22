@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -62,7 +62,7 @@ public:
     CertificateReadException(const char*, int, const std::string&);
     virtual ~CertificateReadException() throw();
     virtual std::string ice_name() const;
-    virtual IceUtil::Exception* ice_clone() const;
+    virtual CertificateReadException* ice_clone() const;
     virtual void ice_throw() const;
 
     std::string reason;
@@ -82,7 +82,7 @@ public:
     CertificateEncodingException(const char*, int, const std::string&);
     virtual ~CertificateEncodingException() throw();
     virtual std::string ice_name() const;
-    virtual IceUtil::Exception* ice_clone() const;
+    virtual CertificateEncodingException* ice_clone() const;
     virtual void ice_throw() const;
 
     std::string reason;
@@ -102,7 +102,7 @@ public:
     ParseException(const char*, int, const std::string&);
     virtual ~ParseException() throw();
     virtual std::string ice_name() const;
-    virtual IceUtil::Exception* ice_clone() const;
+    virtual ParseException* ice_clone() const;
     virtual void ice_throw() const;
 
     std::string reason;

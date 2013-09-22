@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -11,17 +11,35 @@ namespace Ice
 {
     public class InputStreamI : InputStream
     {
-        public InputStreamI(Communicator communicator, byte[] data)
+        public InputStreamI(Communicator communicator, byte[] data, bool copyData)
         {
             _communicator = communicator;
+            IceInternal.Instance instance = IceInternal.Util.getInstance(communicator);
+            initialize(instance, data, instance.defaultsAndOverrides().defaultEncoding, copyData);
+        }
 
-            _is = new IceInternal.BasicStream(IceInternal.Util.getInstance(communicator));
+        public InputStreamI(Communicator communicator, byte[] data, EncodingVersion v, bool copyData)
+        {
+            _communicator = communicator;
+            initialize(IceInternal.Util.getInstance(communicator), data, v, copyData);
+        }
+
+        private void initialize(IceInternal.Instance instance, byte[] data, EncodingVersion v, bool copyData)
+        {
+            if(copyData)
+            {
+                _is = new IceInternal.BasicStream(instance, v, true);
+                _is.resize(data.Length, true);
+                IceInternal.Buffer buf = _is.getBuffer();
+                buf.b.position(0);
+                buf.b.put(data);
+                buf.b.position(0);
+            }
+            else
+            {
+                _is = new IceInternal.BasicStream(instance, v, data);
+            }
             _is.closure(this);
-            _is.resize(data.Length, true);
-            IceInternal.Buffer buf = _is.getBuffer();
-            buf.b.position(0);
-            buf.b.put(data);
-            buf.b.position(0);
         }
 
         public Communicator communicator()
@@ -134,7 +152,7 @@ namespace Ice
             return _is.readProxy();
         }
 
-        private class Patcher<T> : IceInternal.Patcher<T>
+        private class Patcher<T> : IceInternal.Patcher
         {
             public Patcher(ReadObjectCallback cb) : base("unknown")
             {
@@ -154,19 +172,63 @@ namespace Ice
             _is.readObject(new Patcher<Ice.Object>(cb));
         }
 
-        public string readTypeId()
+        public int readEnum(int maxValue)
         {
-            return _is.readTypeId();
+            return _is.readEnum(maxValue);
         }
 
         public void throwException()
         {
-            _is.throwException();
+            _is.throwException(null);
         }
 
-        public void startSlice()
+        internal class UserExceptionFactoryI : IceInternal.UserExceptionFactory
         {
-            _is.startReadSlice();
+            internal UserExceptionFactoryI(UserExceptionReaderFactory factory)
+            {
+                _factory = factory;
+            }
+
+            public void createAndThrow(string id)
+            {
+                _factory.createAndThrow(id);
+            }
+
+            public void destroy()
+            {
+            }
+
+            private UserExceptionReaderFactory _factory;
+        }
+
+        public void throwException(UserExceptionReaderFactory factory)
+        {
+            _is.throwException(new UserExceptionFactoryI(factory));
+        }
+
+        public void startObject()
+        {
+            _is.startReadObject();
+        }
+
+        public SlicedData endObject(bool preserve)
+        {
+            return _is.endReadObject(preserve);
+        }
+
+        public void startException()
+        {
+            _is.startReadException();
+        }
+
+        public SlicedData endException(bool preserve)
+        {
+            return _is.endReadException(preserve);
+        }
+
+        public string startSlice()
+        {
+            return _is.startReadSlice();
         }
 
         public void endSlice()
@@ -179,9 +241,9 @@ namespace Ice
             _is.skipSlice();
         }
 
-        public void startEncapsulation()
+        public EncodingVersion startEncapsulation()
         {
-            _is.startReadEncaps();
+            return _is.startReadEncaps();
         }
 
         public void endEncapsulation()
@@ -189,19 +251,14 @@ namespace Ice
             _is.endReadEncapsChecked();
         }
 
-        public void skipEncapsulation()
+        public EncodingVersion skipEncapsulation()
         {
-            _is.skipEncaps();
+            return _is.skipEncaps();
         }
 
-        public int getEncapsulationSize()
+        public EncodingVersion getEncoding()
         {
-            return _is.getReadEncapsSize();
-        }
-
-        public byte[] readBlob(int sz)
-        {
-            return _is.readBlob(sz);
+            return _is.getReadEncoding();
         }
 
         public void readPendingObjects()
@@ -213,6 +270,26 @@ namespace Ice
         {
             _is.clear();
             _is.getBuffer().b.position(0);
+        }
+
+        public void skip(int sz)
+        {
+            _is.skip(sz);
+        }
+
+        public void skipSize()
+        {
+            _is.skipSize();
+        }
+
+        public bool readOptional(int tag, OptionalFormat format)
+        {
+            return _is.readOpt(tag, format);
+        }
+
+        public int pos()
+        {
+            return _is.pos();
         }
 
         public void destroy()
@@ -229,9 +306,22 @@ namespace Ice
 
     public class OutputStreamI : OutputStream
     {
-        public OutputStreamI(Communicator communicator) :
-            this(communicator, new IceInternal.BasicStream(IceInternal.Util.getInstance(communicator)))
+        public OutputStreamI(Communicator communicator)
         {
+            _communicator = communicator;
+
+            IceInternal.Instance instance = IceInternal.Util.getInstance(communicator);
+            _os = new IceInternal.BasicStream(instance, instance.defaultsAndOverrides().defaultEncoding, true);
+            _os.closure(this);
+        }
+
+        public OutputStreamI(Communicator communicator, EncodingVersion v)
+        {
+            _communicator = communicator;
+
+            IceInternal.Instance instance = IceInternal.Util.getInstance(communicator);
+            _os = new IceInternal.BasicStream(instance, v, true);
+            _os.closure(this);
         }
 
         public OutputStreamI(Communicator communicator, IceInternal.BasicStream os)
@@ -351,9 +441,9 @@ namespace Ice
             _os.writeObject(v);
         }
 
-        public void writeTypeId(string id)
+        public void writeEnum(int v, int maxValue)
         {
-            _os.writeTypeId(id);
+            _os.writeEnum(v, maxValue);
         }
 
         public void writeException(UserException v)
@@ -361,14 +451,39 @@ namespace Ice
             _os.writeUserException(v);
         }
 
-        public void startSlice()
+        public void startObject(SlicedData slicedData)
         {
-            _os.startWriteSlice();
+            _os.startWriteObject(slicedData);
+        }
+
+        public void endObject()
+        {
+            _os.endWriteObject();
+        }
+
+        public void startException(SlicedData slicedData)
+        {
+            _os.startWriteException(slicedData);
+        }
+
+        public void endException()
+        {
+            _os.endWriteException();
+        }
+
+        public void startSlice(string typeId, int compactId, bool last)
+        {
+            _os.startWriteSlice(typeId, compactId, last);
         }
 
         public void endSlice()
         {
             _os.endWriteSlice();
+        }
+
+        public void startEncapsulation(EncodingVersion encoding, FormatType format)
+        {
+            _os.startWriteEncaps(encoding, format);
         }
 
         public void startEncapsulation()
@@ -381,14 +496,39 @@ namespace Ice
             _os.endWriteEncapsChecked();
         }
 
-        public void writeBlob(byte[] data)
+        public EncodingVersion getEncoding()
         {
-            _os.writeBlob(data);
+            return _os.getWriteEncoding();
         }
 
         public void writePendingObjects()
         {
             _os.writePendingObjects();
+        }
+
+        public bool writeOptional(int tag, OptionalFormat format)
+        {
+            return _os.writeOpt(tag, format);
+        }
+
+        public int pos()
+        {
+            return _os.pos();
+        }
+
+        public void rewrite(int sz, int pos)
+        {
+            _os.rewriteInt(sz, pos);
+        }
+
+        public void startSize()
+        {
+            _os.startSize();
+        }
+
+        public void endSize()
+        {
+            _os.endSize();
         }
 
         public byte[] finished()

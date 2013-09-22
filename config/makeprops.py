@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # **********************************************************************
 #
-# Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -24,7 +24,7 @@ propertyClasses = {}
 
 commonPreamble = """// **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -75,9 +75,9 @@ struct PropertyArray
     const Property* properties;
     const int length;
 
-    PropertyArray(const Property* p, int len) :
+    PropertyArray(const Property* p, size_t len) :
         properties(p),
-        length(len)
+        length(static_cast<int>(len))
     {
     }
 };

@@ -1,14 +1,13 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
-#ifndef SERVERPRIVATE_ICE
-#define SERVERPRIVATE_ICE
+#pragma once
 
 #include <Test.ice>
 
@@ -43,6 +42,26 @@ exception UnknownDerivedException extends BaseException
     D2 pd2;
 };
 
+class MyClass
+{
+    int i;
 };
 
-#endif
+class PSUnknown extends Preserved
+{
+    string psu;
+    PNode graph;
+    MyClass cl;
+};
+
+class PSUnknown2 extends Preserved
+{
+    PBase pb;
+};
+
+exception PSUnknownException extends PreservedException
+{
+    PSUnknown2 p;
+};
+
+};

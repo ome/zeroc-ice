@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -48,6 +48,14 @@ internal class EndpointI : IceInternal.EndpointI
     public override short type()
     {
         return (short)(TYPE_BASE + _endpoint.type());
+    }
+
+    //
+    // Return the protocol name;
+    //
+    public override string protocol()
+    {
+        return _endpoint.protocol();
     }
 
     //
@@ -169,11 +177,11 @@ internal class EndpointI : IceInternal.EndpointI
     // Return connectors for this endpoint, or empty list if no connector
     // is available.
     //
-    public override List<IceInternal.Connector> connectors()
+    public override List<IceInternal.Connector> connectors(Ice.EndpointSelectionType selType)
     {
         _configuration.checkConnectorsException();
         List<IceInternal.Connector> connectors = new List<IceInternal.Connector>();
-        foreach(IceInternal.Connector connector in _endpoint.connectors())
+        foreach(IceInternal.Connector connector in _endpoint.connectors(selType))
         {
             connectors.Add(new Connector(connector));
         }
@@ -205,12 +213,12 @@ internal class EndpointI : IceInternal.EndpointI
         private IceInternal.EndpointI_connectors _callback;
     }
 
-    public override void connectors_async(IceInternal.EndpointI_connectors cb)
+    public override void connectors_async(Ice.EndpointSelectionType selType, IceInternal.EndpointI_connectors cb)
     {
         try
         {
             _configuration.checkConnectorsException();
-            _endpoint.connectors_async(new ConnectorsCallback(cb));
+            _endpoint.connectors_async(selType, new ConnectorsCallback(cb));
         }
         catch(Ice.LocalException ex)
         {
@@ -257,12 +265,7 @@ internal class EndpointI : IceInternal.EndpointI
     //
     // Compare endpoints for sorting purposes
     //
-    public override bool Equals(object obj)
-    {
-        return CompareTo(obj) == 0;
-    }
-
-    public override int CompareTo(object obj)
+    public override int CompareTo(IceInternal.EndpointI obj)
     {
         EndpointI p = null;
 
@@ -274,8 +277,7 @@ internal class EndpointI : IceInternal.EndpointI
         {
             try
             {
-                IceInternal.EndpointI e = (IceInternal.EndpointI)obj;
-                return type() < e.type() ? -1 : 1;
+                return type() < obj.type() ? -1 : 1;
             }
             catch(System.InvalidCastException)
             {

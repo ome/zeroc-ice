@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -30,7 +30,7 @@ main(int argc, char* argv[])
 }
 
 int
-SessionControlServer::run(int argc, char* argv[])
+SessionControlServer::run(int, char**)
 {
     communicator()->getProperties()->setProperty("SessionControlAdapter.Endpoints", "tcp -p 12010");
     ObjectAdapterPtr adapter = communicator()->createObjectAdapter("SessionControlAdapter");

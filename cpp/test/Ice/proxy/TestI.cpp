@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -30,7 +30,7 @@ MyDerivedClassI::shutdown(const Ice::Current& c)
 }
 
 Ice::Context
-MyDerivedClassI::getContext(const Ice::Current& c)
+MyDerivedClassI::getContext(const Ice::Current&)
 {
     return _ctx;
 }
@@ -39,10 +39,5 @@ bool
 MyDerivedClassI::ice_isA(const std::string& s, const Ice::Current& current) const
 {
     _ctx = current.ctx;
-    
-#if defined(_MSC_VER) && (_MSC_VER < 1300) // VC++ 6 compiler bug
-    return MyDerivedClass::ice_isA(s, current);
-#else
     return Test::MyDerivedClass::ice_isA(s, current);
-#endif
 }

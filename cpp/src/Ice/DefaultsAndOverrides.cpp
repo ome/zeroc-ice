@@ -1,12 +1,13 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
+#include <IceUtil/DisableWarnings.h>
 #include <Ice/DefaultsAndOverrides.h>
 #include <Ice/Properties.h>
 #include <Ice/Network.h>
@@ -95,4 +96,11 @@ IceInternal::DefaultsAndOverrides::DefaultsAndOverrides(const PropertiesPtr& pro
 
     const_cast<bool&>(defaultPreferSecure) =
         properties->getPropertyAsIntWithDefault("Ice.Default.PreferSecure", 0) > 0;
+
+    value = properties->getPropertyWithDefault("Ice.Default.EncodingVersion", encodingVersionToString(currentEncoding));
+    defaultEncoding = stringToEncodingVersion(value);
+    checkSupportedEncoding(defaultEncoding);
+
+    bool slicedFormat = properties->getPropertyAsIntWithDefault("Ice.Default.SlicedFormat", 0) > 0;
+    const_cast<FormatType&>(defaultFormat) = slicedFormat ? SlicedFormat : CompactFormat;
 }

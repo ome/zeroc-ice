@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -41,6 +41,7 @@ typedef IceUtil::Handle<NodeI> NodeIPtr;
 class NodeI : public Node, public IceUtil::Monitor<IceUtil::Mutex>
 {
 public:
+
     class Update : virtual public IceUtil::Shared
     {
     public:
@@ -51,6 +52,8 @@ public:
         virtual bool send() = 0;
 
         void finished(bool);
+        
+        void completed(const Ice::AsyncResultPtr&);
 
     protected:
 
@@ -66,7 +69,18 @@ public:
     virtual void loadServer_async(const AMD_Node_loadServerPtr&, 
                                   const InternalServerDescriptorPtr&, 
                                   const std::string&,
+                                  bool,
                                   const Ice::Current&);
+
+    virtual void loadServer_async(const AMD_Node_loadServerPtr&, 
+                                  const InternalServerDescriptorPtr&, 
+                                  const std::string&,
+                                  const Ice::Current&);
+
+    virtual void loadServerWithoutRestart_async(const AMD_Node_loadServerWithoutRestartPtr&, 
+                                                const InternalServerDescriptorPtr&, 
+                                                const std::string&,
+                                                const Ice::Current&);
 
     virtual void destroyServer_async(const AMD_Node_destroyServerPtr&, 
                                      const std::string&, 

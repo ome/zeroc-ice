@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -468,8 +468,8 @@ public class Client extends test.Util.Application
     public static void
     main(String[] args)
     {
-    	Client c = new Client();
-    	int status = c.main("Client", args);
+        Client c = new Client();
+        int status = c.main("Client", args);
         
         System.gc();
         System.exit(status);

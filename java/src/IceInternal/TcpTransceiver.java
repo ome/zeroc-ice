@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -85,9 +85,20 @@ final class TcpTransceiver implements Transceiver
         }
     }
     
+    @SuppressWarnings("deprecation") 
     public boolean
     write(Buffer buf)
     {
+        //
+        // We don't want write to be called on android main thread as this will cause
+        // NetworkOnMainThreadException to be thrown. If that is the android main thread
+        // we return false and this method will be later called from the thread pool.
+        //
+        if(Util.isAndroidMainThread(Thread.currentThread()))
+        {
+            return false;
+        }
+
         final int size = buf.b.limit();
         int packetSize = size - buf.b.position();
 
@@ -114,7 +125,7 @@ final class TcpTransceiver implements Transceiver
                 else if(ret == 0)
                 {
                     //
-                    // Writing would block, so we reset the limit (if necessary) and return true to indicate
+                    // Writing would block, so we reset the limit (if necessary) and return false to indicate
                     // that more data must be sent.
                     //
                     if(packetSize == _maxSendPacketSize)
@@ -158,6 +169,7 @@ final class TcpTransceiver implements Transceiver
         return true;
     }
 
+    @SuppressWarnings("deprecation") 
     public boolean
     read(Buffer buf, Ice.BooleanHolder moreData)
     {
@@ -225,20 +237,17 @@ final class TcpTransceiver implements Transceiver
     public Ice.ConnectionInfo
     getInfo()
     {
-        assert(_fd != null);
         Ice.TCPConnectionInfo info = new Ice.TCPConnectionInfo();
-        java.net.Socket socket = _fd.socket();
-        info.localAddress = socket.getLocalAddress().getHostAddress();
-        info.localPort = socket.getLocalPort();
-        if(socket.getInetAddress() != null)
+        if(_fd != null)
         {
-            info.remoteAddress = socket.getInetAddress().getHostAddress();
-            info.remotePort = socket.getPort();
-        }
-        else
-        {
-            info.remoteAddress = "";
-            info.remotePort = -1;
+            java.net.Socket socket = _fd.socket();
+            info.localAddress = socket.getLocalAddress().getHostAddress();
+            info.localPort = socket.getLocalPort();
+            if(socket.getInetAddress() != null)
+            {
+                info.remoteAddress = socket.getInetAddress().getHostAddress();
+                info.remotePort = socket.getPort();
+            }
         }
         return info;
     }
@@ -255,6 +264,7 @@ final class TcpTransceiver implements Transceiver
     //
     // Only for use by TcpConnector, TcpAcceptor
     //
+    @SuppressWarnings("deprecation") 
     TcpTransceiver(Instance instance, java.nio.channels.SocketChannel fd, boolean connected,
                    java.net.InetSocketAddress connectAddr)
     {
@@ -286,15 +296,25 @@ final class TcpTransceiver implements Transceiver
     finalize()
         throws Throwable
     {
-        IceUtilInternal.Assert.FinalizerAssert(_fd == null);
-
-        super.finalize();
+        try
+        {
+            IceUtilInternal.Assert.FinalizerAssert(_fd == null);
+        }
+        catch(java.lang.Exception ex)
+        {
+        }
+        finally
+        {
+            super.finalize();
+        }
     }
 
     private java.nio.channels.SocketChannel _fd;
     private java.net.InetSocketAddress _connectAddr;
     private TraceLevels _traceLevels;
     private Ice.Logger _logger;
+    
+    @SuppressWarnings("deprecation")
     private Ice.Stats _stats;
     private String _desc;
     private int _state;

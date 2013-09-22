@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -22,6 +22,27 @@ public class ServiceManagerI extends _ServiceManagerDisp
         _logger = _communicator.getLogger();
         _argv = args;
         _traceServiceObserver = _communicator.getProperties().getPropertyAsInt("IceBox.Trace.ServiceObserver");
+        _observerCompletedCB = new Ice.Callback()
+            {
+                public void completed(Ice.AsyncResult result)
+                {
+                    try
+                    {
+                        result.throwLocalException();
+                    }
+                    catch(Ice.LocalException ex)
+                    {
+                        ServiceObserverPrx observer = ServiceObserverPrxHelper.uncheckedCast(result.getProxy());
+                        synchronized(ServiceManagerI.this)
+                        {
+                            if(_observers.remove(observer))
+                            {
+                                observerRemoved(observer, ex);
+                            }
+                        }
+                    }
+                }
+            };
     }
 
     public java.util.Map<String, String>
@@ -193,7 +214,6 @@ public class ServiceManagerI extends _ServiceManagerDisp
                                   "Added service observer " + _communicator.proxyToString(observer));
                 }
 
-
                 for(ServiceInfo info: _services)
                 {
                     if(info.status == StatusStarted)
@@ -201,29 +221,12 @@ public class ServiceManagerI extends _ServiceManagerDisp
                         activeServices.add(info.name);
                     }
                 }
-
             }
         }
 
         if(activeServices.size() > 0)
         {
-            AMI_ServiceObserver_servicesStarted cb = new AMI_ServiceObserver_servicesStarted()
-                {
-                    public void ice_response()
-                    {
-                        // ok, success
-                    }
-
-                    public void ice_exception(Ice.LocalException ex)
-                    {
-                        //
-                        // Drop this observer
-                        //
-                        removeObserver(observer, ex);
-                    }
-                };
-
-            observer.servicesStarted_async(cb, activeServices.toArray(new String[0]));
+            observer.begin_servicesStarted(activeServices.toArray(new String[0]), _observerCompletedCB);
         }
     }
 
@@ -246,7 +249,7 @@ public class ServiceManagerI extends _ServiceManagerDisp
             // will most likely need to be firewalled for security reasons.
             //
             Ice.ObjectAdapter adapter = null;
-            if(!properties.getProperty("IceBox.ServiceManager.Endpoints").equals(""))
+            if(properties.getProperty("IceBox.ServiceManager.Endpoints").length() != 0)
             {
                 adapter = _communicator.createObjectAdapter("IceBox.ServiceManager");
 
@@ -260,7 +263,7 @@ public class ServiceManagerI extends _ServiceManagerDisp
             // Parse the property set with the prefix "IceBox.Service.". These
             // properties should have the following format:
             //
-            // IceBox.Service.Foo=Package.Foo [args]
+            // IceBox.Service.Foo=[jar-or-dir:]Package.Foo [args]
             //
             // We parse the service properties specified in IceBox.LoadOrder
             // first, then the ones from remaining services.
@@ -345,12 +348,34 @@ public class ServiceManagerI extends _ServiceManagerDisp
                     //
                     service.args = initData.properties.parseCommandLineOptions(service.name, service.args);
                 }
+
+                //
+                // If Ice metrics are enabled on the IceBox communicator, we also enable them on the 
+                // shared communicator.
+                // 
+                IceInternal.MetricsAdminI metricsAdmin = null;
+                if(_communicator.getObserver() instanceof IceInternal.CommunicatorObserverI)
+                {
+                    metricsAdmin = new IceInternal.MetricsAdminI(initData.properties, Ice.Util.getProcessLogger());
+                    initData.observer = new IceInternal.CommunicatorObserverI(metricsAdmin);
+                }
+
                 _sharedCommunicator = Ice.Util.initialize(initData);
+
+                //
+                // Ensure the metrics admin plugin uses the same property set as the
+                // communicator. This is necessary to correctly deal with runtime 
+                // property updates.
+                //
+                if(metricsAdmin != null)
+                {
+                    metricsAdmin.setProperties(_sharedCommunicator.getProperties());
+                }
             }
 
             for(StartServiceInfo s : servicesInfo)
             {
-                start(s.name, s.className, s.args);
+                start(s.name, s.className, s.classDir, s.absolutePath, s.args);
             }
 
             //
@@ -386,17 +411,6 @@ public class ServiceManagerI extends _ServiceManagerDisp
             try
             {
                 _communicator.addAdminFacet(this, "IceBox.ServiceManager");
-
-                //
-                // Add a Properties facet for each service
-                //
-                for(ServiceInfo info: _services)
-                {
-                    Ice.Communicator communicator = info.communicator != null ? info.communicator : _sharedCommunicator;
-                    _communicator.addAdminFacet(new PropertiesAdminI(communicator.getProperties()),
-                                                         "IceBox.Service." + info.name + ".Properties");
-                }
-
                 _communicator.getAdmin();
             }
             catch(Ice.ObjectAdapterDeactivatedException ex)
@@ -425,11 +439,6 @@ public class ServiceManagerI extends _ServiceManagerDisp
 
             _communicator.waitForShutdown();
             Ice.Application.defaultInterrupt();
-
-            //
-            // Invoke stop() on the services.
-            //
-            stopAll();
         }
         catch(FailureException ex)
         {
@@ -439,7 +448,6 @@ public class ServiceManagerI extends _ServiceManagerDisp
             ex.printStackTrace(pw);
             pw.flush();
             _logger.error(sw.toString());
-            stopAll();
             return 1;
         }
         catch(Throwable ex)
@@ -449,123 +457,123 @@ public class ServiceManagerI extends _ServiceManagerDisp
             ex.printStackTrace(pw);
             pw.flush();
             _logger.error("ServiceManager: caught exception:\n" + sw.toString());
-            stopAll();
             return 1;
+        }
+        finally
+        {
+            //
+            // Invoke stop() on the services.
+            //
+            stopAll();
         }
 
         return 0;
     }
 
     synchronized private void
-    start(String service, String className, String[] args)
+    start(String service, String className, String classDir, boolean absolutePath, String[] args)
         throws FailureException
     {
         //
-        // Instantiate the class.
+        // Load the class.
         //
+
+        //
+        // Use a class loader if the user specified a JAR file or class directory.
+        //
+        Class<?> c = null;
+        if(classDir != null)
+        {
+            try
+            {
+                if(!absolutePath)
+                {
+                    classDir = new java.io.File(System.getProperty("user.dir") + java.io.File.separator +
+                                                classDir).getCanonicalPath();
+                }
+                
+                if(!classDir.endsWith(java.io.File.separator) && !classDir.endsWith(".jar"))
+                {
+                    classDir += java.io.File.separator;
+                }
+                
+                //
+                // Reuse an existing class loader if we have already loaded a plug-in with
+                // the same value for classDir, otherwise create a new one.
+                //
+                ClassLoader cl = null;
+                
+                if(_classLoaders == null)
+                {
+                    _classLoaders = new java.util.HashMap<String, ClassLoader>();
+                }
+                else
+                {
+                    cl = _classLoaders.get(classDir);
+                }
+                
+                if(cl == null)
+                {
+                    final java.net.URL[] url = new java.net.URL[] { new java.net.URL("file:///" + classDir) };
+                    
+                    cl = new java.net.URLClassLoader(url);
+                    
+                    _classLoaders.put(classDir, cl);
+                }
+                
+                c = cl.loadClass(className);
+            }
+            catch(java.net.MalformedURLException ex)
+            {
+                throw new FailureException("ServiceManager: invalid entry point format `" + classDir + "'", ex);
+            }
+            catch(java.io.IOException ex)
+            {
+                throw new FailureException("ServiceManager: invalid path in plug-in entry point `" + classDir +
+                                           "'", ex);
+            }
+            catch(java.lang.ClassNotFoundException ex)
+            {
+                // Ignored
+            }
+        }
+        else
+        {
+            c = IceInternal.Util.findClass(className, null);
+        }
+        
+        if(c == null)
+        {
+            throw new FailureException("ServiceManager: class " + className + " not found");
+        }
+
         ServiceInfo info = new ServiceInfo();
         info.name = service;
         info.status = StatusStopped;
         info.args = args;
 
-        try
-        {
-            Class<?> c = IceInternal.Util.findClass(className, null);
-            if(c == null)
-            {
-                FailureException e = new FailureException();
-                e.reason = "ServiceManager: class " + className + " not found";
-                throw e;
-            }
-
-            //
-            // If the service class provides a constructor that accepts an Ice.Communicator argument,
-            // use that in preference to the default constructor.
-            //
-            java.lang.Object obj = null;
-            try
-            {
-                java.lang.reflect.Constructor<?> con = c.getDeclaredConstructor(Ice.Communicator.class);
-                obj = con.newInstance(_communicator);
-            }
-            catch(IllegalAccessException ex)
-            {
-                throw new FailureException(
-                    "ServiceManager: unable to access service constructor " + className + "(Ice.Communicator)", ex);
-            }
-            catch(NoSuchMethodException ex)
-            {
-                // Ignore.
-            }
-            catch(java.lang.reflect.InvocationTargetException ex)
-            {
-                if(ex.getCause() != null)
-                {
-                    throw ex.getCause();
-                }
-                else
-                {
-                    throw new FailureException("ServiceManager: exception in service constructor for " + className, ex);
-                }
-            }
-
-            if(obj == null)
-            {
-                //
-                // Fall back to the default constructor.
-                //
-                try
-                {
-                    obj = c.newInstance();
-                }
-                catch(IllegalAccessException ex)
-                {
-                    throw new FailureException(
-                        "ServiceManager: unable to access default service constructor in class " + className, ex);
-                }
-            }
-
-            try
-            {
-                info.service = (Service)obj;
-            }
-            catch(ClassCastException ex)
-            {
-                throw new FailureException("ServiceManager: class " + className + " does not implement IceBox.Service");
-            }
-        }
-        catch(InstantiationException ex)
-        {
-            throw new FailureException("ServiceManager: unable to instantiate class " + className, ex);
-        }
-        catch(FailureException ex)
-        {
-            throw ex;
-        }
-        catch(Throwable ex)
-        {
-            throw new FailureException("ServiceManager: exception in service constructor for " + className, ex);
-        }
-
         //
-        // Invoke Service::start().
+        // If Ice.UseSharedCommunicator.<name> is defined, create a
+        // communicator for the service. The communicator inherits
+        // from the shared communicator properties. If it's not
+        // defined, add the service properties to the shared
+        // commnunicator property set.
         //
-        try
+        Ice.Communicator communicator;
+        IceInternal.MetricsAdminI metricsAdmin = null;
+        if(_communicator.getProperties().getPropertyAsInt("IceBox.UseSharedCommunicator." + service) > 0)
         {
-            //
-            // If Ice.UseSharedCommunicator.<name> is defined, create a
-            // communicator for the service. The communicator inherits
-            // from the shared communicator properties. If it's not
-            // defined, add the service properties to the shared
-            // commnunicator property set.
-            //
-            Ice.Communicator communicator;
-            if(_communicator.getProperties().getPropertyAsInt("IceBox.UseSharedCommunicator." + service) > 0)
+            assert(_sharedCommunicator != null);
+            communicator = _sharedCommunicator;
+            if(communicator.getObserver() instanceof IceInternal.CommunicatorObserverI)
             {
-                assert(_sharedCommunicator != null);
-                communicator = _sharedCommunicator;
+                IceInternal.CommunicatorObserverI o = (IceInternal.CommunicatorObserverI)communicator.getObserver();
+                metricsAdmin = o.getMetricsAdmin();
             }
-            else
+        }
+        else
+        {
+            try
             {
                 //
                 // Create the service properties. We use the communicator properties as the default
@@ -588,12 +596,28 @@ public class ServiceManagerI extends _ServiceManagerDisp
                     //
                     serviceArgs.value = initData.properties.parseCommandLineOptions(service, serviceArgs.value);
                 }
+                
+                //
+                // Clone the logger to assign a new prefix. If one of the built-in loggers is configured
+                // don't set any logger.
+                //
+                if(initData.properties.getProperty("Ice.LogFile").length() == 0 &&
+                   (initData.properties.getPropertyAsInt("Ice.UseSyslog") == 0 ||
+                    System.getProperty("os.name").startsWith("Windows")))
+                {
+                    initData.logger = _logger.cloneWithPrefix(initData.properties.getProperty("Ice.ProgramName"));
+                }
 
                 //
-                // Clone the logger to assign a new prefix.
-                //
-                initData.logger = _logger.cloneWithPrefix(initData.properties.getProperty("Ice.ProgramName"));
-
+                // If Ice metrics are enabled on the IceBox communicator, we also enable them on
+                // the service communicator.
+                // 
+                if(_communicator.getObserver() instanceof IceInternal.CommunicatorObserverI)
+                {
+                    metricsAdmin = new IceInternal.MetricsAdminI(initData.properties, initData.logger);
+                    initData.observer = new IceInternal.CommunicatorObserverI(metricsAdmin);
+                }
+                
                 //
                 // Remaining command line options are passed to the communicator. This is
                 // necessary for Ice plug-in properties (e.g.: IceSSL).
@@ -601,12 +625,129 @@ public class ServiceManagerI extends _ServiceManagerDisp
                 info.communicator = Ice.Util.initialize(serviceArgs, initData);
                 info.args = serviceArgs.value;
                 communicator = info.communicator;
+
+                //
+                // Ensure the metrics admin plugin uses the same property set as the
+                // communicator. This is necessary to correctly deal with runtime 
+                // property updates.
+                //
+                if(metricsAdmin != null)
+                {
+                    metricsAdmin.setProperties(communicator.getProperties());
+                }
+            }
+            catch(Throwable ex)
+            {
+                FailureException e = new FailureException();
+                e.reason = "ServiceManager: exception while starting service " + service;
+                e.initCause(ex);
+                throw e;
+            }
+        }
+
+        try
+        {
+            //
+            // Add a PropertiesAdmin facet to the service manager's communicator that provides
+            // access to this service's property set. We do this prior to instantiating the
+            // service so that the service's constructor is able to access the facet (e.g.,
+            // in case it wants to set a callback).
+            //
+            final String facetName = "IceBox.Service." + service + ".Properties";
+            IceInternal.PropertiesAdminI propAdmin = new IceInternal.PropertiesAdminI(facetName, 
+                                                                                      communicator.getProperties(), 
+                                                                                      communicator.getLogger());
+            _communicator.addAdminFacet(propAdmin, facetName);
+
+            //
+            // If a metrics admin facet is setup for the service, register
+            // it with the IceBox communicator.
+            //
+            if(metricsAdmin != null)
+            {
+                _communicator.addAdminFacet(metricsAdmin, "IceBox.Service." + info.name + ".Metrics");
+
+                // Ensure the metrics admin facet is notified of property updates.
+                propAdmin.addUpdateCallback(metricsAdmin);
+            }
+
+            //
+            // Instantiate the service.
+            //
+            try
+            {
+                //
+                // If the service class provides a constructor that accepts an Ice.Communicator argument,
+                // use that in preference to the default constructor.
+                //
+                java.lang.Object obj = null;
+                try
+                {
+                    java.lang.reflect.Constructor<?> con = c.getDeclaredConstructor(Ice.Communicator.class);
+                    obj = con.newInstance(_communicator);
+                }
+                catch(IllegalAccessException ex)
+                {
+                    throw new FailureException(
+                        "ServiceManager: unable to access service constructor " + className + "(Ice.Communicator)", ex);
+                }
+                catch(NoSuchMethodException ex)
+                {
+                    // Ignore.
+                }
+                catch(java.lang.reflect.InvocationTargetException ex)
+                {
+                    if(ex.getCause() != null)
+                    {
+                        throw ex.getCause();
+                    }
+                    else
+                    {
+                        throw new FailureException("ServiceManager: exception in service constructor for " + className, ex);
+                    }
+                }
+
+                if(obj == null)
+                {
+                    //
+                    // Fall back to the default constructor.
+                    //
+                    try
+                    {
+                        obj = c.newInstance();
+                    }
+                    catch(IllegalAccessException ex)
+                    {
+                        throw new FailureException(
+                            "ServiceManager: unable to access default service constructor in class " + className, ex);
+                    }
+                }
+
+                try
+                {
+                    info.service = (Service)obj;
+                }
+                catch(ClassCastException ex)
+                {
+                    throw new FailureException("ServiceManager: class " + className + " does not implement IceBox.Service");
+                }
+            }
+            catch(InstantiationException ex)
+            {
+                throw new FailureException("ServiceManager: unable to instantiate class " + className, ex);
+            }
+            catch(FailureException ex)
+            {
+                throw ex;
+            }
+            catch(Throwable ex)
+            {
+                throw new FailureException("ServiceManager: exception in service constructor for " + className, ex);
             }
 
             try
             {
                 info.service.start(service, communicator, info.args);
-                info.status = StatusStarted;
 
                 //
                 // There is no need to notify the observers since the 'start all'
@@ -615,58 +756,48 @@ public class ServiceManagerI extends _ServiceManagerDisp
                 // object adapter (so before any observer can be registered)
                 //
             }
-            catch(Throwable ex)
+            catch(FailureException ex)
             {
-                if(info.communicator != null)
-                {
-                    try
-                    {
-                        info.communicator.shutdown();
-                        info.communicator.waitForShutdown();
-                    }
-                    catch(Ice.CommunicatorDestroyedException e)
-                    {
-                        //
-                        // Ignore, the service might have already destroyed
-                        // the communicator for its own reasons.
-                        //
-                    }
-                    catch(java.lang.Exception e)
-                    {
-                        java.io.StringWriter sw = new java.io.StringWriter();
-                        java.io.PrintWriter pw = new java.io.PrintWriter(sw);
-                        e.printStackTrace(pw);
-                        pw.flush();
-                        _logger.warning("ServiceManager: exception while shutting down communicator for service "
-                                        + service + ":\n" + sw.toString());
-                    }
-
-                    try
-                    {
-                        info.communicator.destroy();
-                    }
-                    catch(java.lang.Exception e)
-                    {
-                        java.io.StringWriter sw = new java.io.StringWriter();
-                        java.io.PrintWriter pw = new java.io.PrintWriter(sw);
-                        e.printStackTrace(pw);
-                        pw.flush();
-                        _logger.warning("ServiceManager: exception while destroying communicator for service "
-                                        + service + ":\n" + sw.toString());
-                    }
-                }
                 throw ex;
             }
+            catch(Throwable ex)
+            {
+                FailureException e = new FailureException();
+                e.reason = "ServiceManager: exception while starting service " + service;
+                e.initCause(ex);
+                throw e;
+            }
 
+            info.status = StatusStarted;
             _services.add(info);
         }
-        catch(FailureException ex)
+        catch(Ice.ObjectAdapterDeactivatedException ex)
         {
-            throw ex;
+            //
+            // Can be raised by addAdminFacet if the service manager communicator has been shut down.
+            //
+            if(info.communicator != null)
+            {
+                destroyServiceCommunicator(service, info.communicator);
+            }
         }
-        catch(Throwable ex)
+        catch(RuntimeException ex)
         {
-            throw new FailureException("ServiceManager: exception while starting service " + service, ex);
+            try
+            {
+                _communicator.removeAdminFacet("IceBox.Service." + service + ".Properties");
+            }
+            catch(Ice.LocalException e)
+            {
+                // Ignored
+            }
+
+            if(info.communicator != null)
+            {
+                destroyServiceCommunicator(service, info.communicator);
+            }
+
+            throw ex;
         }
     }
 
@@ -726,41 +857,7 @@ public class ServiceManagerI extends _ServiceManagerDisp
 
             if(info.communicator != null)
             {
-                try
-                {
-                    info.communicator.shutdown();
-                    info.communicator.waitForShutdown();
-                }
-                catch(Ice.CommunicatorDestroyedException e)
-                {
-                    //
-                    // Ignore, the service might have already destroyed
-                    // the communicator for its own reasons.
-                    //
-                }
-                catch(java.lang.Exception e)
-                {
-                    java.io.StringWriter sw = new java.io.StringWriter();
-                    java.io.PrintWriter pw = new java.io.PrintWriter(sw);
-                    e.printStackTrace(pw);
-                    pw.flush();
-                    _logger.warning("ServiceManager: exception while stopping service " + info.name + ":\n" +
-                                    sw.toString());
-                }
-
-                try
-                {
-                    info.communicator.destroy();
-                }
-                catch(java.lang.Exception e)
-                {
-                    java.io.StringWriter sw = new java.io.StringWriter();
-                    java.io.PrintWriter pw = new java.io.PrintWriter(sw);
-                    e.printStackTrace(pw);
-                    pw.flush();
-                    _logger.warning("ServiceManager: exception while stopping service " + info.name + ":\n" +
-                                    sw.toString());
-                }
+                destroyServiceCommunicator(info.name, info.communicator);
             }
         }
 
@@ -794,23 +891,7 @@ public class ServiceManagerI extends _ServiceManagerDisp
 
             for(final ServiceObserverPrx observer: observers)
             {
-                AMI_ServiceObserver_servicesStarted cb = new AMI_ServiceObserver_servicesStarted()
-                    {
-                        public void ice_response()
-                        {
-                            // ok, success
-                        }
-
-                        public void ice_exception(Ice.LocalException ex)
-                        {
-                            //
-                            // Drop this observer
-                            //
-                            removeObserver(observer, ex);
-                        }
-                    };
-
-                observer.servicesStarted_async(cb, servicesArray);
+                observer.begin_servicesStarted(servicesArray, _observerCompletedCB);
             }
         }
     }
@@ -824,33 +905,8 @@ public class ServiceManagerI extends _ServiceManagerDisp
 
             for(final ServiceObserverPrx observer: observers)
             {
-                AMI_ServiceObserver_servicesStopped cb = new AMI_ServiceObserver_servicesStopped()
-                    {
-                        public void ice_response()
-                        {
-                            // ok, success
-                        }
-
-                        public void ice_exception(Ice.LocalException ex)
-                        {
-                            //
-                            // Drop this observer
-                            //
-                            removeObserver(observer, ex);
-                        }
-                    };
-
-                observer.servicesStopped_async(cb, servicesArray);
+                observer.begin_servicesStopped(servicesArray, _observerCompletedCB);
             }
-        }
-    }
-
-    private synchronized void
-    removeObserver(ServiceObserverPrx observer, Ice.LocalException ex)
-    {
-        if(_observers.remove(observer))
-        {
-            observerRemoved(observer, ex);
         }
     }
 
@@ -900,28 +956,6 @@ public class ServiceManagerI extends _ServiceManagerDisp
         public String[] args;
     }
 
-    static class PropertiesAdminI extends Ice._PropertiesAdminDisp
-    {
-        PropertiesAdminI(Ice.Properties properties)
-        {
-            _properties = properties;
-        }
-
-        public String
-        getProperty(String name, Ice.Current current)
-        {
-            return _properties.getProperty(name);
-        }
-
-        public java.util.TreeMap<String, String>
-        getPropertiesForPrefix(String name, Ice.Current current)
-        {
-            return new java.util.TreeMap<String, String>(_properties.getPropertiesForPrefix(name));
-        }
-
-        private final Ice.Properties _properties;
-    }
-
     static class StartServiceInfo
     {
         StartServiceInfo(String service, String value, String[] serverArgs)
@@ -929,28 +963,85 @@ public class ServiceManagerI extends _ServiceManagerDisp
             name = service;
 
             //
-            // Separate the entry point from the arguments.
+            // We support the following formats:
             //
-            int pos = IceUtilInternal.StringUtil.findFirstOf(value, " \t\n");
-            if(pos == -1)
+            // <class-name> [args]
+            // <jar-file>:<class-name> [args]
+            // <class-dir>:<class-name> [args]
+            // "<path with spaces>":<class-name> [args]
+            // "<path with spaces>:<class-name>" [args]
+            //
+
+            try
             {
-                className = value;
-                args = new String[0];
+                args = IceUtilInternal.Options.split(value);
+            }
+            catch(IceUtilInternal.Options.BadQuote ex)
+            {
+                throw new FailureException("ServiceManager: invalid arguments for service `" + name + "':\n" +
+                                           ex.getMessage());
+            }
+
+            assert(args.length > 0);
+
+            final String entryPoint = args[0];
+
+            final boolean isWindows = System.getProperty("os.name").startsWith("Windows");
+            absolutePath = false;
+
+            //
+            // Find first ':' that isn't part of the file path.
+            //
+            int pos = entryPoint.indexOf(':');
+            if(isWindows)
+            {
+                final String driveLetters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+                if(pos == 1 && entryPoint.length() > 2 && driveLetters.indexOf(entryPoint.charAt(0)) != -1 &&
+                   (entryPoint.charAt(2) == '\\' || entryPoint.charAt(2) == '/'))
+                {
+                    absolutePath = true;
+                    pos = entryPoint.indexOf(':', pos + 1);
+                }
+                if(!absolutePath)
+                {
+                    absolutePath = entryPoint.startsWith("\\\\");
+                }
             }
             else
             {
-                className = value.substring(0, pos);
-                try
-                {
-                    args = IceUtilInternal.Options.split(value.substring(pos));
-                }
-                catch(IceUtilInternal.Options.BadQuote ex)
-                {
-                    FailureException e = new FailureException();
-                    e.reason = "ServiceManager: invalid arguments for service `" + name + "':\n" + ex.toString();
-                    throw e;
-                }
+                absolutePath = entryPoint.startsWith("/");
             }
+
+            if((pos == -1 && absolutePath) || (pos != -1 && entryPoint.length() <= pos + 1))
+            {
+                //
+                // Class name is missing.
+                //
+                throw new FailureException("ServiceManager: invalid entry point for service `" + name + "':\n" +
+                                           entryPoint);
+            }
+
+            //
+            // Extract the JAR file or subdirectory, if any.
+            //
+            classDir = null; // Path name of JAR file or subdirectory.
+
+            if(pos == -1)
+            {
+                className = entryPoint;
+            }
+            else
+            {
+                classDir = entryPoint.substring(0, pos).trim();
+                className = entryPoint.substring(pos + 1).trim();
+            }
+
+            //
+            // Shift the arguments.
+            //
+            String[] tmp = new String[args.length - 1];
+            System.arraycopy(args, 1, tmp, 0, args.length - 1);
+            args = tmp;
 
             if(serverArgs.length > 0)
             {
@@ -969,6 +1060,8 @@ public class ServiceManagerI extends _ServiceManagerDisp
         String name;
         String[] args;
         String className;
+        String classDir;
+        boolean absolutePath;
     }
 
     private Ice.Properties
@@ -998,13 +1091,54 @@ public class ServiceManagerI extends _ServiceManagerDisp
         return properties;
     }
 
+    private void
+    destroyServiceCommunicator(String service, Ice.Communicator communicator)
+    {
+        try
+        {
+            communicator.shutdown();
+            communicator.waitForShutdown();
+        }
+        catch(Ice.CommunicatorDestroyedException e)
+        {
+            //
+            // Ignore, the service might have already destroyed
+            // the communicator for its own reasons.
+            //
+        }
+        catch(java.lang.Exception e)
+        {
+            java.io.StringWriter sw = new java.io.StringWriter();
+            java.io.PrintWriter pw = new java.io.PrintWriter(sw);
+            e.printStackTrace(pw);
+            pw.flush();
+            _logger.warning("ServiceManager: exception in shutting down communicator for service "
+                            + service + "\n" + sw.toString());
+        }
+
+        try
+        {
+            communicator.destroy();
+        }
+        catch(java.lang.Exception e)
+        {
+            java.io.StringWriter sw = new java.io.StringWriter();
+            java.io.PrintWriter pw = new java.io.PrintWriter(sw);
+            e.printStackTrace(pw);
+            pw.flush();
+            _logger.warning("ServiceManager: exception in destroying communicator for service "
+                            + service + "\n" + sw.toString());
+        }
+    }
+
     private Ice.Communicator _communicator;
     private Ice.Communicator _sharedCommunicator;
     private Ice.Logger _logger;
     private String[] _argv; // Filtered server argument vector
     private java.util.List<ServiceInfo> _services = new java.util.LinkedList<ServiceInfo>();
     private boolean _pendingStatusChanges = false;
-
-    java.util.HashSet<ServiceObserverPrx> _observers = new java.util.HashSet<ServiceObserverPrx>();
-    int _traceServiceObserver = 0;
+    private Ice.Callback _observerCompletedCB;
+    private java.util.HashSet<ServiceObserverPrx> _observers = new java.util.HashSet<ServiceObserverPrx>();
+    private int _traceServiceObserver = 0;
+    private java.util.Map<String, ClassLoader> _classLoaders;
 }

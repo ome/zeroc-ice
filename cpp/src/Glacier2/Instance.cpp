@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -9,6 +9,8 @@
 
 #include <Glacier2/SessionRouterI.h>
 #include <Glacier2/Instance.h>
+#include <Glacier2/InstrumentationI.h>
+#include <Ice/InstrumentationI.h>
 
 using namespace std;
 using namespace Glacier2;
@@ -62,6 +64,19 @@ Glacier2::Instance::Instance(const Ice::CommunicatorPtr& communicator, const Ice
     }
 
     const_cast<ProxyVerifierPtr&>(_proxyVerifier) = new ProxyVerifier(communicator);
+
+    //
+    // If an Ice metrics observer is setup on the communicator, also
+    // enable metrics for IceStorm.
+    //
+    IceInternal::CommunicatorObserverIPtr o = 
+        IceInternal::CommunicatorObserverIPtr::dynamicCast(communicator->getObserver());
+    if(o)
+    {
+        const_cast<Glacier2::Instrumentation::RouterObserverPtr&>(_observer) = 
+            new RouterObserverI(o->getMetricsAdmin(), 
+                                _properties->getPropertyWithDefault("Glacier2.InstanceName", "Glacier2"));
+    }
 }
 
 Glacier2::Instance::~Instance()

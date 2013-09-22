@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -33,7 +33,7 @@ class Cond;
 // `IceUtil::noncopyable' inaccessible in `IceInternal::Outgoing' due
 // to ambiguity
 //
-class Mutex
+class ICE_UTIL_API Mutex
 {
 public:
 
@@ -86,6 +86,9 @@ private:
 #ifdef _WIN32
     struct LockState
     {
+#   ifdef ICE_HAS_WIN32_CONDVAR
+        CRITICAL_SECTION* mutex;
+#   endif 
     };
 #else
     struct LockState
@@ -119,22 +122,30 @@ Mutex::Mutex()
 #endif
 }
 
+#ifdef _WIN32
+inline
+Mutex::Mutex(MutexProtocol)
+{
+    init(PrioNone);
+}
+#else
 inline
 Mutex::Mutex(MutexProtocol protocol)
 {
-#ifdef _WIN32
-    init(PrioNone);
-#else
     init(protocol);
-#endif
 }
+#endif
 
 #ifdef _WIN32
 
 inline void
 Mutex::init(MutexProtocol)
 {
+#ifdef ICE_OS_WINRT
+    InitializeCriticalSectionEx(&_mutex, 0, 0);
+#else
     InitializeCriticalSection(&_mutex);
+#endif
 }
 
 inline
@@ -172,6 +183,18 @@ Mutex::unlock() const
     LeaveCriticalSection(&_mutex);
 }
 
+#  ifdef ICE_HAS_WIN32_CONDVAR
+inline void
+Mutex::unlock(LockState& state) const
+{
+    state.mutex = &_mutex;
+}
+
+inline void
+Mutex::lock(LockState&) const
+{
+}
+#  else
 inline void
 Mutex::unlock(LockState&) const
 {
@@ -183,11 +206,16 @@ Mutex::lock(LockState&) const
 {
     EnterCriticalSection(&_mutex);
 }
+#   endif
 
 #else
 
 inline void
-Mutex::init(MutexProtocol protocol)
+Mutex::init(MutexProtocol 
+#if defined(_POSIX_THREAD_PRIO_INHERIT) && _POSIX_THREAD_PRIO_INHERIT > 0
+            protocol
+#endif
+            )
 {
     int rc;
     pthread_mutexattr_t attr;
@@ -251,9 +279,13 @@ Mutex::init(MutexProtocol protocol)
 inline
 Mutex::~Mutex()
 {
+#ifndef NDEBUG
     int rc = 0;
     rc = pthread_mutex_destroy(&_mutex);
     assert(rc == 0);
+#else
+    pthread_mutex_destroy(&_mutex);
+#endif
 }
 
 inline void

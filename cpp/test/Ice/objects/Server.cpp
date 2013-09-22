@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -8,7 +8,10 @@
 // **********************************************************************
 
 #include <Ice/Ice.h>
+#include <TestCommon.h>
 #include <TestI.h>
+
+DEFINE_TEST("server")
 
 using namespace std;
 using namespace Test;
@@ -43,7 +46,7 @@ public:
 };
 
 int
-run(int argc, char* argv[], const Ice::CommunicatorPtr& communicator)
+run(int, char**, const Ice::CommunicatorPtr& communicator)
 {
     Ice::ObjectFactoryPtr factory = new MyObjectFactory;
     communicator->addObjectFactory(factory, "::Test::I");
@@ -57,6 +60,7 @@ run(int argc, char* argv[], const Ice::CommunicatorPtr& communicator)
     UnexpectedObjectExceptionTestIPtr uoet = new UnexpectedObjectExceptionTestI;
     adapter->add(uoet, communicator->stringToIdentity("uoet"));
     adapter->activate();
+    TEST_READY
     communicator->waitForShutdown();
     return EXIT_SUCCESS;
 }

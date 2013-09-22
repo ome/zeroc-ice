@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -15,6 +15,11 @@
 #include <IceStorm/Election.h>
 #include <IceStorm/Replica.h>
 
+#ifdef __SUNPRO_CC
+#  pragma error_messages(off,hidef)
+#endif
+
+
 namespace IceStorm
 {
 class Instance;
@@ -25,23 +30,6 @@ typedef IceUtil::Handle<TraceLevels> TraceLevelsPtr;
 
 namespace IceStormElection
 {
-
-class AMICall : virtual public IceUtil::Shared,
-                virtual public IceUtil::Monitor<IceUtil::Mutex>
-{
-public:
-
-    AMICall();
-
-    void response();
-    void exception(const IceUtil::Exception& e);
-    void waitResponse();
-
-private:
-    bool _response;
-    std::auto_ptr<IceUtil::Exception> _ex;
-};
-typedef IceUtil::Handle<AMICall> AMICallPtr;
 
 class Observers : public IceUtil::Shared, public IceUtil::Mutex
 {
@@ -73,7 +61,7 @@ private:
             id(i), observer(o) {}
         int id;
         ReplicaObserverPrx observer;
-        AMICallPtr call;
+        ::Ice::AsyncResultPtr result;
     };
     std::vector<ObserverInfo> _observers;
     IceUtil::Mutex _reapedMutex;
@@ -82,5 +70,9 @@ private:
 typedef IceUtil::Handle<Observers> ObserversPtr;
 
 }
+
+#ifdef __SUNPRO_CC
+#  pragma error_messages(default,hidef)
+#endif
 
 #endif // OBSERVERS_H

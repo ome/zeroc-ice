@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -12,12 +12,12 @@ package IceInternal;
 public final class OutgoingConnectionFactory
 {
     //
-    // Helper class to to multi hash map.
+    // Helper class to multi hash map.
     //
     private static class MultiHashMap<K, V> extends java.util.HashMap<K, java.util.List<V>>
     {
         public void
-        put(K key, V value)
+        putOne(K key, V value)
         {
             java.util.List<V> list = this.get(key);
             if(list == null)
@@ -40,7 +40,7 @@ public final class OutgoingConnectionFactory
             }
         }
     };
-    
+
     interface CreateConnectionCallback
     {
         void setConnection(Ice.ConnectionI connection, boolean compress);
@@ -64,7 +64,20 @@ public final class OutgoingConnectionFactory
         }
 
         _destroyed = true;
+        _communicator = null;
         notifyAll();
+    }
+
+    public synchronized void
+    updateConnectionObservers()
+    {
+        for(java.util.List<Ice.ConnectionI> connectionList : _connections.values())
+        {
+            for(Ice.ConnectionI connection : connectionList)
+            {
+                connection.updateObserver();
+            }
+        }
     }
 
     public void
@@ -168,17 +181,8 @@ public final class OutgoingConnectionFactory
             //
             try
             {
-                java.util.List<Connector> cons = endpoint.connectors();
+                java.util.List<Connector> cons = endpoint.connectors(selType);
                 assert(cons.size() > 0);
-
-                //
-                // Shuffle connectors if endpoint selection type is Random.
-                //
-                if(selType == Ice.EndpointSelectionType.Random)
-                {
-                    java.util.Collections.shuffle(cons);
-                }
-
                 for(Connector c : cons)
                 {
                     connectors.add(new ConnectorInfo(c, endpoint));
@@ -213,15 +217,32 @@ public final class OutgoingConnectionFactory
         // Try to establish the connection to the connectors.
         //
         DefaultsAndOverrides defaultsAndOverrides = _instance.defaultsAndOverrides();
+        Ice.Instrumentation.CommunicatorObserver obsv = _instance.initializationData().observer;
         java.util.Iterator<ConnectorInfo> q = connectors.iterator();
         ConnectorInfo ci = null;
         while(q.hasNext())
         {
             ci = q.next();
+
+            Ice.Instrumentation.Observer observer = null;
+            if(obsv != null)
+            {
+                observer = obsv.getConnectionEstablishmentObserver(ci.endpoint, ci.connector.toString());
+                if(observer != null)
+                {
+                    observer.attach();
+                }
+            }
+
             try
             {
                 connection = createConnection(ci.connector.connect(), ci);
                 connection.start(null);
+
+                if(observer != null)
+                {
+                    observer.detach();
+                }
 
                 if(defaultsAndOverrides.overrideCompress)
                 {
@@ -236,6 +257,11 @@ public final class OutgoingConnectionFactory
             }
             catch(Ice.CommunicatorDestroyedException ex)
             {
+                if(observer != null)
+                {
+                    observer.failed(ex.ice_name());
+                    observer.detach();
+                }
                 exception = ex;
                 handleConnectionException(exception, hasMore || p.hasNext());
                 connection = null;
@@ -243,6 +269,11 @@ public final class OutgoingConnectionFactory
             }
             catch(Ice.LocalException ex)
             {
+                if(observer != null)
+                {
+                    observer.failed(ex.ice_name());
+                    observer.detach();
+                }
                 exception = ex;
                 handleConnectionException(exception, hasMore || p.hasNext());
                 connection = null;
@@ -272,8 +303,7 @@ public final class OutgoingConnectionFactory
     }
 
     public void
-    create(EndpointI[] endpts, boolean hasMore, Ice.EndpointSelectionType selType,
-           CreateConnectionCallback callback)
+    create(EndpointI[] endpts, boolean hasMore, Ice.EndpointSelectionType selType, CreateConnectionCallback callback)
     {
         assert(endpts.length > 0);
 
@@ -415,8 +445,9 @@ public final class OutgoingConnectionFactory
     //
     // Only for use by Instance.
     //
-    OutgoingConnectionFactory(Instance instance)
+    OutgoingConnectionFactory(Ice.Communicator communicator, Instance instance)
     {
+        _communicator = communicator;
         _instance = instance;
         _destroyed = false;
     }
@@ -425,13 +456,21 @@ public final class OutgoingConnectionFactory
     finalize()
         throws Throwable
     {
-        IceUtilInternal.Assert.FinalizerAssert(_destroyed);
-        //IceUtilInternal.Assert.FinalizerAssert(_connections.isEmpty());
-        //IceUtilInternal.Assert.FinalizerAssert(_connectionsByEndpoint.isEmpty());
-        IceUtilInternal.Assert.FinalizerAssert(_pendingConnectCount == 0);
-        IceUtilInternal.Assert.FinalizerAssert(_pending.isEmpty());
-
-        super.finalize();
+        try
+        {
+            IceUtilInternal.Assert.FinalizerAssert(_destroyed);
+            IceUtilInternal.Assert.FinalizerAssert(_connections.isEmpty());
+            IceUtilInternal.Assert.FinalizerAssert(_connectionsByEndpoint.isEmpty());
+            IceUtilInternal.Assert.FinalizerAssert(_pendingConnectCount == 0);
+            IceUtilInternal.Assert.FinalizerAssert(_pending.isEmpty());
+        }
+        catch(java.lang.Exception ex)
+        {
+        }
+        finally
+        {
+            super.finalize();
+        }
     }
 
     private java.util.List<EndpointI>
@@ -670,32 +709,32 @@ public final class OutgoingConnectionFactory
         // in case the communicator is destroyed.
         //
         Ice.ConnectionI connection = null;
-	try
-	{
+        try
+        {
             if(_destroyed)
             {
                 throw new Ice.CommunicatorDestroyedException();
             }
 
-            connection = new Ice.ConnectionI(_instance, _reaper, transceiver, ci.connector, 
+            connection = new Ice.ConnectionI(_communicator, _instance, _reaper, transceiver, ci.connector,
                                              ci.endpoint.compress(false), null);
-	}
-	catch(Ice.LocalException ex)
-	{
-	    try
-	    {
-		transceiver.close();
-	    }
-	    catch(Ice.LocalException exc)
-	    {
-		// Ignore
-	    }
+        }
+        catch(Ice.LocalException ex)
+        {
+            try
+            {
+                transceiver.close();
+            }
+            catch(Ice.LocalException exc)
+            {
+                // Ignore
+            }
             throw ex;
-	}
+        }
 
-        _connections.put(ci.connector, connection);
-        _connectionsByEndpoint.put(connection.endpoint(), connection);
-        _connectionsByEndpoint.put(connection.endpoint().compress(true), connection);
+        _connections.putOne(ci.connector, connection);
+        _connectionsByEndpoint.putOne(connection.endpoint(), connection);
+        _connectionsByEndpoint.putOne(connection.endpoint().compress(true), connection);
         return connection;
     }
 
@@ -969,6 +1008,10 @@ public final class OutgoingConnectionFactory
         public void
         connectionStartCompleted(Ice.ConnectionI connection)
         {
+            if(_observer != null)
+            {
+                _observer.detach();
+            }
             connection.activate();
             _factory.finishGetConnection(_connectors, _current, connection, this);
         }
@@ -977,6 +1020,12 @@ public final class OutgoingConnectionFactory
         connectionStartFailed(Ice.ConnectionI connection, Ice.LocalException ex)
         {
             assert(_current != null);
+
+            if(_observer != null)
+            {
+                _observer.failed(ex.ice_name());
+                _observer.detach();
+            }
 
             _factory.handleConnectionException(ex, _hasMore || _iter.hasNext());
             if(ex instanceof Ice.CommunicatorDestroyedException) // No need to continue.
@@ -999,14 +1048,6 @@ public final class OutgoingConnectionFactory
         public void
         connectors(java.util.List<Connector> cons)
         {
-            //
-            // Shuffle connectors if endpoint selection type is Random.
-            //
-            if(_selType == Ice.EndpointSelectionType.Random)
-            {
-                java.util.Collections.shuffle(cons);
-            }
-
             for(Connector p : cons)
             {
                 _connectors.add(new ConnectorInfo(p, _currentEndpoint));
@@ -1122,7 +1163,7 @@ public final class OutgoingConnectionFactory
             {
                 assert(_endpointsIter.hasNext());
                 _currentEndpoint = _endpointsIter.next();
-                _currentEndpoint.connectors_async(this);
+                _currentEndpoint.connectors_async(_selType, this);
             }
             catch(Ice.LocalException ex)
             {
@@ -1170,6 +1211,18 @@ public final class OutgoingConnectionFactory
             {
                 assert(_iter.hasNext());
                 _current = _iter.next();
+                
+                Ice.Instrumentation.CommunicatorObserver obsv = _factory._instance.initializationData().observer;
+                if(obsv != null)
+                {
+                    _observer = obsv.getConnectionEstablishmentObserver(_current.endpoint, 
+                                                                        _current.connector.toString());
+                    if(_observer != null)
+                    {
+                        _observer.attach();
+                    }
+                }
+                
                 connection = _factory.createConnection(_current.connector.connect(), _current);
                 connection.start(this);
             }
@@ -1189,14 +1242,16 @@ public final class OutgoingConnectionFactory
         private java.util.List<ConnectorInfo> _connectors = new java.util.ArrayList<ConnectorInfo>();
         private java.util.Iterator<ConnectorInfo> _iter;
         private ConnectorInfo _current;
+        private Ice.Instrumentation.Observer _observer;
     }
 
+    private Ice.Communicator _communicator;
     private final Instance _instance;
     private final ConnectionReaper _reaper = new ConnectionReaper();
     private boolean _destroyed;
 
     private MultiHashMap<Connector, Ice.ConnectionI> _connections = new MultiHashMap<Connector, Ice.ConnectionI>();
-    private MultiHashMap<EndpointI, Ice.ConnectionI> _connectionsByEndpoint = 
+    private MultiHashMap<EndpointI, Ice.ConnectionI> _connectionsByEndpoint =
         new MultiHashMap<EndpointI, Ice.ConnectionI>();
     private java.util.Map<Connector, java.util.HashSet<ConnectCallback> > _pending =
         new java.util.HashMap<Connector, java.util.HashSet<ConnectCallback> >();

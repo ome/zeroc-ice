@@ -1,14 +1,13 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
-#ifndef ICE_SERVANT_LOCATOR_ICE
-#define ICE_SERVANT_LOCATOR_ICE
+#pragma once
 
 [["cpp:header-ext:h"]]
 
@@ -44,7 +43,7 @@ local interface ServantLocator
      * receives that user exception; otherwise, the client receives
      * {@link UnknownUserException}.
      *
-     * If {@link #locate} throws any exception, the Ice run time does <EM>not</EM>
+     * If {@link #locate} throws any exception, the Ice run time does <em>not</em>
      * call {@link finished}.
      *
      * <p class="Note">If you call {@link #locate} from your own code, you
@@ -116,4 +115,3 @@ local interface ServantLocator
 
 };
 
-#endif

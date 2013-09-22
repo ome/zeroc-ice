@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -43,15 +43,6 @@ public abstract class ObjectImpl implements Object, java.lang.Cloneable, java.io
         return o;
     }
 
-    /**
-     * @deprecated
-     **/
-    public int
-    ice_hash()
-    {
-        return hashCode();
-    }
-
     public final static String[] __ids =
     {
         "::Ice::Object"
@@ -87,13 +78,13 @@ public abstract class ObjectImpl implements Object, java.lang.Cloneable, java.io
     public static DispatchStatus
     ___ice_isA(Ice.Object __obj, IceInternal.Incoming __inS, Current __current)
     {
-        IceInternal.BasicStream __is = __inS.is();
-        __is.startReadEncaps();
+        IceInternal.BasicStream __is = __inS.startReadParams();
         String __id = __is.readString();
-        __is.endReadEncaps();
+        __inS.endReadParams();
         boolean __ret = __obj.ice_isA(__id, __current);
-        IceInternal.BasicStream __os = __inS.os();
+        IceInternal.BasicStream __os = __inS.__startWriteParams(Ice.FormatType.DefaultFormat);
         __os.writeBool(__ret);
+        __inS.__endWriteParams(true);
         return DispatchStatus.DispatchOK;
     }
 
@@ -120,8 +111,9 @@ public abstract class ObjectImpl implements Object, java.lang.Cloneable, java.io
     public static DispatchStatus
     ___ice_ping(Ice.Object __obj, IceInternal.Incoming __inS, Current __current)
     {
-        __inS.is().skipEmptyEncaps();
+        __inS.readEmptyParams();
         __obj.ice_ping(__current);
+        __inS.__writeEmptyParams();
         return DispatchStatus.DispatchOK;
     }
 
@@ -151,10 +143,11 @@ public abstract class ObjectImpl implements Object, java.lang.Cloneable, java.io
     public static DispatchStatus
     ___ice_ids(Ice.Object __obj, IceInternal.Incoming __inS, Current __current)
     {
-        __inS.is().skipEmptyEncaps();
+        __inS.readEmptyParams();
         String[] __ret = __obj.ice_ids(__current);
-        IceInternal.BasicStream __os = __inS.os();
+        IceInternal.BasicStream __os = __inS.__startWriteParams(Ice.FormatType.DefaultFormat);
         __os.writeStringSeq(__ret);
+        __inS.__endWriteParams(true);
         return DispatchStatus.DispatchOK;
     }
 
@@ -184,10 +177,11 @@ public abstract class ObjectImpl implements Object, java.lang.Cloneable, java.io
     public static DispatchStatus
     ___ice_id(Ice.Object __obj, IceInternal.Incoming __inS, Current __current)
     {
-        __inS.is().skipEmptyEncaps();
+        __inS.readEmptyParams();
         String __ret = __obj.ice_id(__current);
-        IceInternal.BasicStream __os = __inS.os();
+        IceInternal.BasicStream __os = __inS.__startWriteParams(Ice.FormatType.DefaultFormat);
         __os.writeString(__ret);
+        __inS.__endWriteParams(true);
         return DispatchStatus.DispatchOK;
     }
 
@@ -349,70 +343,65 @@ public abstract class ObjectImpl implements Object, java.lang.Cloneable, java.io
         assert(false);
         throw new Ice.OperationNotExistException(current.id, current.facet, current.operation);
     }
-    
+
     public DispatchStatus
     __collocDispatch(IceInternal.Direct request)
     {
         return request.run(this);
     }
+
+    public void
+    __write(IceInternal.BasicStream os)
+    {
+         os.startWriteObject(null);
+         __writeImpl(os);
+         os.endWriteObject();
+    }
+
+    public void
+    __read(IceInternal.BasicStream is)
+    {
+         is.startReadObject();
+         __readImpl(is);
+         is.endReadObject(false);
+    }
+
+    public void
+    __write(OutputStream os)
+    {
+        os.startObject(null);
+        __writeImpl(os);
+        os.endObject();
+    }
+
+    public void
+    __read(InputStream is)
+    {
+        is.startObject();
+        __readImpl(is);
+        is.endObject(false);
+    }
+
+    protected void
+    __writeImpl(IceInternal.BasicStream os)
+    {
+    }
+
+    protected void
+    __readImpl(IceInternal.BasicStream is)
+    {
+    }
     
-
-    public void
-    __write(IceInternal.BasicStream __os)
+     protected void
+    __writeImpl(OutputStream os)
     {
-        __os.writeTypeId(ice_staticId());
-        __os.startWriteSlice();
-        __os.writeSize(0); // For compatibility with the old AFM.
-        __os.endWriteSlice();
+        throw new MarshalException("class was not generated with stream support");
     }
 
-    public void
-    __read(IceInternal.BasicStream __is, boolean __rid)
+    protected void
+    __readImpl(InputStream is)
     {
-        if(__rid)
-        {
-            __is.readTypeId();
-        }
-
-        __is.startReadSlice();
-
-        // For compatibility with the old AFM.
-        int sz = __is.readSize();
-        if(sz != 0)
-        {
-            throw new MarshalException();
-        }
-
-        __is.endReadSlice();
-    }
-
-    public void
-    __write(Ice.OutputStream __outS)
-    {
-        __outS.writeTypeId(ice_staticId());
-        __outS.startSlice();
-        __outS.writeSize(0); // For compatibility with the old AFM.
-        __outS.endSlice();
-    }
-
-    public void
-    __read(Ice.InputStream __inS, boolean __rid)
-    {
-        if(__rid)
-        {
-            __inS.readTypeId();
-        }
-
-        __inS.startSlice();
-
-        // For compatibility with the old AFM.
-        int sz = __inS.readSize();
-        if(sz != 0)
-        {
-            throw new MarshalException();
-        }
-
-        __inS.endSlice();
+        throw new MarshalException("class was not generated with stream support");
     }
 
     private static String
@@ -440,11 +429,11 @@ public abstract class ObjectImpl implements Object, java.lang.Cloneable, java.io
     {
         if(expected != received)
         {
-            if(expected == Ice.OperationMode.Idempotent 
+            if(expected == Ice.OperationMode.Idempotent
                && received == Ice.OperationMode.Nonmutating)
             {
                 //
-                // Fine: typically an old client still using the 
+                // Fine: typically an old client still using the
                 // deprecated nonmutating keyword
                 //
             }
@@ -458,4 +447,6 @@ public abstract class ObjectImpl implements Object, java.lang.Cloneable, java.io
             }
         }
     }
+
+    public static final long serialVersionUID = 0L;
 }

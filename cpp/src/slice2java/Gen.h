@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -32,10 +32,11 @@ protected:
     //
     // Compose the parameter lists for an operation.
     //
-    std::vector<std::string> getParams(const OperationPtr&, const std::string&, bool = false);
-    std::vector<std::string> getInOutParams(const OperationPtr&, const std::string&, ParamDir);
-    std::vector<std::string> getParamsAsync(const OperationPtr&, const std::string&, bool);
-    std::vector<std::string> getParamsAsyncCB(const OperationPtr&, const std::string&);
+    std::vector<std::string> getParams(const OperationPtr&, const std::string&, bool, bool);
+    std::vector<std::string> getParamsProxy(const OperationPtr&, const std::string&, bool, bool);
+    std::vector<std::string> getInOutParams(const OperationPtr&, const std::string&, ParamDir, bool, bool);
+    std::vector<std::string> getParamsAsync(const OperationPtr&, const std::string&, bool, bool);
+    std::vector<std::string> getParamsAsyncCB(const OperationPtr&, const std::string&, bool, bool);
 
     //
     // Compose the argument lists for an operation.
@@ -44,6 +45,9 @@ protected:
     std::vector<std::string> getInOutArgs(const OperationPtr&, ParamDir);
     std::vector<std::string> getArgsAsync(const OperationPtr&);
     std::vector<std::string> getArgsAsyncCB(const OperationPtr&);
+
+    void writeMarshalUnmarshalParams(::IceUtilInternal::Output&, const std::string&, const ParamDeclList&,
+                                     const OperationPtr&, int&, bool, bool, bool = false);
 
     //
     // Generate a throws clause containing only non-local exceptions.
@@ -61,6 +65,21 @@ protected:
     //
     void writeHashCode(::IceUtilInternal::Output&, const TypePtr&, const std::string&, int&,
                        const std::list<std::string>& = std::list<std::string>());
+
+    //
+    // Marshal/unmarshal a data member.
+    //
+    void writeMarshalDataMember(::IceUtilInternal::Output&, const std::string&, const DataMemberPtr&, int&);
+    void writeUnmarshalDataMember(::IceUtilInternal::Output&, const std::string&, const DataMemberPtr&, int&,
+                                  bool, int&);
+    void writeStreamMarshalDataMember(::IceUtilInternal::Output&, const std::string&, const DataMemberPtr&, int&);
+    void writeStreamUnmarshalDataMember(::IceUtilInternal::Output&, const std::string&, const DataMemberPtr&, int&,
+                                        bool, int&);
+
+    //
+    // Generate a patcher class.
+    //
+    void writePatcher(::IceUtilInternal::Output&, const std::string&, const DataMemberList&, bool);
 
     //
     // Generate dispatch and marshalling methods for a class or interface.
@@ -165,19 +184,27 @@ private:
     private:
 
         //
-        // Verifies that a getter/setter method does not conflict with an operation.
+        // Verifies that a data member method does not conflict with an operation.
         //
-        bool validateGetterSetter(const OperationList&, const std::string&, int, const std::string&,
-                                  const std::string&);
+        bool validateMethod(const OperationList&, const std::string&, int, const std::string&, const std::string&);
 
         bool _stream;
+    };
+
+    class CompactIdVisitor : public JavaVisitor
+    {
+    public:
+
+        CompactIdVisitor(const std::string&);
+
+        virtual bool visitClassDefStart(const ClassDefPtr&);
     };
 
     class HolderVisitor : public JavaVisitor
     {
     public:
 
-        HolderVisitor(const std::string&, bool);
+        HolderVisitor(const std::string&);
 
         virtual bool visitClassDefStart(const ClassDefPtr&);
         virtual bool visitStructStart(const StructPtr&);
@@ -188,8 +215,6 @@ private:
     private:
 
         void writeHolder(const TypePtr&);
-
-        bool _stream;
     };
 
     class HelperVisitor : public JavaVisitor
@@ -205,6 +230,8 @@ private:
         virtual void visitEnum(const EnumPtr&);
 
     private:
+
+        void writeOperation(const ClassDefPtr&, const std::string&, const OperationPtr&, bool);
 
         bool _stream;
     };
@@ -236,6 +263,10 @@ private:
         DelegateMVisitor(const std::string&);
 
         virtual bool visitClassDefStart(const ClassDefPtr&);
+
+    private:
+
+        void writeOperation(const ClassDefPtr&, const std::string&, const OperationPtr&, bool);
     };
 
     class DelegateDVisitor : public JavaVisitor
@@ -245,6 +276,10 @@ private:
         DelegateDVisitor(const std::string&);
 
         virtual bool visitClassDefStart(const ClassDefPtr&);
+
+    private:
+
+        void writeOperation(const ClassDefPtr&, const std::string&, const OperationPtr&, bool);
     };
 
     class DispatcherVisitor : public JavaVisitor
@@ -272,12 +307,13 @@ private:
         // Generate code to emit a local variable declaration and initialize it
         // if necessary.
         //
-        void writeDecl(::IceUtilInternal::Output&, const std::string&, const std::string&, const TypePtr&, const StringList&);
+        void writeDecl(::IceUtilInternal::Output&, const std::string&, const std::string&, const TypePtr&,
+                       const StringList&, bool);
 
         //
         // Generate code to return a value.
         //
-        void writeReturn(::IceUtilInternal::Output&, const TypePtr&);
+        void writeReturn(::IceUtilInternal::Output&, const TypePtr&, bool);
 
         //
         // Generate an operation.

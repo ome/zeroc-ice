@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -13,6 +13,7 @@
 #include <Util.h>
 #include <IceUtil/DisableWarnings.h>
 #include <Ice/LocalException.h>
+#include <Ice/Protocol.h>
 #include <IceUtil/UUID.h>
 #include <Slice/PythonUtil.h>
 #include <compile.h>
@@ -21,15 +22,172 @@
 using namespace std;
 using namespace Slice::Python;
 
+namespace IcePy
+{
+
+bool
+checkIsInstance(PyObject* p, const char* type)
+{
+    PyObject* pyType = lookupType(type);
+    return PyObject_IsInstance(p, pyType) == 1;
+}
+
+template<typename T> bool
+setVersion(PyObject* p, const T& version, const char* type)
+{
+    assert(checkIsInstance(p, type));
+
+    PyObjectHandle major = PyLong_FromLong(version.major);
+    PyObjectHandle minor = PyLong_FromLong(version.minor);
+    if(!major.get() || !minor.get())
+    {
+        return false;
+    }
+    if(PyObject_SetAttrString(p, STRCAST("major"), major.get()) < 0 ||
+       PyObject_SetAttrString(p, STRCAST("minor"), minor.get()) < 0)
+    {
+        return false;
+    }
+    return true;
+}
+
+template<typename T> bool
+getVersion(PyObject* p, T& v, const char* type)
+{
+    assert(checkIsInstance(p, type));
+    PyObjectHandle major = PyObject_GetAttrString(p, STRCAST("major"));
+    PyObjectHandle minor = PyObject_GetAttrString(p, STRCAST("minor"));
+    if(major.get())
+    {
+        major = PyNumber_Long(major.get());
+        if(!major.get())
+        {
+            PyErr_Format(PyExc_ValueError, STRCAST("version major must be a numeric value"));
+            return false;
+        }
+        long m = PyLong_AsLong(major.get());
+        if(m < 0 || m > 255)
+        {
+            PyErr_Format(PyExc_ValueError, STRCAST("version major must be a value between 0 and 255"));
+            return false;
+        }
+        v.major = static_cast<Ice::Byte>(m);
+    }
+    if(minor.get())
+    {
+        major = PyNumber_Long(minor.get());
+        if(!minor.get())
+        {
+            PyErr_Format(PyExc_ValueError, STRCAST("version minor must be a numeric value"));
+            return false;
+        }
+        long m = PyLong_AsLong(minor.get());
+        if(m < 0 || m > 255)
+        {
+            PyErr_Format(PyExc_ValueError, STRCAST("version minor must be a value between 0 and 255"));
+            return false;
+        }
+        v.minor = static_cast<Ice::Byte>(m);
+    }
+    return true;
+}
+
+template<typename T> PyObject*
+createVersion(const T& version, const char* type)
+{
+    PyObject* versionType = lookupType(type);
+
+    PyObjectHandle obj = PyObject_CallObject(versionType, 0);
+    if(!obj.get())
+    {
+        return 0;
+    }
+
+    if(!setVersion<T>(obj.get(), version, type))
+    {
+        return 0;
+    }
+
+    return obj.release();
+}
+
+template<typename T> PyObject*
+versionToString(PyObject* args, const char* type)
+{
+    PyObject* versionType = IcePy::lookupType(type);
+    PyObject* p;
+    if(!PyArg_ParseTuple(args, STRCAST("O!"), versionType, &p))
+    {
+        return NULL;
+    }
+
+    T v;
+    if(!getVersion<T>(p, v, type))
+    {
+        return NULL;
+    }
+
+    string s;
+    try
+    {
+        s = IceInternal::versionToString<T>(v);
+    }
+    catch(const Ice::Exception& ex)
+    {
+        IcePy::setPythonException(ex);
+        return NULL;
+    }
+    return createString(s);
+}
+
+template<typename T> PyObject*
+stringToVersion(PyObject* args, const char* type)
+{
+    char* str;
+    if(!PyArg_ParseTuple(args, STRCAST("s"), &str))
+    {
+        return NULL;
+    }
+
+    T v;
+    try
+    {
+        v = IceInternal::stringToVersion<T>(str);
+    }
+    catch(const Ice::Exception& ex)
+    {
+        IcePy::setPythonException(ex);
+        return NULL;
+    }
+
+    return createVersion<T>(v, type);
+}
+
+char Ice_ProtocolVersion[] = "Ice.ProtocolVersion";
+char Ice_EncodingVersion[] = "Ice.EncodingVersion";
+
+}
+
 string
 IcePy::getString(PyObject* p)
 {
-    assert(p == Py_None || PyString_Check(p));
+    assert(p == Py_None || checkString(p));
 
     string str;
     if(p != Py_None)
     {
+#if PY_VERSION_HEX >= 0x03000000
+        PyObjectHandle bytes = PyUnicode_AsUTF8String(p);
+        if(bytes.get())
+        {
+            char* s;
+            Py_ssize_t sz;
+            PyBytes_AsStringAndSize(bytes.get(), &s, &sz);
+            str.assign(s, sz);
+        }
+#else
         str.assign(PyString_AS_STRING(p), PyString_GET_SIZE(p));
+#endif
     }
     return str;
 }
@@ -37,7 +195,7 @@ IcePy::getString(PyObject* p)
 bool
 IcePy::getStringArg(PyObject* p, const string& arg, string& val)
 {
-    if(PyString_Check(p))
+    if(checkString(p))
     {
         val = getString(p);
     }
@@ -185,9 +343,13 @@ IcePy::PyException::raise()
             ostr << getTypeName();
 
             IcePy::PyObjectHandle msg = PyObject_Str(ex.get());
-            if(msg.get() && strlen(PyString_AsString(msg.get())) > 0)
+            if(msg.get())
             {
-                ostr << ": " << PyString_AsString(msg.get());
+                string s = getString(msg.get());
+                if(!s.empty())
+                {
+                    ostr << ": " << s;
+                }
             }
 
             e.unknown = ostr.str();
@@ -238,13 +400,12 @@ IcePy::PyException::raiseLocalException()
             IcePy::getIdentity(member.get(), e.id);
         }
         member = PyObject_GetAttrString(ex.get(), STRCAST("facet"));
-        if(member.get() && PyString_Check(member.get()))
+        if(member.get() && checkString(member.get()))
         {
-            // TODO: Support unicode for the facet name.
             e.facet = getString(member.get());
         }
         member = PyObject_GetAttrString(ex.get(), STRCAST("operation"));
-        if(member.get() && PyString_Check(member.get()))
+        if(member.get() && checkString(member.get()))
         {
             e.operation = getString(member.get());
         }
@@ -270,7 +431,7 @@ IcePy::PyException::raiseLocalException()
     {
         IcePy::PyObjectHandle member;
         member = PyObject_GetAttrString(ex.get(), STRCAST("unknown"));
-        if(member.get() && PyString_Check(member.get()))
+        if(member.get() && checkString(member.get()))
         {
             e.unknown = getString(member.get());
         }
@@ -304,7 +465,7 @@ IcePy::PyException::getTraceback()
     // import traceback
     // list = traceback.format_exception(type, ex, tb)
     //
-    PyObjectHandle str = PyString_FromString("traceback");
+    PyObjectHandle str = createString("traceback");
     PyObjectHandle mod = PyImport_Import(str.get());
     assert(mod.get()); // Unable to import traceback module - Python installation error?
     PyObject* d = PyModule_GetDict(mod.get());
@@ -316,7 +477,8 @@ IcePy::PyException::getTraceback()
     string result;
     for(Py_ssize_t i = 0; i < PyList_GET_SIZE(list.get()); ++i)
     {
-        result += PyString_AsString(PyList_GetItem(list.get(), i));
+        string s = getString(PyList_GetItem(list.get(), i));
+        result += s;
     }
 
     return result;
@@ -325,39 +487,15 @@ IcePy::PyException::getTraceback()
 string
 IcePy::PyException::getTypeName()
 {
-#ifdef ICEPY_OLD_EXCEPTIONS
-    PyObject* cls = reinterpret_cast<PyObject*>(reinterpret_cast<PyInstanceObject*>(ex.get())->in_class);
-#else
     PyObject* cls = reinterpret_cast<PyObject*>(ex.get()->ob_type);
-#endif
     PyObjectHandle name = PyObject_GetAttrString(cls, "__name__");
     assert(name.get());
     PyObjectHandle mod = PyObject_GetAttrString(cls, "__module__");
     assert(mod.get());
-    string result = PyString_AsString(mod.get());
+    string result = getString(mod.get());
     result += ".";
-    result += PyString_AsString(name.get());
+    result += getString(name.get());
     return result;
-}
-
-IcePy::AllowThreads::AllowThreads()
-{
-    _state = PyEval_SaveThread();
-}
-
-IcePy::AllowThreads::~AllowThreads()
-{
-    PyEval_RestoreThread(_state);
-}
-
-IcePy::AdoptThread::AdoptThread()
-{
-    _state = PyGILState_Ensure();
-}
-
-IcePy::AdoptThread::~AdoptThread()
-{
-    PyGILState_Release(_state);
 }
 
 bool
@@ -374,7 +512,7 @@ IcePy::listToStringSeq(PyObject* l, Ice::StringSeq& seq)
             return false;
         }
         string str;
-        if(PyString_Check(item))
+        if(checkString(item))
         {
             str = getString(item);
         }
@@ -428,7 +566,7 @@ IcePy::tupleToStringSeq(PyObject* t, Ice::StringSeq& seq)
             return false;
         }
         string str;
-        if(PyString_Check(item))
+        if(checkString(item))
         {
             str = getString(item);
         }
@@ -454,7 +592,7 @@ IcePy::dictionaryToContext(PyObject* dict, Ice::Context& context)
     while(PyDict_Next(dict, &pos, &key, &value))
     {
         string keystr;
-        if(PyString_Check(key))
+        if(checkString(key))
         {
             keystr = getString(key);
         }
@@ -465,7 +603,7 @@ IcePy::dictionaryToContext(PyObject* dict, Ice::Context& context)
         }
 
         string valuestr;
-        if(PyString_Check(value))
+        if(checkString(value))
         {
             valuestr = getString(value);
         }
@@ -544,11 +682,7 @@ IcePy::lookupType(const string& typeName)
 PyObject*
 IcePy::createExceptionInstance(PyObject* type)
 {
-#ifdef ICEPY_OLD_EXCEPTIONS
-    assert(PyClass_Check(type));
-#else
     assert(PyExceptionClass_Check(type));
-#endif
     IcePy::PyObjectHandle args = PyTuple_New(0);
     if(!args.get())
     {
@@ -650,20 +784,20 @@ convertLocalException(const Ice::LocalException& ex, PyObject* p)
     }
     catch(const Ice::FileException& e)
     {
-        IcePy::PyObjectHandle m = PyInt_FromLong(e.error);
+        IcePy::PyObjectHandle m = PyLong_FromLong(e.error);
         PyObject_SetAttrString(p, STRCAST("error"), m.get());
         m = IcePy::createString(e.path);
         PyObject_SetAttrString(p, STRCAST("path"), m.get());
     }
     catch(const Ice::SyscallException& e) // This must appear after all subclasses of SyscallException.
     {
-        IcePy::PyObjectHandle m = PyInt_FromLong(e.error);
+        IcePy::PyObjectHandle m = PyLong_FromLong(e.error);
         PyObject_SetAttrString(p, STRCAST("error"), m.get());
     }
     catch(const Ice::DNSException& e)
     {
         IcePy::PyObjectHandle m;
-        m = PyInt_FromLong(e.error);
+        m = PyLong_FromLong(e.error);
         PyObject_SetAttrString(p, STRCAST("error"), m.get());
         m = IcePy::createString(e.host);
         PyObject_SetAttrString(p, STRCAST("host"), m.get());
@@ -671,26 +805,18 @@ convertLocalException(const Ice::LocalException& ex, PyObject* p)
     catch(const Ice::UnsupportedProtocolException& e)
     {
         IcePy::PyObjectHandle m;
-        m = PyInt_FromLong(e.badMajor);
-        PyObject_SetAttrString(p, STRCAST("badMajor"), m.get());
-        m = PyInt_FromLong(e.badMinor);
-        PyObject_SetAttrString(p, STRCAST("badMinor"), m.get());
-        m = PyInt_FromLong(e.major);
-        PyObject_SetAttrString(p, STRCAST("major"), m.get());
-        m = PyInt_FromLong(e.minor);
-        PyObject_SetAttrString(p, STRCAST("minor"), m.get());
+        m = IcePy::createProtocolVersion(e.bad);
+        PyObject_SetAttrString(p, STRCAST("bad"), m.get());
+        m = IcePy::createProtocolVersion(e.supported);
+        PyObject_SetAttrString(p, STRCAST("supported"), m.get());
     }
     catch(const Ice::UnsupportedEncodingException& e)
     {
         IcePy::PyObjectHandle m;
-        m = PyInt_FromLong(e.badMajor);
-        PyObject_SetAttrString(p, STRCAST("badMajor"), m.get());
-        m = PyInt_FromLong(e.badMinor);
-        PyObject_SetAttrString(p, STRCAST("badMinor"), m.get());
-        m = PyInt_FromLong(e.major);
-        PyObject_SetAttrString(p, STRCAST("major"), m.get());
-        m = PyInt_FromLong(e.minor);
-        PyObject_SetAttrString(p, STRCAST("minor"), m.get());
+        m = IcePy::createEncodingVersion(e.bad);
+        PyObject_SetAttrString(p, STRCAST("bad"), m.get());
+        m = IcePy::createEncodingVersion(e.supported);
+        PyObject_SetAttrString(p, STRCAST("supported"), m.get());
     }
     catch(const Ice::NoObjectFactoryException& e)
     {
@@ -812,13 +938,8 @@ IcePy::setPythonException(PyObject* ex)
     //
     // PyErr_Restore steals references to the type and exception.
     //
-#ifdef ICEPY_OLD_EXCEPTIONS
-    PyObject* type = reinterpret_cast<PyObject*>(reinterpret_cast<PyInstanceObject*>(ex)->in_class);
-    Py_INCREF(type);
-#else
     PyObject* type = PyObject_Type(ex);
     assert(type);
-#endif
     Py_INCREF(ex);
     PyErr_Restore(type, ex, 0);
 }
@@ -837,11 +958,7 @@ IcePy::handleSystemExit(PyObject* ex)
     // This code is similar to handle_system_exit in pythonrun.c.
     //
     PyObjectHandle code;
-#ifdef ICEPY_OLD_EXCEPTIONS
-    if(PyInstance_Check(ex))
-#else
     if(PyExceptionInstance_Check(ex))
-#endif
     {
         code = PyObject_GetAttrString(ex, STRCAST("code"));
     }
@@ -852,9 +969,9 @@ IcePy::handleSystemExit(PyObject* ex)
     }
 
     int status;
-    if(PyInt_Check(code.get()))
+    if(PyLong_Check(code.get()))
     {
-        status = static_cast<int>(PyInt_AsLong(code.get()));
+        status = static_cast<int>(PyLong_AsLong(code.get()));
     }
     else
     {
@@ -919,24 +1036,52 @@ IcePy::getIdentity(PyObject* p, Ice::Identity& ident)
     PyObjectHandle category = PyObject_GetAttrString(p, STRCAST("category"));
     if(name.get())
     {
-        char* s = PyString_AsString(name.get());
-        if(!s)
+        if(!checkString(name.get()))
         {
             PyErr_Format(PyExc_ValueError, STRCAST("identity name must be a string"));
             return false;
         }
-        ident.name = s;
+        ident.name = getString(name.get());
     }
     if(category.get())
     {
-        char* s = PyString_AsString(category.get());
-        if(!s)
+        if(!checkString(category.get()))
         {
             PyErr_Format(PyExc_ValueError, STRCAST("identity category must be a string"));
             return false;
         }
-        ident.category = s;
+        ident.category = getString(category.get());
     }
+    return true;
+}
+
+PyObject*
+IcePy::createProtocolVersion(const Ice::ProtocolVersion& v)
+{
+    return createVersion<Ice::ProtocolVersion>(v, Ice_ProtocolVersion);
+}
+
+PyObject*
+IcePy::createEncodingVersion(const Ice::EncodingVersion& v)
+{
+    return createVersion<Ice::EncodingVersion>(v, Ice_EncodingVersion);
+}
+
+bool
+IcePy::getEncodingVersion(PyObject* args, Ice::EncodingVersion& v)
+{
+    PyObject* versionType = IcePy::lookupType(Ice_EncodingVersion);
+    PyObject* p;
+    if(!PyArg_ParseTuple(args, STRCAST("O!"), versionType, &p))
+    {
+        return false;
+    }
+
+    if(!getVersion<Ice::EncodingVersion>(p, v, Ice_EncodingVersion))
+    {
+        return false;
+    }
+
     return true;
 }
 
@@ -952,7 +1097,56 @@ extern "C"
 PyObject*
 IcePy_intVersion(PyObject* /*self*/)
 {
-    return PyInt_FromLong(ICE_INT_VERSION);
+    return PyLong_FromLong(ICE_INT_VERSION);
+}
+
+extern "C"
+PyObject*
+IcePy_currentProtocol(PyObject* /*self*/)
+{
+    return IcePy::createProtocolVersion(Ice::currentProtocol);
+}
+
+extern "C"
+PyObject*
+IcePy_currentProtocolEncoding(PyObject* /*self*/)
+{
+    return IcePy::createEncodingVersion(Ice::currentProtocolEncoding);
+}
+
+extern "C"
+PyObject*
+IcePy_currentEncoding(PyObject* /*self*/)
+{
+    return IcePy::createEncodingVersion(Ice::currentEncoding);
+}
+
+extern "C"
+PyObject*
+IcePy_protocolVersionToString(PyObject* /*self*/, PyObject* args)
+{
+    return IcePy::versionToString<Ice::ProtocolVersion>(args, IcePy::Ice_ProtocolVersion);
+}
+
+extern "C"
+PyObject*
+IcePy_stringToProtocolVersion(PyObject* /*self*/, PyObject* args)
+{
+    return IcePy::stringToVersion<Ice::ProtocolVersion>(args, IcePy::Ice_ProtocolVersion);
+}
+
+extern "C"
+PyObject*
+IcePy_encodingVersionToString(PyObject* /*self*/, PyObject* args)
+{
+    return IcePy::versionToString<Ice::EncodingVersion>(args, IcePy::Ice_EncodingVersion);
+}
+
+extern "C"
+PyObject*
+IcePy_stringToEncodingVersion(PyObject* /*self*/, PyObject* args)
+{
+    return IcePy::stringToVersion<Ice::EncodingVersion>(args, IcePy::Ice_EncodingVersion);
 }
 
 extern "C"

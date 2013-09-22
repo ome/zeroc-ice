@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -16,6 +16,7 @@ namespace IceInternal
     using System.Threading;
 
     public delegate void ThreadPoolWorkItem();
+    public delegate void AsyncCallback(object state);
 
     internal struct ThreadPoolMessage
     {
@@ -199,6 +200,7 @@ namespace IceInternal
             }
             _stackSize = stackSize;
 
+#if !SILVERLIGHT
             _hasPriority = properties.getProperty(_prefix + ".ThreadPriority").Length > 0;
             _priority = IceInternal.Util.stringToThreadPriority(properties.getProperty(_prefix + ".ThreadPriority"));
             if(!_hasPriority)
@@ -206,6 +208,7 @@ namespace IceInternal
                 _hasPriority = properties.getProperty("Ice.ThreadPriority").Length > 0;
                 _priority = IceInternal.Util.stringToThreadPriority(properties.getProperty("Ice.ThreadPriority"));
             }
+#endif
             
             if(_instance.traceLevels().threadPool >= 1)
             {
@@ -223,6 +226,7 @@ namespace IceInternal
                 {
                     WorkerThread thread = new WorkerThread(this, _threadPrefix + "-" + _threadIndex++);
                     _threads.Add(thread);
+#if !SILVERLIGHT
                     if(_hasPriority)
                     {
                         thread.start(_priority);
@@ -231,6 +235,9 @@ namespace IceInternal
                     {
                         thread.start(ThreadPriority.Normal);
                     }
+#else
+                    thread.start();
+#endif
                 }
             }
             catch(System.Exception ex)
@@ -241,6 +248,22 @@ namespace IceInternal
                 destroy();
                 joinWithAllThreads();
                 throw;
+            }
+        }
+
+        public void updateObservers()
+        {
+            _m.Lock();
+            try
+            {
+                foreach(WorkerThread t in _threads)
+                {
+                    t.updateObserver();
+                }
+            }
+            finally
+            {
+                _m.Unlock();
             }
         }
 
@@ -355,7 +378,7 @@ namespace IceInternal
             }
             else
             {
-                execute(delegate() { call(); });
+                execute(() => { call(); });
             }
         }
 
@@ -390,6 +413,7 @@ namespace IceInternal
                     try
                     {
                         WorkerThread t = new WorkerThread(this, _threadPrefix + "-" + _threadIndex++);
+#if !SILVERLIGHT
                         if(_hasPriority)
                         {
                             t.start(_priority);
@@ -398,6 +422,9 @@ namespace IceInternal
                         {
                             t.start(ThreadPriority.Normal);
                         }
+#else
+                        t.start();
+#endif
                         _threads.Add(t);
                     }
                     catch(System.Exception ex)
@@ -465,6 +492,10 @@ namespace IceInternal
                     {
                         Debug.Assert(_inUse > 0);
                         --_inUse;
+                        if(_workItems.Count == 0)
+                        {
+                            thread.setState(Ice.Instrumentation.ThreadState.ThreadStateIdle);
+                        }
                     }
 
                     workItem = null;
@@ -540,6 +571,8 @@ namespace IceInternal
 
                     Debug.Assert(_inUse >= 0);
                     ++_inUse;
+
+                    thread.setState(Ice.Instrumentation.ThreadState.ThreadStateInUseForUser);
                     
                     if(_sizeMax > 1 && _inUse == _sizeWarn)
                     {
@@ -665,22 +698,12 @@ namespace IceInternal
 
         public void asyncReadCallback(object state)
         {
-            IAsyncResult result = (IAsyncResult)state;
-            if(result.CompletedSynchronously)
-            {
-                return;
-            }
-            messageCallback(new ThreadPoolCurrent(this, (EventHandler)result.AsyncState, SocketOperation.Read));
+            messageCallback(new ThreadPoolCurrent(this, (EventHandler)state, SocketOperation.Read));
         }
         
         public void asyncWriteCallback(object state)
         {
-            IAsyncResult result = (IAsyncResult)state;
-            if(result.CompletedSynchronously)
-            {
-                return;
-            }
-            messageCallback(new ThreadPoolCurrent(this, (EventHandler)result.AsyncState, SocketOperation.Write));
+            messageCallback(new ThreadPoolCurrent(this, (EventHandler)state, SocketOperation.Write));
         }
 
         public void messageCallback(ThreadPoolCurrent current)
@@ -724,11 +747,43 @@ namespace IceInternal
         private sealed class WorkerThread
         {
             private ThreadPool _threadPool;
+            private Ice.Instrumentation.ThreadObserver _observer;
+            private Ice.Instrumentation.ThreadState _state;
 
             internal WorkerThread(ThreadPool threadPool, string name) : base()
             {
                 _threadPool = threadPool;
                 _name = name;
+                _state = Ice.Instrumentation.ThreadState.ThreadStateIdle;
+                updateObserver();
+            }
+
+            public void updateObserver()
+            {
+                // Must be called with the thread pool mutex locked
+                Ice.Instrumentation.CommunicatorObserver obsv = _threadPool._instance.initializationData().observer;
+                if(obsv != null)
+                {
+                    _observer = obsv.getThreadObserver(_threadPool._prefix, _name, _state, _observer);
+                    if(_observer != null)
+                    {
+                        _observer.attach();
+                    }
+                }
+            }
+
+            public void
+            setState(Ice.Instrumentation.ThreadState s)
+            {
+                // Must be called with the thread pool mutex locked
+                if(_observer != null)
+                {
+                    if(_state != s)
+                    {
+                        _observer.stateChanged(_state, s);
+                    }
+                }
+                _state = s;
             }
 
             public void join()
@@ -736,6 +791,7 @@ namespace IceInternal
                 _thread.Join();
             }
 
+#if !SILVERLIGHT
             public void start(ThreadPriority priority)
             {
                 if(_threadPool._stackSize == 0)
@@ -751,6 +807,15 @@ namespace IceInternal
                 _thread.Priority = priority;
                 _thread.Start();
             }
+#else
+            public void start()
+            {
+                _thread = new Thread(new ThreadStart(Run));
+                _thread.IsBackground = true;
+                _thread.Name = _name;
+                _thread.Start();
+            }
+#endif
 
             public void Run()
             {
@@ -777,6 +842,11 @@ namespace IceInternal
                     string s = "exception in `" + _threadPool._prefix + "' thread " + _thread.Name + ":\n" + ex;
                     _threadPool._instance.initializationData().logger.error(s);
                 }
+                
+                if(_observer != null)
+                {
+                    _observer.detach();
+                }
 
                 if(_threadPool._instance.initializationData().threadHook != null)
                 {
@@ -801,8 +871,10 @@ namespace IceInternal
         private readonly int _sizeMax; // Maximum number of threads.
         private readonly int _sizeWarn; // If _inUse reaches _sizeWarn, a "low on threads" warning will be printed.
         private readonly bool _serialize; // True if requests need to be serialized over the connection.
+#if !SILVERLIGHT
         private readonly ThreadPriority _priority;
         private readonly bool _hasPriority = false;
+#endif
         private readonly int _serverIdleTime;
         private readonly int _threadIdleTime;
         private readonly int _stackSize;

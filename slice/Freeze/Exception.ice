@@ -1,14 +1,13 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
-#ifndef FREEZE_EXCEPTION_ICE
-#define FREEZE_EXCEPTION_ICE
+#pragma once
 
 [["cpp:header-ext:h"]]
 
@@ -25,6 +24,7 @@ local interface Transaction;
  * @see Connection
  *
  **/
+["cpp:ice_print"]
 local exception DatabaseException
 {
     /**
@@ -41,6 +41,7 @@ local exception DatabaseException
  * could not be found.
  *
  **/
+["cpp:ice_print"]
 local exception NotFoundException extends DatabaseException
 {
 };
@@ -51,8 +52,14 @@ local exception NotFoundException extends DatabaseException
  * this exception by aborting and trying the transaction again.
  *
  **/
+["cpp:ice_print"]
 local exception DeadlockException extends DatabaseException
 {
+    /**
+     *
+     * The transaction in which the deadlock occurred.
+     *
+     **/
     Transaction tx;
 };
 
@@ -68,15 +75,26 @@ local exception InvalidPositionException
 
 /**
  *
- * Exception raised when Freeze fails to locate an index
+ * Exception raised when Freeze fails to locate an index.
  *
  **/
+["cpp:ice_print"]
 local exception IndexNotFoundException
 {
+    /**
+     *
+     * The name of the map in which the index could not be found.
+     *
+     **/
     string mapName;
+
+    /**
+     *
+     * The name of the index.
+     *
+     **/
     string indexName;
 };
 
 };
 
-#endif

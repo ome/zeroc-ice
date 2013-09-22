@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -17,6 +17,9 @@ public class Server extends Ice.Application
             System.err.println(appName() + ": too many arguments");
             return 1;
         }
+
+	Ice.ObjectFactory factory = new ObjectFactory();
+	communicator().addObjectFactory(factory, Demo.Printer.ice_staticId());
 
         Ice.ObjectAdapter adapter = communicator().createObjectAdapter("Value");
         Ice.Object object = new InitialI(adapter);

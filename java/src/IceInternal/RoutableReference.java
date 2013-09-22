@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -69,6 +69,22 @@ public class RoutableReference extends Reference
     getConnectionId()
     {
         return _connectionId;
+    }
+
+    public Reference
+    changeEncoding(Ice.EncodingVersion newEncoding)
+    {
+        RoutableReference r = (RoutableReference)super.changeEncoding(newEncoding);
+        if(r != this)
+        {
+            LocatorInfo locInfo = r._locatorInfo;
+            if(locInfo != null && !locInfo.getLocator().ice_getEncodingVersion().equals(newEncoding))
+            {
+                r._locatorInfo = getInstance().locatorManager().get(
+                    (Ice.LocatorPrx)locInfo.getLocator().ice_encodingVersion(newEncoding));
+            }
+        }
+        return r;
     }
 
     public Reference
@@ -368,9 +384,7 @@ public class RoutableReference extends Reference
         if(!_hashInitialized)
         {
             super.hashCode(); // Initializes _hashValue.
-
-            // Add hash of adapter ID to base hash.
-            _hashValue = 5 * _hashValue + _adapterId.hashCode();
+            _hashValue = IceInternal.HashUtil.hashAdd(_hashValue, _adapterId);
         }
         return _hashValue;
     }
@@ -631,6 +645,8 @@ public class RoutableReference extends Reference
                       String facet,
                       int mode,
                       boolean secure,
+                      Ice.ProtocolVersion protocol,
+                      Ice.EncodingVersion encoding,
                       EndpointI[] endpoints,
                       String adapterId,
                       LocatorInfo locatorInfo,
@@ -641,7 +657,7 @@ public class RoutableReference extends Reference
                       Ice.EndpointSelectionType endpointSelection,
                       int locatorCacheTimeout)
     {
-        super(instance, communicator, identity, facet, mode, secure);
+        super(instance, communicator, identity, facet, mode, secure, protocol, encoding);
         _endpoints = endpoints;
         _adapterId = adapterId;
         _locatorInfo = locatorInfo;

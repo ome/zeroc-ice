@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -785,6 +785,141 @@ allTests(const Ice::CommunicatorPtr& communicator)
 
             deactivate(com, adapters);
         }
+        cout << "ok" << endl;
+    }
+
+    {
+        cout << "testing ipv4 & ipv6 connections... " << flush;
+
+        Ice::PropertiesPtr ipv4 = Ice::createProperties();
+        ipv4->setProperty("Ice.IPv4", "1");
+        ipv4->setProperty("Ice.IPv6", "0");
+        ipv4->setProperty("Adapter.Endpoints", "tcp -h localhost");
+
+        Ice::PropertiesPtr ipv6 = Ice::createProperties();
+        ipv6->setProperty("Ice.IPv4", "0");
+        ipv6->setProperty("Ice.IPv6", "1");
+        ipv6->setProperty("Adapter.Endpoints", "tcp -h localhost");
+
+        Ice::PropertiesPtr bothPreferIPv4 = Ice::createProperties();
+        bothPreferIPv4->setProperty("Ice.IPv4", "1");
+        bothPreferIPv4->setProperty("Ice.IPv6", "1");
+        bothPreferIPv4->setProperty("Ice.PreferIPv6Address", "0");
+        bothPreferIPv4->setProperty("Adapter.Endpoints", "tcp -h localhost");
+
+        Ice::PropertiesPtr bothPreferIPv6 = Ice::createProperties();
+        bothPreferIPv6->setProperty("Ice.IPv4", "1");
+        bothPreferIPv6->setProperty("Ice.IPv6", "1");
+        bothPreferIPv6->setProperty("Ice.PreferIPv6Address", "1");
+        bothPreferIPv6->setProperty("Adapter.Endpoints", "tcp -h localhost");
+
+        vector<Ice::PropertiesPtr> clientProps;
+        clientProps.push_back(ipv4);
+        clientProps.push_back(ipv6);
+        clientProps.push_back(bothPreferIPv4);
+        clientProps.push_back(bothPreferIPv6);
+
+        Ice::PropertiesPtr anyipv4 = ipv4->clone();
+        anyipv4->setProperty("Adapter.Endpoints", "tcp -p 12012");
+        anyipv4->setProperty("Adapter.PublishedEndpoints", "tcp -h 127.0.0.1 -p 12012");
+
+        Ice::PropertiesPtr anyipv6 = ipv6->clone();
+        anyipv6->setProperty("Adapter.Endpoints", "tcp -p 12012");
+        anyipv6->setProperty("Adapter.PublishedEndpoints", "tcp -h \"::1\" -p 12012");
+
+        Ice::PropertiesPtr anyboth = Ice::createProperties();
+        anyboth->setProperty("Ice.IPv4", "1");
+        anyboth->setProperty("Ice.IPv6", "1");
+        anyboth->setProperty("Adapter.Endpoints", "tcp -p 12012");
+        anyboth->setProperty("Adapter.PublishedEndpoints", "tcp -h \"::1\" -p 12012:tcp -h 127.0.0.1 -p 12012");
+
+        Ice::PropertiesPtr localipv4 = ipv4->clone();
+        localipv4->setProperty("Adapter.Endpoints", "tcp -h 127.0.0.1");
+
+        Ice::PropertiesPtr localipv6 = ipv6->clone();
+        localipv6->setProperty("Adapter.Endpoints", "tcp -h \"::1\"");
+
+        vector<Ice::PropertiesPtr> serverProps = clientProps;
+        serverProps.push_back(anyipv4);
+        serverProps.push_back(anyipv6);
+        serverProps.push_back(anyboth);
+        serverProps.push_back(localipv4);
+        serverProps.push_back(localipv6);
+
+#if defined(_WIN32) && !defined(ICE_OS_WINRT)
+        OSVERSIONINFO ver;
+        ver.dwOSVersionInfoSize = sizeof(OSVERSIONINFO);
+        GetVersionEx(&ver);
+        const bool dualStack = ver.dwMajorVersion >= 6; // Windows XP IPv6 doesn't support dual-stack
+#else
+        const bool dualStack = true;
+#endif
+
+        bool ipv6NotSupported = false;
+        for(vector<Ice::PropertiesPtr>::const_iterator p = serverProps.begin(); p != serverProps.end(); ++p)
+        {
+            Ice::InitializationData serverInitData;
+            serverInitData.properties = *p;
+            Ice::CommunicatorPtr serverCommunicator = Ice::initialize(serverInitData);
+            Ice::ObjectAdapterPtr oa;
+            try
+            {
+                oa = serverCommunicator->createObjectAdapter("Adapter");
+                oa->activate();
+            }
+            catch(const Ice::DNSException&)
+            {
+                serverCommunicator->destroy();
+                continue; // IP version not supported.
+            }
+            catch(const Ice::SocketException&)
+            {
+                if(*p == ipv6)
+                {
+                    ipv6NotSupported = true;
+                }
+                serverCommunicator->destroy();
+                continue; // IP version not supported.
+            }
+
+            string strPrx = oa->createProxy(serverCommunicator->stringToIdentity("dummy"))->ice_toString();
+            for(vector<Ice::PropertiesPtr>::const_iterator q = clientProps.begin(); q != clientProps.end(); ++q)
+            {
+                Ice::InitializationData clientInitData;
+                clientInitData.properties = *q;
+                Ice::CommunicatorPtr clientCommunicator = Ice::initialize(clientInitData);
+                Ice::ObjectPrx prx = clientCommunicator->stringToProxy(strPrx);
+                try
+                {
+                    prx->ice_ping();
+                    test(false);
+                }
+                catch(const Ice::ObjectNotExistException&)
+                {
+                    // Expected, no object registered.
+                }
+                catch(const Ice::DNSException&)
+                {
+                    // Expected if no IPv4 or IPv6 address is
+                    // associated to localhost or if trying to connect
+                    // to an any endpoint with the wrong IP version,
+                    // e.g.: resolving an IPv4 address when only IPv6
+                    // is enabled fails with a DNS exception.
+                }
+                catch(const Ice::SocketException&)
+                {
+                    test((*p == ipv4 && *q == ipv6) || (*p == ipv6 && *q == ipv4) ||
+                         (*p == bothPreferIPv4 && *q == ipv6) || (*p == bothPreferIPv6 && *q == ipv4) ||
+                         (*p == bothPreferIPv6 && *q == ipv6 && ipv6NotSupported) ||
+                         (*p == anyipv4 && *q == ipv6) || (*p == anyipv6 && *q == ipv4) ||
+                         (*p == anyboth && *q == ipv4 && !dualStack) ||
+                         (*p == localipv4 && *q == ipv6) || (*p == localipv6 && *q == ipv4));
+                }
+                clientCommunicator->destroy();
+            }
+            serverCommunicator->destroy();
+        }
+
         cout << "ok" << endl;
     }
 

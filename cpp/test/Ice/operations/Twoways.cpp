@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -20,6 +20,13 @@
 #endif
 #ifdef max
 #   undef max
+#endif
+
+//
+// Work-around for GCC warning bug
+//
+#if defined(__GNUC__)
+#   pragma GCC diagnostic ignored "-Wstrict-aliasing"
 #endif
 
 using namespace std;
@@ -731,6 +738,7 @@ twoways(const Ice::CommunicatorPtr& communicator, const Test::MyClassPrx& p)
             test(r == ctx);
         }
 
+#ifndef ICE_OS_WINRT
         {
             //
             // Test implicit context propagation
@@ -795,7 +803,8 @@ twoways(const Ice::CommunicatorPtr& communicator, const Test::MyClassPrx& p)
                 ic->destroy();
             }
         }
-    }
+#endif
+        }
 
     {
         Ice::Double d = 1278312346.0 / 13.0;

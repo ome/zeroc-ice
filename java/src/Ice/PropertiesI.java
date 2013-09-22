@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -176,7 +176,9 @@ public final class PropertiesI implements Properties
                 //
                 assert(dotPos != -1);
                 String propPrefix = pattern.substring(0, dotPos - 1);
-                if(!propPrefix.equals(prefix))
+                boolean mismatchCase = false;
+                String otherKey = "";
+                if(!propPrefix.toUpperCase().equals(prefix.toUpperCase()))
                 {
                     continue;
                 }
@@ -197,10 +199,27 @@ public final class PropertiesI implements Properties
                             key = IceInternal.PropertyNames.validProps[i][j].deprecatedBy();
                         }
                     }
+
+                    if(!found)
+                    {
+                        pComp = java.util.regex.Pattern.compile(pattern.toUpperCase());
+                        m = pComp.matcher(key.toUpperCase());
+                        if(m.matches())
+                        {
+                            found = true;
+                            mismatchCase = true;
+                            otherKey = pattern.replaceAll("\\\\", "");
+                            break;
+                        }
+                    }
                 }
                 if(!found)
                 {
                     logger.warning("unknown property: " + key);
+                }
+                else if(mismatchCase)
+                {
+                    logger.warning("unknown property: `" + key + "'; did you mean `" + otherKey + "'");
                 }
             }
         }
@@ -457,7 +476,15 @@ public final class PropertiesI implements Properties
     {
         if(defaults != null)
         {
-            _properties = new java.util.HashMap<String, PropertyValue>(((PropertiesI)defaults)._properties);
+            //
+            // NOTE: we can't just do a shallow copy of the map as the map values
+            // would otherwise be shared between the two PropertiesI object.
+            //
+            //_properties = new java.util.HashMap<String, PropertyValue>(((PropertiesI)defaults)._properties);
+            for(java.util.Map.Entry<String, PropertyValue> p : (((PropertiesI)defaults)._properties).entrySet())
+            {
+                _properties.put(p.getKey(), new PropertyValue(p.getValue()));
+            }
         }
 
         boolean loadConfigFiles = false;

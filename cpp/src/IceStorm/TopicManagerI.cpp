@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -290,11 +290,16 @@ nameToIdentity(const InstancePtr& instance, const string& name)
 
 TopicManagerImpl::TopicManagerImpl(const InstancePtr& instance) :
     _instance(instance),
-    _databaseCache(instance->databaseCache())
+    _connectionPool(instance->connectionPool())
 {
     try
     {
         __setNoDelete(true);
+
+        if(_instance->observer())
+        {
+            _instance->observer()->setObserverUpdater(this);
+        }
 
         // TODO: If we want to improve the performance of the
         // non-replicated case we could allocate a null-topic manager impl
@@ -312,15 +317,15 @@ TopicManagerImpl::TopicManagerImpl(const InstancePtr& instance) :
             _sync = _instance->nodeAdapter()->addWithUUID(_syncImpl);
         }
 
-        DatabaseConnectionPtr connection = _databaseCache->getConnection();
+        DatabaseConnectionPtr connection = _connectionPool->newConnection();
 
         // Ensure that the llu counter is present in the log.
-        LLUWrapperPtr lluWrapper = _databaseCache->getLLU(connection);
+        LLUWrapperPtr lluWrapper = _connectionPool->getLLU(connection);
         LogUpdate empty = {0, 0};
         lluWrapper->put(empty);
 
         // Recreate each of the topics.
-        SubscribersWrapperPtr subscribersWrapper = _databaseCache->getSubscribers(connection);
+        SubscribersWrapperPtr subscribersWrapper = _connectionPool->getSubscribers(connection);
         map<SubscriberRecordKey, SubscriberRecord> subscriberMap = subscribersWrapper->getMap();
 
         map<SubscriberRecordKey, SubscriberRecord>::const_iterator p = subscriberMap.begin();
@@ -381,7 +386,7 @@ TopicManagerImpl::create(const string& name)
     {
         try
         {
-            DatabaseConnectionPtr connection = _databaseCache->getConnection();
+            DatabaseConnectionPtr connection = _connectionPool->newConnection();
             TransactionHolder txn(connection);
 
             SubscriberRecordKey key;
@@ -390,10 +395,10 @@ TopicManagerImpl::create(const string& name)
             rec.link = false;
             rec.cost = 0;
 
-            SubscribersWrapperPtr subscribersWrapper = _databaseCache->getSubscribers(connection);
+            SubscribersWrapperPtr subscribersWrapper = _connectionPool->getSubscribers(connection);
             subscribersWrapper->put(key, rec);
 
-            LLUWrapperPtr lluWrapper = _databaseCache->getLLU(connection);
+            LLUWrapperPtr lluWrapper = _connectionPool->getLLU(connection);
             llu = lluWrapper->get();
             llu.iteration++;
             lluWrapper->put(llu);
@@ -408,7 +413,7 @@ TopicManagerImpl::create(const string& name)
         catch(const DatabaseException& ex)
         {
             halt(_instance->communicator(), ex);
-        }	
+        }       
     }
 
     _instance->observers()->createTopic(llu, name);
@@ -486,13 +491,13 @@ TopicManagerImpl::observerInit(const LogUpdate& llu, const TopicContentSeq& cont
     {
         try
         {
-            DatabaseConnectionPtr connection = _databaseCache->getConnection();
+            DatabaseConnectionPtr connection = _connectionPool->newConnection();
             TransactionHolder txn(connection);
 
-            LLUWrapperPtr lluWrapper = _databaseCache->getLLU(connection);
+            LLUWrapperPtr lluWrapper = _connectionPool->getLLU(connection);
             lluWrapper->put(llu);
 
-            SubscribersWrapperPtr subscribersWrapper = _databaseCache->getSubscribers(connection);
+            SubscribersWrapperPtr subscribersWrapper = _connectionPool->getSubscribers(connection);
             subscribersWrapper->clear();
 
             for(TopicContentSeq::const_iterator p = content.begin(); p != content.end(); ++p)
@@ -524,7 +529,7 @@ TopicManagerImpl::observerInit(const LogUpdate& llu, const TopicContentSeq& cont
         catch(const DatabaseException& ex)
         {
             halt(_instance->communicator(), ex);
-        }	
+        }       
     }
 
     // We do this with two scans. The first runs through the topics
@@ -590,7 +595,7 @@ TopicManagerImpl::observerCreateTopic(const LogUpdate& llu, const string& name)
     {
         try
         {
-            DatabaseConnectionPtr connection = _databaseCache->getConnection();
+            DatabaseConnectionPtr connection = _connectionPool->newConnection();
             TransactionHolder txn(connection);
 
             SubscriberRecordKey key;
@@ -599,7 +604,7 @@ TopicManagerImpl::observerCreateTopic(const LogUpdate& llu, const string& name)
             rec.link = false;
             rec.cost = 0;
 
-            SubscribersWrapperPtr subscribersWrapper = _databaseCache->getSubscribers(connection);
+            SubscribersWrapperPtr subscribersWrapper = _connectionPool->getSubscribers(connection);
             try
             {
                 subscribersWrapper->find(key);
@@ -610,7 +615,7 @@ TopicManagerImpl::observerCreateTopic(const LogUpdate& llu, const string& name)
             }
             subscribersWrapper->put(key, rec);
 
-            LLUWrapperPtr lluWrapper = _databaseCache->getLLU(connection);
+            LLUWrapperPtr lluWrapper = _connectionPool->getLLU(connection);
             lluWrapper->put(llu);
 
             txn.commit();
@@ -623,7 +628,7 @@ TopicManagerImpl::observerCreateTopic(const LogUpdate& llu, const string& name)
         catch(const DatabaseException& ex)
         {
             halt(_instance->communicator(), ex);
-        }	
+        }       
     }
     installTopic(name, id, true);
 }
@@ -687,7 +692,7 @@ TopicManagerImpl::getContent(LogUpdate& llu, TopicContentSeq& content)
         reap(); 
     }
 
-    DatabaseConnectionPtr connection = _databaseCache->newConnection();
+    DatabaseConnectionPtr connection = _connectionPool->newConnection();
 
     for(;;)
     {
@@ -700,7 +705,7 @@ TopicManagerImpl::getContent(LogUpdate& llu, TopicContentSeq& content)
                 content.push_back(rec);
             }
         
-            LLUWrapperPtr lluWrapper = _databaseCache->getLLU(connection);
+            LLUWrapperPtr lluWrapper = _connectionPool->getLLU(connection);
             llu = lluWrapper->get();
             break;
         }
@@ -711,20 +716,20 @@ TopicManagerImpl::getContent(LogUpdate& llu, TopicContentSeq& content)
         catch(const DatabaseException& ex)
         {
             halt(_instance->communicator(), ex);
-        }	
+        }       
     }
 }
 
 LogUpdate
 TopicManagerImpl::getLastLogUpdate() const
 {
-    DatabaseConnectionPtr connection = _databaseCache->newConnection();
+    DatabaseConnectionPtr connection = _connectionPool->newConnection();
 
     for(;;)
     {
         try
         {
-            LLUWrapperPtr lluWrapper = _databaseCache->getLLU(connection);
+            LLUWrapperPtr lluWrapper = _connectionPool->getLLU(connection);
             return lluWrapper->get();
         }
         catch(const DeadlockException&)
@@ -776,7 +781,7 @@ TopicManagerImpl::initMaster(const set<GroupNodeInfo>& slaves, const LogUpdate& 
         {
             content.clear();
 
-            DatabaseConnectionPtr connection = _databaseCache->getConnection();
+            DatabaseConnectionPtr connection = _connectionPool->newConnection();
             TransactionHolder txn(connection);
 
             for(map<string, TopicImplPtr>::const_iterator p = _topics.begin(); p != _topics.end(); ++p)
@@ -785,7 +790,7 @@ TopicManagerImpl::initMaster(const set<GroupNodeInfo>& slaves, const LogUpdate& 
                 content.push_back(rec);
             }
 
-            LLUWrapperPtr lluWrapper = _databaseCache->getLLU(connection);
+            LLUWrapperPtr lluWrapper = _connectionPool->getLLU(connection);
             lluWrapper->put(llu);
 
             txn.commit();
@@ -798,7 +803,7 @@ TopicManagerImpl::initMaster(const set<GroupNodeInfo>& slaves, const LogUpdate& 
         catch(const DatabaseException& ex)
         {
             halt(_instance->communicator(), ex);
-        }	
+        }       
     }
 
     // Now initialize the observers.
@@ -859,6 +864,26 @@ Ice::ObjectPtr
 TopicManagerImpl::getServant() const
 {
     return _managerImpl;
+}
+
+void
+TopicManagerImpl::updateTopicObservers()
+{
+    Lock sync(*this);
+    for(map<string, TopicImplPtr>::const_iterator p = _topics.begin(); p != _topics.end(); ++p)
+    {
+        p->second->updateObserver();
+    }
+}
+
+void
+TopicManagerImpl::updateSubscriberObservers()
+{
+    Lock sync(*this);
+    for(map<string, TopicImplPtr>::const_iterator p = _topics.begin(); p != _topics.end(); ++p)
+    {
+        p->second->updateSubscriberObservers();
+    }
 }
 
 TopicPrx

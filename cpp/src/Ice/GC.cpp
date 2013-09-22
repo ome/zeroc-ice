@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -15,6 +15,7 @@
 #include <set>
 
 using namespace IceUtil;
+using namespace Ice::Instrumentation;
 
 namespace 
 {
@@ -138,7 +139,7 @@ IceInternal::GCShared::__setNoDelete(bool b)
 //
 
 
-IceInternal::GC::GC(int interval, StatsCallback cb)
+IceInternal::GC::GC(int interval, StatsCallback cb) : Thread("Ice.GC")
 {
     IceUtilInternal::MutexPtrLock<IceUtil::Mutex> sync(numCollectorsMutex);
     if(numCollectors++ > 0)
@@ -174,6 +175,7 @@ IceInternal::GC::run()
     while(true)
     {
         bool collect = false;
+        ThreadObserverPtr observer;
         {
             Monitor<Mutex>::Lock sync(*this);
 
@@ -186,12 +188,24 @@ IceInternal::GC::run()
             {
                 collect = true;
             }
+            observer = _observer.get();
         }
         if(collect)
         {
-            collectGarbage();
+            if(observer)
+            {
+                observer->stateChanged(ThreadStateIdle, ThreadStateInUseForOther);
+                collectGarbage();
+                observer->stateChanged(ThreadStateInUseForOther, ThreadStateIdle);
+            }
+            else
+            {
+                collectGarbage();
+            }
         }
     }
+
+    _observer.detach();
 }
 
 void
@@ -331,25 +345,22 @@ IceInternal::GC::collectGarbage()
     //
     // What is left in the counts map can be garbage collected.
     //
+    for(GCCountMap::const_iterator i = counts.begin(); i != counts.end(); ++i)
     {
-        GCCountMap::const_iterator i;
-        for(i = counts.begin(); i != counts.end(); ++i)
-        {
-            //
-            // For classes with members that point at potentially-cyclic instances, __gcClear()
-            // decrements the reference count of the pointed-at instances as many times as they are
-            // pointed at and clears the corresponding Ptr members in the pointing class.
-            // For classes that cannot be part of a cycle (because they do not contain class members)
-            // and are therefore true leaves, __gcClear() assigns 0 to the corresponding class member,
-            // which either decrements the ref count or, if it reaches zero, deletes the instance as usual.
-            //
-            i->first->__gcClear();
-        }
-        for(i = counts.begin(); i != counts.end(); ++i)
-        {
-            gcObjects->erase(i->first); // Remove this object from candidate set.
-            delete i->first; // Delete this object.
-        }
+        //
+        // For classes with members that point at potentially-cyclic instances, __gcClear()
+        // decrements the reference count of the pointed-at instances as many times as they are
+        // pointed at and clears the corresponding Ptr members in the pointing class.
+        // For classes that cannot be part of a cycle (because they do not contain class members)
+        // and are therefore true leaves, __gcClear() assigns 0 to the corresponding class member,
+        // which either decrements the ref count or, if it reaches zero, deletes the instance as usual.
+        //
+        i->first->__gcClear();
+    }
+    for(GCCountMap::const_iterator i = counts.begin(); i != counts.end(); ++i)
+    {
+        gcObjects->erase(i->first); // Remove this object from candidate set.
+        delete i->first; // Delete this object.
     }
 
     if(_statsCallback)
@@ -371,5 +382,38 @@ IceInternal::GC::collectGarbage()
         Monitor<Mutex>::Lock sync(*this);
 
         _collecting = false;
+    }
+}
+
+void
+IceInternal::GC::updateObserver(const CommunicatorObserverPtr& observer)
+{
+    Monitor<Mutex>::Lock sync(*this);
+    if(!observer)
+    {
+        return;
+    }
+
+    // Only the first communicator can observe the GC thread.
+    if(!_communicatorObserver)
+    {
+        _communicatorObserver = observer;
+    } 
+
+    if(observer == _communicatorObserver)
+    {
+        _observer.attach(observer->getThreadObserver("Communicator", name(), ThreadStateIdle, _observer.get()));
+    }
+}
+
+void
+IceInternal::GC::clearObserver(const CommunicatorObserverPtr& observer)
+{
+    Monitor<Mutex>::Lock sync(*this);
+    assert(observer);
+    if(observer == _communicatorObserver)
+    {
+        _communicatorObserver = 0;
+        _observer.detach();
     }
 }

@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -15,9 +15,10 @@
 #include <structmember.h>
 #include <Communicator.h>
 #include <Connection.h>
-#include <Util.h>
-#include <Operation.h>
 #include <Endpoint.h>
+#include <Operation.h>
+#include <Thread.h>
+#include <Util.h>
 #include <Ice/Communicator.h>
 #include <Ice/LocalException.h>
 #include <Ice/Locator.h>
@@ -72,7 +73,7 @@ allocateProxy(const Ice::ObjectPrx& proxy, const Ice::CommunicatorPtr& communica
 extern "C"
 #endif
 static ProxyObject*
-proxyNew(PyObject* /*arg*/)
+proxyNew(PyTypeObject* /*type*/, PyObject* /*args*/, PyObject* /*kwds*/)
 {
     PyErr_Format(PyExc_RuntimeError, STRCAST("A proxy cannot be created directly"));
     return 0;
@@ -86,27 +87,67 @@ proxyDealloc(ProxyObject* self)
 {
     delete self->proxy;
     delete self->communicator;
-    self->ob_type->tp_free(self);
+    Py_TYPE(self)->tp_free(reinterpret_cast<PyObject*>(self));
 }
 
 #ifdef WIN32
 extern "C"
 #endif
-static int
-proxyCompare(ProxyObject* p1, ProxyObject* p2)
+static PyObject*
+proxyCompare(ProxyObject* p1, PyObject* other, int op)
 {
-    if(*p1->proxy < *p2->proxy)
+    bool result = false;
+
+    if(PyObject_TypeCheck(other, &ProxyType))
     {
-        return -1;
+        ProxyObject* p2 = reinterpret_cast<ProxyObject*>(other);
+
+        switch(op)
+        {
+        case Py_EQ:
+            result = *p1->proxy == *p2->proxy;
+            break;
+        case Py_NE:
+            result = *p1->proxy != *p2->proxy;
+            break;
+        case Py_LE:
+            result = *p1->proxy <= *p2->proxy;
+            break;
+        case Py_GE:
+            result = *p1->proxy >= *p2->proxy;
+            break;
+        case Py_LT:
+            result = *p1->proxy < *p2->proxy;
+            break;
+        case Py_GT:
+            result = *p1->proxy > *p2->proxy;
+            break;
+        }
     }
-    else if(*p1->proxy == *p2->proxy)
+    else if(other == Py_None)
     {
-        return 0;
+        result = op == Py_NE || op == Py_GE || op == Py_GT;
     }
     else
     {
-        return 1;
+        if(op == Py_EQ)
+        {
+            result = false;
+        }
+        else if(op == Py_NE)
+        {
+            result = true;
+        }
+        else
+        {
+            PyErr_Format(PyExc_TypeError, "can't compare %s to %s", Py_TYPE(p1)->tp_name, Py_TYPE(other)->tp_name);
+            return 0;
+        }
     }
+
+    PyObject* r = result ? getTrue() : getFalse();
+    Py_INCREF(r);
+    return r;
 }
 
 #ifdef WIN32
@@ -504,7 +545,7 @@ proxyIceContext(ProxyObject* self, PyObject* args)
         return 0;
     }
 
-    return createProxy(newProxy, *self->communicator, reinterpret_cast<PyObject*>(self->ob_type));
+    return createProxy(newProxy, *self->communicator, reinterpret_cast<PyObject*>(Py_TYPE(self)));
 }
 
 #ifdef WIN32
@@ -616,7 +657,7 @@ proxyIceAdapterId(ProxyObject* self, PyObject* args)
         return 0;
     }
 
-    return createProxy(newProxy, *self->communicator, reinterpret_cast<PyObject*>(self->ob_type));
+    return createProxy(newProxy, *self->communicator, reinterpret_cast<PyObject*>(Py_TYPE(self)));
 }
 
 #ifdef WIN32
@@ -704,7 +745,7 @@ proxyIceEndpoints(ProxyObject* self, PyObject* args)
         return 0;
     }
 
-    return createProxy(newProxy, *self->communicator, reinterpret_cast<PyObject*>(self->ob_type));
+    return createProxy(newProxy, *self->communicator, reinterpret_cast<PyObject*>(Py_TYPE(self)));
 }
 
 #ifdef WIN32
@@ -718,7 +759,7 @@ proxyIceGetLocatorCacheTimeout(ProxyObject* self)
     try
     {
         Ice::Int timeout = (*self->proxy)->ice_getLocatorCacheTimeout();
-        return PyInt_FromLong(timeout);
+        return PyLong_FromLong(timeout);
     }
     catch(const Ice::Exception& ex)
     {
@@ -772,7 +813,7 @@ proxyIceLocatorCacheTimeout(ProxyObject* self, PyObject* args)
         return 0;
     }
 
-    return createProxy(newProxy, *self->communicator, reinterpret_cast<PyObject*>(self->ob_type));
+    return createProxy(newProxy, *self->communicator, reinterpret_cast<PyObject*>(Py_TYPE(self)));
 }
 
 #ifdef WIN32
@@ -829,7 +870,7 @@ proxyIceConnectionCached(ProxyObject* self, PyObject* args)
         return 0;
     }
 
-    return createProxy(newProxy, *self->communicator, reinterpret_cast<PyObject*>(self->ob_type));
+    return createProxy(newProxy, *self->communicator, reinterpret_cast<PyObject*>(Py_TYPE(self)));
 }
 
 #ifdef WIN32
@@ -917,7 +958,7 @@ proxyIceEndpointSelection(ProxyObject* self, PyObject* args)
         return 0;
     }
 
-    return createProxy(newProxy, *self->communicator, reinterpret_cast<PyObject*>(self->ob_type));
+    return createProxy(newProxy, *self->communicator, reinterpret_cast<PyObject*>(Py_TYPE(self)));
 }
 
 #ifdef WIN32
@@ -974,8 +1015,60 @@ proxyIceSecure(ProxyObject* self, PyObject* args)
         return 0;
     }
 
-    PyTypeObject* type = self->ob_type; // Necessary to prevent GCC's strict-alias warnings.
-    return createProxy(newProxy, *self->communicator, reinterpret_cast<PyObject*>(type));
+    return createProxy(newProxy, *self->communicator, reinterpret_cast<PyObject*>(Py_TYPE(self)));
+}
+
+
+#ifdef WIN32
+extern "C"
+#endif
+static PyObject*
+proxyIceGetEncodingVersion(ProxyObject* self)
+{
+    assert(self->proxy);
+
+    PyObject* version;
+    try
+    {
+        version = IcePy::createEncodingVersion((*self->proxy)->ice_getEncodingVersion());
+    }
+    catch(const Ice::Exception& ex)
+    {
+        setPythonException(ex);
+        return 0;
+    }
+
+    Py_INCREF(version);
+    return version;
+}
+
+#ifdef WIN32
+extern "C"
+#endif
+static PyObject*
+proxyIceEncodingVersion(ProxyObject* self, PyObject* args)
+{
+    Ice::EncodingVersion val;
+    if(!getEncodingVersion(args, val))
+    {
+        PyErr_Format(PyExc_ValueError, STRCAST("ice_encodingVersion requires an encoding version"));
+        return 0;
+    }
+
+    assert(self->proxy);
+
+    Ice::ObjectPrx newProxy;
+    try
+    {
+        newProxy = (*self->proxy)->ice_encodingVersion(val);
+    }
+    catch(const Ice::Exception& ex)
+    {
+        setPythonException(ex);
+        return 0;
+    }
+
+    return createProxy(newProxy, *self->communicator, reinterpret_cast<PyObject*>(Py_TYPE(self)));
 }
 
 #ifdef WIN32
@@ -1032,7 +1125,7 @@ proxyIcePreferSecure(ProxyObject* self, PyObject* args)
         return 0;
     }
 
-    return createProxy(newProxy, *self->communicator, reinterpret_cast<PyObject*>(self->ob_type));
+    return createProxy(newProxy, *self->communicator, reinterpret_cast<PyObject*>(Py_TYPE(self)));
 }
 
 #ifdef WIN32
@@ -1098,7 +1191,7 @@ proxyIceRouter(ProxyObject* self, PyObject* args)
         return 0;
     }
 
-    return createProxy(newProxy, *self->communicator, reinterpret_cast<PyObject*>(self->ob_type));
+    return createProxy(newProxy, *self->communicator, reinterpret_cast<PyObject*>(Py_TYPE(self)));
 }
 
 #ifdef WIN32
@@ -1164,7 +1257,7 @@ proxyIceLocator(ProxyObject* self, PyObject* args)
         return 0;
     }
 
-    return createProxy(newProxy, *self->communicator, reinterpret_cast<PyObject*>(self->ob_type));
+    return createProxy(newProxy, *self->communicator, reinterpret_cast<PyObject*>(Py_TYPE(self)));
 }
 
 #ifdef WIN32
@@ -1186,7 +1279,7 @@ proxyIceTwoway(ProxyObject* self)
         return 0;
     }
 
-    return createProxy(newProxy, *self->communicator, reinterpret_cast<PyObject*>(self->ob_type));
+    return createProxy(newProxy, *self->communicator, reinterpret_cast<PyObject*>(Py_TYPE(self)));
 }
 
 #ifdef WIN32
@@ -1231,7 +1324,7 @@ proxyIceOneway(ProxyObject* self)
         return 0;
     }
 
-    return createProxy(newProxy, *self->communicator, reinterpret_cast<PyObject*>(self->ob_type));
+    return createProxy(newProxy, *self->communicator, reinterpret_cast<PyObject*>(Py_TYPE(self)));
 }
 
 #ifdef WIN32
@@ -1276,7 +1369,7 @@ proxyIceBatchOneway(ProxyObject* self)
         return 0;
     }
 
-    return createProxy(newProxy, *self->communicator, reinterpret_cast<PyObject*>(self->ob_type));
+    return createProxy(newProxy, *self->communicator, reinterpret_cast<PyObject*>(Py_TYPE(self)));
 }
 
 #ifdef WIN32
@@ -1321,7 +1414,7 @@ proxyIceDatagram(ProxyObject* self)
         return 0;
     }
 
-    return createProxy(newProxy, *self->communicator, reinterpret_cast<PyObject*>(self->ob_type));
+    return createProxy(newProxy, *self->communicator, reinterpret_cast<PyObject*>(Py_TYPE(self)));
 }
 
 #ifdef WIN32
@@ -1366,7 +1459,7 @@ proxyIceBatchDatagram(ProxyObject* self)
         return 0;
     }
 
-    return createProxy(newProxy, *self->communicator, reinterpret_cast<PyObject*>(self->ob_type));
+    return createProxy(newProxy, *self->communicator, reinterpret_cast<PyObject*>(Py_TYPE(self)));
 }
 
 #ifdef WIN32
@@ -1423,7 +1516,7 @@ proxyIceCompress(ProxyObject* self, PyObject* args)
         return 0;
     }
 
-    return createProxy(newProxy, *self->communicator, reinterpret_cast<PyObject*>(self->ob_type));
+    return createProxy(newProxy, *self->communicator, reinterpret_cast<PyObject*>(Py_TYPE(self)));
 }
 
 #ifdef WIN32
@@ -1451,7 +1544,7 @@ proxyIceTimeout(ProxyObject* self, PyObject* args)
         return 0;
     }
 
-    return createProxy(newProxy, *self->communicator, reinterpret_cast<PyObject*>(self->ob_type));
+    return createProxy(newProxy, *self->communicator, reinterpret_cast<PyObject*>(Py_TYPE(self)));
 }
 
 // NOTE: ice_collocationOptimized is not currently supported.
@@ -1487,7 +1580,7 @@ proxyIceConnectionId(ProxyObject* self, PyObject* args)
         return 0;
     }
 
-    return createProxy(newProxy, *self->communicator, reinterpret_cast<PyObject*>(self->ob_type));
+    return createProxy(newProxy, *self->communicator, reinterpret_cast<PyObject*>(Py_TYPE(self)));
 }
 
 #ifdef WIN32
@@ -1637,7 +1730,8 @@ proxyBeginIceFlushBatchRequests(ProxyObject* self, PyObject* args, PyObject* kwd
         return 0;
     }
 
-    return createAsyncResult(result, reinterpret_cast<PyObject*>(self), 0, 0);
+    PyObjectHandle communicator = getCommunicatorWrapper(*self->communicator);
+    return createAsyncResult(result, reinterpret_cast<PyObject*>(self), 0, communicator.get());
 }
 
 #ifdef WIN32
@@ -1834,7 +1928,7 @@ checkedCastImpl(ProxyObject* p, const string& id, PyObject* facet, PyObject* ctx
         target = (*p->proxy)->ice_facet(facetStr);
     }
 
-    bool b;
+    bool b = false;
     try
     {
         AllowThreads allowThreads; // Release Python's global interpreter lock during remote invocations.
@@ -1851,6 +1945,10 @@ checkedCastImpl(ProxyObject* p, const string& id, PyObject* facet, PyObject* ctx
             }
             b = target->ice_isA(id, c);
         }
+    }
+    catch(const Ice::FacetNotExistException&)
+    {
+        // Ignore.
     }
     catch(const Ice::Exception& ex)
     {
@@ -1900,7 +1998,7 @@ proxyIceCheckedCast(PyObject* type, PyObject* args)
 
     PyObject* facet = 0;
 
-    if(PyString_Check(facetOrCtx))
+    if(checkString(facetOrCtx))
     {
         facet = facetOrCtx;
     }
@@ -2012,7 +2110,7 @@ proxyCheckedCast(PyObject* /*self*/, PyObject* args)
 
         if(arg1 != 0)
         {
-            if(!PyString_Check(arg1))
+            if(!checkString(arg1))
             {
                 PyErr_Format(PyExc_ValueError, STRCAST("facet argument to checkedCast must be a string"));
                 return 0;
@@ -2029,7 +2127,7 @@ proxyCheckedCast(PyObject* /*self*/, PyObject* args)
     }
     else if(arg1 != 0 && arg1 != Py_None)
     {
-        if(PyString_Check(arg1))
+        if(checkString(arg1))
         {
             facet = arg1;
         }
@@ -2161,6 +2259,10 @@ static PyMethodDef ProxyMethods[] =
         PyDoc_STR(STRCAST("ice_isSecure() -> bool")) },
     { STRCAST("ice_secure"), reinterpret_cast<PyCFunction>(proxyIceSecure), METH_VARARGS,
         PyDoc_STR(STRCAST("ice_secure(bool) -> Ice.ObjectPrx")) },
+    { STRCAST("ice_getEncodingVersion"), reinterpret_cast<PyCFunction>(proxyIceGetEncodingVersion), METH_NOARGS,
+        PyDoc_STR(STRCAST("ice_getEncodingVersion() -> Ice.EncodingVersion")) },
+    { STRCAST("ice_encodingVersion"), reinterpret_cast<PyCFunction>(proxyIceEncodingVersion), METH_VARARGS,
+        PyDoc_STR(STRCAST("ice_endpointSelection(Ice.EncodingVersion) -> Ice.ObjectPrx")) },
     { STRCAST("ice_isPreferSecure"), reinterpret_cast<PyCFunction>(proxyIceIsPreferSecure), METH_NOARGS,
         PyDoc_STR(STRCAST("ice_isPreferSecure() -> bool")) },
     { STRCAST("ice_preferSecure"), reinterpret_cast<PyCFunction>(proxyIcePreferSecure), METH_VARARGS,
@@ -2237,33 +2339,37 @@ PyTypeObject ProxyType =
 {
     /* The ob_type field must be initialized in the module init function
      * to be portable to Windows without using C++. */
-    PyObject_HEAD_INIT(0)
-    0,                               /* ob_size */
+    PyVarObject_HEAD_INIT(0, 0)
     STRCAST("IcePy.ObjectPrx"),      /* tp_name */
     sizeof(ProxyObject),             /* tp_basicsize */
     0,                               /* tp_itemsize */
     /* methods */
-    (destructor)proxyDealloc,        /* tp_dealloc */
+    reinterpret_cast<destructor>(proxyDealloc), /* tp_dealloc */
     0,                               /* tp_print */
     0,                               /* tp_getattr */
     0,                               /* tp_setattr */
-    (cmpfunc)proxyCompare,           /* tp_compare */
-    (reprfunc)proxyRepr,             /* tp_repr */
+    0,                               /* tp_reserved */
+    reinterpret_cast<reprfunc>(proxyRepr), /* tp_repr */
     0,                               /* tp_as_number */
     0,                               /* tp_as_sequence */
     0,                               /* tp_as_mapping */
-    (hashfunc)proxyHash,             /* tp_hash */
+    reinterpret_cast<hashfunc>(proxyHash), /* tp_hash */
     0,                               /* tp_call */
     0,                               /* tp_str */
     0,                               /* tp_getattro */
     0,                               /* tp_setattro */
     0,                               /* tp_as_buffer */
+#if PY_VERSION_HEX >= 0x03000000
+    Py_TPFLAGS_BASETYPE,             /* tp_flags */
+#else
     Py_TPFLAGS_BASETYPE |
+    Py_TPFLAGS_HAVE_RICHCOMPARE |
     Py_TPFLAGS_HAVE_CLASS,           /* tp_flags */
+#endif
     0,                               /* tp_doc */
     0,                               /* tp_traverse */
     0,                               /* tp_clear */
-    0,                               /* tp_richcompare */
+    reinterpret_cast<richcmpfunc>(proxyCompare), /* tp_richcompare */
     0,                               /* tp_weaklistoffset */
     0,                               /* tp_iter */
     0,                               /* tp_iternext */
@@ -2277,7 +2383,7 @@ PyTypeObject ProxyType =
     0,                               /* tp_dictoffset */
     0,                               /* tp_init */
     0,                               /* tp_alloc */
-    (newfunc)proxyNew,               /* tp_new */
+    reinterpret_cast<newfunc>(proxyNew), /* tp_new */
     0,                               /* tp_free */
     0,                               /* tp_is_gc */
 };

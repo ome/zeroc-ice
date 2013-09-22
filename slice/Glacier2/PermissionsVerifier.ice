@@ -1,14 +1,13 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
-#ifndef GLACIER2_PERMISSIONS_VERIFIER_ICE
-#define GLACIER2_PERMISSIONS_VERIFIER_ICE
+#pragma once
 
 [["cpp:header-ext:h"]]
 
@@ -16,6 +15,26 @@
 
 module Glacier2
 {
+
+/**
+ *
+ * This exception is raised if a client is denied the ability to create
+ * a session with the router.
+ *
+ * @see Router#createSession
+ * @see Router#createSessionFromSecureConnection
+ *
+ **/
+["preserve-slice"]
+exception PermissionDeniedException
+{
+    /**
+     *
+     * The reason why permission was denied.
+     *
+     **/
+    string reason;
+};
 
 /**
  *
@@ -39,9 +58,14 @@ interface PermissionsVerifier
      *
      * @return True if access is granted, or false otherwise.
      *
+     * @throws PermissionDeniedException Raised if the user access is
+     * denied. This can be raised in place of returning false with a
+     * reason set in the reason out parameter.
+     *
      **/
-    ["ami", "nonmutating", "cpp:const"] idempotent bool checkPermissions(string userId, string password, 
-                                                                         out string reason);
+    ["nonmutating", "cpp:const", "format:sliced"]
+    idempotent bool checkPermissions(string userId, string password, out string reason)
+        throws PermissionDeniedException;
 };
 
 /**
@@ -64,12 +88,17 @@ interface SSLPermissionsVerifier
      *
      * @return True if access is granted, or false otherwise.
      *
+     * @throws PermissionDeniedException Raised if the user access is
+     * denied. This can be raised in place of returning false with a
+     * reason set in the reason out parameter.
+     *
      * @see SSLInfo
      *
      **/
-    ["ami", "nonmutating", "cpp:const"] idempotent bool authorize(SSLInfo info, out string reason);
+    ["nonmutating", "cpp:const", "format:sliced"] 
+    idempotent bool authorize(SSLInfo info, out string reason)
+        throws PermissionDeniedException;
 };
 
 };
 
-#endif

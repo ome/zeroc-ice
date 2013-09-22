@@ -1,17 +1,32 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
-#ifndef TEST_ICE
-#define TEST_ICE
+#pragma once
 
 module Test
 {
+
+struct S
+{
+    string str;
+};
+
+class Base
+{
+    S theS;
+    string str;
+};
+
+class AbstractBase extends Base
+{
+    void op();
+};
 
 class B;
 class C;
@@ -76,10 +91,23 @@ class H implements I
 {
 };
 
+sequence<Base> BaseSeq;
+
+class CompactExt;
+
+class Compact(1)
+{
+};
+
+const int CompactExtId = 789;
+
+class CompactExt(CompactExtId) extends Compact
+{
+};
+
 class Initial
 {
     void shutdown();
-
     B getB1();
     B getB2();
     C getC();
@@ -94,6 +122,10 @@ class Initial
     I getH();
 
     void setI(I theI);
+
+    BaseSeq opBaseSeq(BaseSeq inSeq, out BaseSeq outSeq);
+
+    Compact getCompact();
 };
 
 class Empty
@@ -150,5 +182,3 @@ dictionary<int, COneMember> DOneMember;
 dictionary<int, CTwoMembers> DTwoMembers;
 
 };
-
-#endif

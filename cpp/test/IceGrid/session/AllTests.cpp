@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -16,6 +16,7 @@
 #include <IceGrid/Observer.h>
 #include <Glacier2/Router.h>
 #include <TestCommon.h>
+#include <Test.h>
 
 using namespace std;
 using namespace IceGrid;
@@ -131,7 +132,7 @@ public:
     }
 
     void
-    waitForUpdate(const char* file, int line)
+    waitForUpdate(const char*, int line)
     {
         Lock sync(*this);
 
@@ -361,7 +362,7 @@ public:
     }
 
     virtual void 
-    nodeInit(const NodeDynamicInfoSeq& info, const Ice::Current& current)
+    nodeInit(const NodeDynamicInfoSeq& info, const Ice::Current&)
     {
         Lock sync(*this);
         for(NodeDynamicInfoSeq::const_iterator p = info.begin(); p != info.end(); ++p)
@@ -372,7 +373,7 @@ public:
     }
 
     virtual void
-    nodeUp(const NodeDynamicInfo& info, const Ice::Current& current)
+    nodeUp(const NodeDynamicInfo& info, const Ice::Current&)
     {
         Lock sync(*this);
         this->nodes[info.info.name] = filter(info);
@@ -380,7 +381,7 @@ public:
     }
 
     virtual void
-    nodeDown(const string& name, const Ice::Current& current)
+    nodeDown(const string& name, const Ice::Current&)
     {
         Lock sync(*this);
         this->nodes.erase(name);
@@ -388,7 +389,7 @@ public:
     }
 
     virtual void
-    updateServer(const string& node, const ServerDynamicInfo& info, const Ice::Current& current)
+    updateServer(const string& node, const ServerDynamicInfo& info, const Ice::Current&)
     {
         if(info.id == "Glacier2" || info.id == "Glacier2Admin" || info.id == "PermissionsVerifierServer")
         {
@@ -426,7 +427,7 @@ public:
     }
 
     virtual void
-    updateAdapter(const string& node, const AdapterDynamicInfo& info, const Ice::Current& current)
+    updateAdapter(const string& node, const AdapterDynamicInfo& info, const Ice::Current&)
     {
         if(info.id == "PermissionsVerifierServer.Server")
         {
@@ -508,7 +509,7 @@ public:
     }
 
     virtual void 
-    registryInit(const RegistryInfoSeq& info, const Ice::Current& current)
+    registryInit(const RegistryInfoSeq& info, const Ice::Current&)
     {
         Lock sync(*this);
         for(RegistryInfoSeq::const_iterator p = info.begin(); p != info.end(); ++p)
@@ -519,7 +520,7 @@ public:
     }
 
     virtual void
-    registryUp(const RegistryInfo& info, const Ice::Current& current)
+    registryUp(const RegistryInfo& info, const Ice::Current&)
     {
         Lock sync(*this);
         this->registries[info.name] = info;
@@ -527,7 +528,7 @@ public:
     }
 
     virtual void
-    registryDown(const string& name, const Ice::Current& current)
+    registryDown(const string& name, const Ice::Current&)
         {
             Lock sync(*this);
             this->registries.erase(name);
@@ -554,6 +555,8 @@ allTests(const Ice::CommunicatorPtr& communicator)
     SessionKeepAliveThreadPtr keepAlive = new SessionKeepAliveThread(
         communicator->getLogger(), IceUtil::Time::seconds(5));
     keepAlive->start();
+
+    bool encoding10 = communicator->getProperties()->getProperty("Ice.Default.EncodingVersion") == "1.0";
 
     RegistryPrx registry = RegistryPrx::checkedCast(communicator->stringToProxy("IceGrid/Registry"));
     test(registry);
@@ -593,8 +596,10 @@ allTests(const Ice::CommunicatorPtr& communicator)
     IceGrid::RegistryPrx registry1 = IceGrid::RegistryPrx::uncheckedCast(registry->ice_connectionId("reg1"));
     IceGrid::RegistryPrx registry2 = IceGrid::RegistryPrx::uncheckedCast(registry->ice_connectionId("reg2"));
 
-    Ice::ObjectPrx router = communicator->stringToProxy("Glacier2/router:default -p 12347 -h 127.0.0.1");
-    Ice::ObjectPrx adminRouter = communicator->stringToProxy("Glacier2/router:default -p 12348 -h 127.0.0.1");
+    Glacier2::RouterPrx router = Glacier2::RouterPrx::uncheckedCast(
+        communicator->stringToProxy("Glacier2/router:default -p 12347 -h 127.0.0.1"));
+    Glacier2::RouterPrx adminRouter = Glacier2::RouterPrx::uncheckedCast(
+        communicator->stringToProxy("Glacier2/router:default -p 12348 -h 127.0.0.1"));
 
     Glacier2::RouterPrx router1 = Glacier2::RouterPrx::uncheckedCast(router->ice_connectionId("router1"));
     Glacier2::RouterPrx router2 = Glacier2::RouterPrx::uncheckedCast(router->ice_connectionId("router2"));
@@ -634,6 +639,17 @@ allTests(const Ice::CommunicatorPtr& communicator)
         }
         catch(const IceGrid::PermissionDeniedException&)
         {
+        }
+        try
+        {
+            Ice::Context ctx;
+            ctx["throw"] = "1";
+            registry1->createSession("client3", "test1", ctx);
+            test(false);
+        }
+        catch(const IceGrid::PermissionDeniedException& ex)
+        {
+            test(ex.reason == "reason");
         }
 
         session1->ice_ping();
@@ -690,6 +706,17 @@ allTests(const Ice::CommunicatorPtr& communicator)
         }
         catch(const IceGrid::PermissionDeniedException&)
         {
+        }
+        try
+        {
+            Ice::Context ctx;
+            ctx["throw"] = "1";
+            registry1->createSession("admin3", "test1", ctx);
+            test(false);
+        }
+        catch(const IceGrid::PermissionDeniedException& ex)
+        {
+            test(ex.reason == "reason");
         }
 
         adminSession1->ice_ping();
@@ -752,6 +779,18 @@ allTests(const Ice::CommunicatorPtr& communicator)
 
         try
         {
+            Ice::Context ctx;
+            ctx["throw"] = "1";
+            registry1->createSessionFromSecureConnection(ctx);
+            test(false);
+        }
+        catch(const IceGrid::PermissionDeniedException& ex)
+        {
+            test(ex.reason == "reason");
+        }
+
+        try
+        {
             session1->ice_connectionId("")->ice_ping();
             test(false);
         }
@@ -779,6 +818,18 @@ allTests(const Ice::CommunicatorPtr& communicator)
 
         adminSession1->ice_ping();
         adminSession2->ice_ping();
+
+        try
+        {
+            Ice::Context ctx;
+            ctx["throw"] = "1";
+            registry1->createAdminSessionFromSecureConnection(ctx);
+            test(false);
+        }
+        catch(const IceGrid::PermissionDeniedException& ex)
+        {
+            test(ex.reason == "reason");
+        }
 
         try
         {
@@ -847,6 +898,21 @@ allTests(const Ice::CommunicatorPtr& communicator)
         catch(const Glacier2::CannotCreateSessionException&)
         {
         }
+        try
+        {
+            Ice::Context ctx;
+            ctx["throw"] = "1";
+            router->ice_connectionId("routerex")->createSession("client3", "test1", ctx);
+            test(false);
+        }
+        catch(const Test::ExtendedPermissionDeniedException& ex)
+        {
+            test(!encoding10 && ex.reason == "reason");
+        }
+        catch(const Glacier2::PermissionDeniedException& ex)
+        {
+            test(encoding10 && ex.reason == "reason");
+        }
 
         session1->ice_ping();
         session2->ice_ping();
@@ -903,11 +969,26 @@ allTests(const Ice::CommunicatorPtr& communicator)
 
         try
         {
-            adminRouter1->createSession("client3", "test1");
+            adminRouter1->createSession("admin3", "test1");
             test(false);
         }
         catch(const Glacier2::CannotCreateSessionException&)
         {
+        }
+        try
+        {
+            Ice::Context ctx;
+            ctx["throw"] = "1";
+            adminRouter->ice_connectionId("routerex")->createSession("admin3", "test1", ctx);
+            test(false);
+        }
+        catch(const Test::ExtendedPermissionDeniedException& ex)
+        {
+            test(!encoding10 && ex.reason == "reason");
+        }
+        catch(const Glacier2::PermissionDeniedException& ex)
+        {
+            test(encoding10 && ex.reason == "reason");
         }
 
         admSession1->ice_ping();
@@ -988,6 +1069,22 @@ allTests(const Ice::CommunicatorPtr& communicator)
 
         try
         {
+            Ice::Context ctx;
+            ctx["throw"] = "1";
+            router->ice_connectionId("routerex")->createSessionFromSecureConnection(ctx);
+            test(false);
+        }
+        catch(const Test::ExtendedPermissionDeniedException& ex)
+        {
+            test(!encoding10 && ex.reason == "reason");
+        }
+        catch(const Glacier2::PermissionDeniedException& ex)
+        {
+            test(encoding10 && ex.reason == "reason");
+        }
+
+        try
+        {
             session1->ice_connectionId("router21")->ice_router(router2)->ice_ping();
             test(false);
         }
@@ -1044,6 +1141,22 @@ allTests(const Ice::CommunicatorPtr& communicator)
 
         admSession1->ice_ping();
         admSession2->ice_ping();
+
+        try
+        {
+            Ice::Context ctx;
+            ctx["throw"] = "1";
+            adminRouter->ice_connectionId("routerex")->createSessionFromSecureConnection(ctx);
+            test(false);
+        }
+        catch(const Test::ExtendedPermissionDeniedException& ex)
+        {
+            test(!encoding10 && ex.reason == "reason");
+        }
+        catch(const Glacier2::PermissionDeniedException& ex)
+        {
+            test(encoding10 && ex.reason == "reason");
+        }
 
         Ice::ObjectPrx admin1 = admSession1->getAdmin()->ice_router(adminRouter1)->ice_connectionId("admRouter11");
         Ice::ObjectPrx admin2 = admSession2->getAdmin()->ice_router(adminRouter2)->ice_connectionId("admRouter21");
@@ -1870,7 +1983,6 @@ allTests(const Ice::CommunicatorPtr& communicator)
         }
         cout << "ok" << endl;
     }
-
 
     admin->stopServer("PermissionsVerifierServer");
 

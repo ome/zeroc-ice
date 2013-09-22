@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -65,7 +65,7 @@ public:
 private:
 
     bool _haveResponse;
-    auto_ptr<Exception> _ex;
+    IceUtil::UniquePtr<Exception> _ex;
     Int _response;
 };
 typedef IceUtil::Handle<AsyncCallback> AsyncCallbackPtr;
@@ -305,6 +305,9 @@ public:
             }
         }
         catch(const Ice::ConnectionLostException&)
+        {
+        }
+        catch(const Ice::ObjectNotExistException&)
         {
         }
         catch(const Ice::CommunicatorDestroyedException&)

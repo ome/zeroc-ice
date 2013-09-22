@@ -1,14 +1,14 @@
+
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
-#ifndef ICE_CONNECTION_ICE
-#define ICE_CONNECTION_ICE
+#pragma once
 
 [["cpp:header-ext:h"]]
 
@@ -40,6 +40,13 @@ local class ConnectionInfo
      *
      **/
     string adapterName;
+
+    /**
+     *
+     * The connection id.
+     *
+     **/
+    string connectionId;
 };
 
 /**
@@ -78,7 +85,6 @@ local interface Connection
      * connection.
      *
      * @see #setAdapter
-     *
      **/
     ["cpp:const"] Object* createProxy(Identity id);
 
@@ -182,16 +188,16 @@ local interface Connection
 local class IPConnectionInfo extends ConnectionInfo
 {
     /** The local address. */
-    string localAddress;
+    string localAddress = "";
 
     /** The local port. */
-    int localPort;
+    int localPort = -1;
 
     /** The remote address. */
-    string remoteAddress;
+    string remoteAddress = "";
 
     /** The remote port. */
-    int remotePort;
+    int remotePort = -1;
 };
 
 /**
@@ -214,9 +220,8 @@ local class UDPConnectionInfo extends IPConnectionInfo
     string mcastAddress;
 
     /** The multicast port. */
-    int mcastPort;
+    int mcastPort = -1;
 };
 
 };
 
-#endif

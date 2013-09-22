@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -30,19 +30,19 @@ public class SessionHelper
             {
                 try
                 {
-                    _router.refreshSession_async(new Glacier2.AMI_Router_refreshSession()
+                    _router.begin_refreshSession(new Glacier2.Callback_Router_refreshSession()
                     {
-                        public void ice_response()
+                        public void response()
                         {
                         }
 
-                        public void ice_exception(Ice.LocalException ex)
+                        public void exception(Ice.LocalException ex)
                         {
                             done();
                             SessionHelper.this.destroy();
                         }
 
-                        public void ice_exception(Ice.UserException ex)
+                        public void exception(Ice.UserException ex)
                         {
                             done();
                             SessionHelper.this.destroy();
@@ -129,6 +129,7 @@ public class SessionHelper
                 return;
             }
             _session = null;
+            _connected = false;
 
             try
             {
@@ -450,7 +451,6 @@ public class SessionHelper
             //
             communicator.getLogger().warning("SessionHelper: unexpected exception when destroying the session:\n" + e);
         }
-        _connected = false;
 
         if(refreshThread != null)
         {
@@ -500,13 +500,19 @@ public class SessionHelper
         catch(final Ice.LocalException ex)
         {
             _destroy = true;
-            dispatchCallback(new Runnable()
-            {
-                public void run()
+            new Thread(new Runnable()
                 {
-                    _callback.connectFailed(SessionHelper.this, ex);
-                }
-            }, null);
+                    public void run()
+                    {
+                        dispatchCallback(new Runnable()
+                        {
+                            public void run()
+                            {
+                                _callback.connectFailed(SessionHelper.this, ex);
+                            }
+                        }, null);
+                    }
+                }).start();
             return;
         }
 
@@ -589,7 +595,7 @@ public class SessionHelper
         }
     }
 
-    private Ice.InitializationData _initData;
+    private final Ice.InitializationData _initData;
     private Ice.Communicator _communicator;
     private Ice.ObjectAdapter _adapter;
     private Glacier2.RouterPrx _router;
@@ -597,7 +603,7 @@ public class SessionHelper
     private String _category;
 
     private SessionRefreshThread _refreshThread;
-    private SessionCallback _callback;
+    private final SessionCallback _callback;
     private boolean _destroy = false;
     private boolean _connected = false;
     private Thread _shutdownHook;

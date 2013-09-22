@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -10,6 +10,10 @@
 #include <IceUtil/StringUtil.h>
 #include <IceUtil/Unicode.h>
 #include <cstring>
+
+#ifdef ICE_OS_WINRT
+#include <IceUtil/ScopedArray.h>
+#endif
 
 using namespace std;
 using namespace IceUtil;
@@ -139,8 +143,7 @@ encodeChar(string::value_type b, string& s, const string& special)
 string
 IceUtilInternal::escapeString(const string& s, const string& special)
 {
-    string::size_type i;
-    for(i = 0; i < special.size(); ++i)
+    for(string::size_type i = 0; i < special.size(); ++i)
     {
         if(static_cast<unsigned char>(special[i]) < 32 || static_cast<unsigned char>(special[i]) > 126)
         {
@@ -149,7 +152,7 @@ IceUtilInternal::escapeString(const string& s, const string& special)
     }
     
     string result;
-    for(i = 0; i < s.size(); ++i)
+    for(string::size_type i = 0; i < s.size(); ++i)
     {
         encodeChar(s[i], result, special);
     }
@@ -497,37 +500,97 @@ IceUtilInternal::errorToString(int error, LPCVOID source)
 {
     if(error < WSABASEERR)
     {
-        LPVOID lpMsgBuf = 0;
-        DWORD ok = FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER |
-                                 FORMAT_MESSAGE_FROM_SYSTEM |
-                                 FORMAT_MESSAGE_IGNORE_INSERTS | 
-                                 (source != NULL ? FORMAT_MESSAGE_FROM_HMODULE : 0),
-                                 source,
-                                 error,
-                                 MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), // Default language
-                                 (LPTSTR)&lpMsgBuf,
-                                 0,
-                                 NULL);
-        if(ok)
+#ifdef ICE_OS_WINRT
+
+        int size = 256;
+        IceUtil::ScopedArray<wchar_t> lpMsgBuf(new wchar_t[size]);
+
+        DWORD stored = 0;
+        
+        while(stored == 0)
         {
-            LPCTSTR msg = (LPCTSTR)lpMsgBuf;
-            assert(msg && strlen((const char*)msg) > 0);
-            string result = (const char*)msg;
-            if(result[result.length() - 1] == '\n')
+            stored = FormatMessageW(
+                FORMAT_MESSAGE_FROM_SYSTEM |
+                FORMAT_MESSAGE_IGNORE_INSERTS |
+                (source != NULL ? FORMAT_MESSAGE_FROM_HMODULE : 0),
+                source,
+                error,
+                MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), // Default language
+                lpMsgBuf.get(),
+                size,
+                NULL);
+
+            if(stored == 0)
+            {
+                DWORD err = GetLastError();
+                if(err == ERROR_INSUFFICIENT_BUFFER)
+                {
+                    if(size == 65536)
+                    {
+                        break; // already at the max size
+                    }
+                    else
+                    {
+                        size *= 4;
+                        size = max(size, 65536);
+                        lpMsgBuf.reset(new wchar_t[size]);
+                    }
+                }
+                else
+                {
+                    break;
+                }   
+            }
+        }
+
+        LPWSTR msg = lpMsgBuf.get();
+
+#else
+        LPWSTR msg = 0;
+ 
+        DWORD stored = FormatMessageW(
+            FORMAT_MESSAGE_ALLOCATE_BUFFER |
+            FORMAT_MESSAGE_FROM_SYSTEM |
+            FORMAT_MESSAGE_IGNORE_INSERTS |
+            (source != NULL ? FORMAT_MESSAGE_FROM_HMODULE : 0),
+            source,
+            error,
+            MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), // Default language
+            reinterpret_cast<LPWSTR>(&msg),
+            0,
+            NULL);
+#endif
+        
+        if(stored > 0)
+        {
+            assert(msg && wcslen(msg) > 0);
+            wstring result = msg;
+            if(result[result.length() - 1] == L'\n')
             {
                 result = result.substr(0, result.length() - 2);
             }
-            LocalFree(lpMsgBuf);
-            return result;
+#ifndef ICE_OS_WINRT
+            if(msg)
+            {
+                LocalFree(msg);
+            }
+#endif
+            return IceUtil::wstringToString(result);
         }
         else
         {
+#ifndef ICE_OS_WINRT
+            if(msg)
+            {
+                LocalFree(msg);
+            }
+#endif
             ostringstream os;
             os << "unknown error: " << error;
             return os.str();
         }
     }
-
+    
     switch(error)
     {
     case WSAEINTR:

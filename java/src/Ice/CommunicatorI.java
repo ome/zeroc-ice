@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -133,10 +133,16 @@ public final class CommunicatorI implements Communicator
         return _instance.initializationData().logger;
     }
 
+    @SuppressWarnings("deprecation")
     public Stats
     getStats()
     {
         return _instance.initializationData().stats;
+    }
+
+    public Ice.Instrumentation.CommunicatorObserver getObserver()
+    {
+         return _instance.initializationData().observer;
     }
 
     public RouterPrx
@@ -234,22 +240,28 @@ public final class CommunicatorI implements Communicator
         r.__wait();
     }
 
-    public ObjectPrx 
+    public ObjectPrx
     getAdmin()
     {
         return _instance.getAdmin();
     }
 
-    public void 
+    public void
     addAdminFacet(Object servant, String facet)
     {
         _instance.addAdminFacet(servant, facet);
     }
 
-    public Object 
+    public Object
     removeAdminFacet(String facet)
     {
         return _instance.removeAdminFacet(facet);
+    }
+
+    public Object
+    findAdminFacet(String facet)
+    {
+        return _instance.findAdminFacet(facet);
     }
 
     CommunicatorI(InitializationData initData)

@@ -1,6 +1,6 @@
 # **********************************************************************
 #
-# Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -9,9 +9,9 @@
 
 top_srcdir	= ../..
 
-SERVER		= $(top_srcdir)/bin/icepatch2server
-CLIENT		= $(top_srcdir)/bin/icepatch2client
-CALC		= $(top_srcdir)/bin/icepatch2calc
+SERVER		= $(bindir)/icepatch2server
+CLIENT		= $(bindir)/icepatch2client
+CALC		= $(bindir)/icepatch2calc
 
 TARGETS         = $(SERVER) $(CLIENT) $(CALC)
 
@@ -25,6 +25,12 @@ CALCOBJS	= Calc.o
 SRCS		= $(SOBJS:.o=.cpp) \
 		  $(COBJS:.o=.cpp) \
 		  $(CALCOBJS:.o=.cpp)
+
+ifeq ($(CPP11),yes)
+RPATH_DIR	= @loader_path/../../lib/c++11
+else
+RPATH_DIR	= @loader_path/../lib
+endif
 
 include $(top_srcdir)/config/Make.rules
 

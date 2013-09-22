@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -276,32 +276,6 @@ public class LoginActivity extends Activity
                 {
                     _loginInProgress = false;
                     setLoginState();
-                }
-            });
-            return builder.create();
-        }
-
-        case DIALOG_CONFIRM:
-        {
-            final String msg = "The server certificate does not match the official ZeroC chat server "
-                    + "certificate, do you want to continue and connect to this chat server?";
-
-            AlertDialog.Builder builder = new AlertDialog.Builder(LoginActivity.this);
-            builder.setTitle("Warning");
-            builder.setMessage(msg);
-            builder.setCancelable(false);
-            builder.setPositiveButton("Ok", new DialogInterface.OnClickListener()
-            {
-                public void onClick(DialogInterface dialog, int whichButton)
-                {
-                    _service.confirmConnection(true);
-                }
-            });
-            builder.setNegativeButton("Cancel", new DialogInterface.OnClickListener()
-            {
-                public void onClick(DialogInterface dialog, int whichButton)
-                {
-                    _service.confirmConnection(false);
                 }
             });
             return builder.create();

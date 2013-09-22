@@ -1,14 +1,13 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
-#ifndef FREEZE_EVICTOR_STORAGE_ICE
-#define FREEZE_EVICTOR_STORAGE_ICE
+#pragma once
 
 [["cpp:header-ext:h"]]
 
@@ -19,7 +18,7 @@ module Freeze
 
 /**
  *
- * The evictor maintains statistics about each object.
+ *  Evictors maintain statistics about each object, when using Ice encoding version 1.0.
  *
  **/
 struct Statistics
@@ -48,8 +47,8 @@ struct Statistics
 
 /**
  *
- * The evictor uses a number of maps with {@link Ice.Identity} keys and {@link ObjectRecord} values as its
- * persistent storage.
+ * ObjectRecord is the value-type for the persistent maps maintained by evictors 
+ * when using Ice encoding version is 1.0.
  *
  **/
 struct ObjectRecord
@@ -63,7 +62,7 @@ struct ObjectRecord
 
     /**
      *
-     * The statistics for the object.
+     * The statistics for the object. 
      *
      **/
     Statistics stats;
@@ -71,4 +70,3 @@ struct ObjectRecord
 
 };
 
-#endif

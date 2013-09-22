@@ -1,20 +1,20 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
-#ifndef ICE_CURRENT_ICE
-#define ICE_CURRENT_ICE
+#pragma once
 
 [["cpp:header-ext:h"]]
 
 #include <Ice/ObjectAdapterF.ice>
 #include <Ice/ConnectionF.ice>
 #include <Ice/Identity.ice>
+#include <Ice/Version.ice>
 
 module Ice
 {
@@ -147,8 +147,14 @@ local struct Current
      *
      **/
     int requestId;
+
+    /**
+     *
+     * The encoding version used to encode the input and output parameters.
+     *
+     **/
+    Ice::EncodingVersion encoding;
 };
 
 };
 
-#endif

@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -81,6 +81,9 @@ private:
 #ifdef _WIN32
     struct LockState
     {
+#   ifdef ICE_HAS_WIN32_CONDVAR
+        CRITICAL_SECTION* mutex;
+#   endif
         int count;
     };
 #else

@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -54,6 +54,15 @@ final class EndpointI extends IceInternal.EndpointI
     type()
     {
         return (short)(TYPE_BASE + _endpoint.type());
+    }
+
+    //
+    // Return the protocol name
+    //
+    public String
+    protocol()
+    {
+        return _endpoint.protocol();
     }
 
     //
@@ -184,11 +193,11 @@ final class EndpointI extends IceInternal.EndpointI
     // is available.
     //
     public java.util.List<IceInternal.Connector>
-    connectors()
+    connectors(Ice.EndpointSelectionType selType)
     {
         _configuration.checkConnectorsException();
         java.util.List<IceInternal.Connector> connectors = new java.util.ArrayList<IceInternal.Connector>();
-        for(IceInternal.Connector p : _endpoint.connectors())
+        for(IceInternal.Connector p : _endpoint.connectors(selType))
         {
             connectors.add(new Connector(_configuration, p));
         }
@@ -196,7 +205,7 @@ final class EndpointI extends IceInternal.EndpointI
     }
 
     public void
-    connectors_async(final IceInternal.EndpointI_connectors cb)
+    connectors_async(Ice.EndpointSelectionType selType, final IceInternal.EndpointI_connectors cb)
     {
         class Callback implements IceInternal.EndpointI_connectors
         {
@@ -221,7 +230,7 @@ final class EndpointI extends IceInternal.EndpointI
         try
         {
             _configuration.checkConnectorsException();
-            _endpoint.connectors_async(new Callback());
+            _endpoint.connectors_async(selType, new Callback());
         }
         catch(Ice.LocalException ex)
         {

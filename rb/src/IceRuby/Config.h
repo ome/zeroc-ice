@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -25,6 +25,15 @@
 //#if defined(__HP_aCC) && defined(_POSIX_C_SOURCE)
 //#    undef _POSIX_C_SOURCE
 //#endif
+
+//
+// Ruby defines _FILE_OFFSET_BITS without a guard; we undefine it to
+// avoid a warning
+//
+#if defined(__SUNPRO_CC) && defined(_FILE_OFFSET_BITS)
+   #undef _FILE_OFFSET_BITS
+#endif
+
 
 #include <ruby.h>
 

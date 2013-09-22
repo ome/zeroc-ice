@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -31,10 +31,6 @@ public class Client
         int status = 0;
         Ice.Communicator communicator = null;
 
-#if !COMPACT
-        Debug.Listeners.Add(new ConsoleTraceListener());
-#endif
-
         try
         {
             Ice.InitializationData initData = new Ice.InitializationData();
@@ -49,6 +45,8 @@ public class Client
             // This test kills connections, so we don't want warnings.
             //
             initData.properties.setProperty("Ice.Warn.Connections", "0");
+
+            initData.properties.setProperty("Ice.MessageSizeMax", "50000");
 
             //
             // Setup the test transport plug-in.

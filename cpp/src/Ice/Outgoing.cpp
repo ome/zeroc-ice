@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -17,21 +17,23 @@
 #include <Ice/Protocol.h>
 #include <Ice/Instance.h>
 #include <Ice/ReplyStatus.h>
+#include <Ice/ProxyFactory.h>
 
 using namespace std;
 using namespace Ice;
+using namespace Ice::Instrumentation;
 using namespace IceInternal;
 
 IceInternal::LocalExceptionWrapper::LocalExceptionWrapper(const LocalException& ex, bool r) :
     _retry(r)
 {
-    _ex.reset(dynamic_cast<LocalException*>(ex.ice_clone()));
+    _ex.reset(ex.ice_clone());
 }
 
 IceInternal::LocalExceptionWrapper::LocalExceptionWrapper(const LocalExceptionWrapper& ex) :
     _retry(ex._retry)
 {
-    _ex.reset(dynamic_cast<LocalException*>(ex.get()->ice_clone()));
+    _ex.reset(ex.get()->ice_clone());
 }
 
 void
@@ -81,13 +83,17 @@ IceInternal::LocalExceptionWrapper::retry() const
 }
 
 IceInternal::Outgoing::Outgoing(RequestHandler* handler, const string& operation, OperationMode mode, 
-                                const Context* context) :
+                                const Context* context, InvocationObserver& observer) :
     _handler(handler),
+    _observer(observer),
     _state(StateUnsent),
-    _is(handler->getReference()->getInstance().get()),
-    _os(handler->getReference()->getInstance().get()),
+    _encoding(getCompatibleEncoding(handler->getReference()->getEncoding())),
+    _is(handler->getReference()->getInstance().get(), Ice::currentProtocolEncoding),
+    _os(handler->getReference()->getInstance().get(), Ice::currentProtocolEncoding),
     _sent(false)
-{
+{ 
+    checkSupportedProtocol(getCompatibleProtocol(handler->getReference()->getProtocol()));
+
     switch(_handler->getReference()->getMode())
     {
         case Reference::ModeTwoway:
@@ -108,7 +114,7 @@ IceInternal::Outgoing::Outgoing(RequestHandler* handler, const string& operation
 
     try
     {
-        _handler->getReference()->getIdentity().__write(&_os);
+        _os.write(_handler->getReference()->getIdentity());
 
         //
         // For compatibility with the old FacetPath.
@@ -132,7 +138,7 @@ IceInternal::Outgoing::Outgoing(RequestHandler* handler, const string& operation
             //
             // Explicit context
             //
-            __writeContext(&_os, *context);
+            _os.write(*context);
         }
         else
         {
@@ -143,20 +149,13 @@ IceInternal::Outgoing::Outgoing(RequestHandler* handler, const string& operation
             const Context& prxContext = _handler->getReference()->getContext()->getValue();
             if(implicitContext == 0)
             {
-                __writeContext(&_os, prxContext);
+                _os.write(prxContext);
             }
             else
             {
                 implicitContext->write(prxContext, &_os);
             }
         }
-        
-        //
-        // Input and output parameters are always sent in an
-        // encapsulation, which makes it possible to forward requests as
-        // blobs.
-        //
-        _os.startWriteEncaps();
     }
     catch(const LocalException& ex)
     {
@@ -164,13 +163,15 @@ IceInternal::Outgoing::Outgoing(RequestHandler* handler, const string& operation
     }
 }
 
+Outgoing::~Outgoing()
+{
+}
+
 bool
 IceInternal::Outgoing::invoke()
 {
     assert(_state == StateUnsent);
 
-    _os.endWriteEncaps();
-    
     switch(_handler->getReference()->getMode())
     {
         case Reference::ModeTwoway:
@@ -343,6 +344,11 @@ IceInternal::Outgoing::abort(const LocalException& ex)
 void
 IceInternal::Outgoing::sent(bool notify)
 {
+    if(_handler->getReference()->getMode() != Reference::ModeTwoway)
+    {
+        _remoteObserver.detach();
+    }
+
     if(notify)
     {
         IceUtil::Monitor<IceUtil::Mutex>::Lock sync(_monitor);
@@ -357,6 +363,12 @@ IceInternal::Outgoing::sent(bool notify)
         //
         _sent = true;
     }
+
+    //
+    // NOTE: At this point the stack allocated Outgoing object can be destroyed 
+    // since the notify() on the monitor will release the thread waiting on the
+    // synchronous Ice call.
+    //
 }
 
 void
@@ -367,8 +379,14 @@ IceInternal::Outgoing::finished(BasicStream& is)
     assert(_handler->getReference()->getMode() == Reference::ModeTwoway); // Can only be called for twoways.
 
     assert(_state <= StateInProgress);
+    if(_remoteObserver)
+    {
+        _remoteObserver->reply(static_cast<Int>(is.b.size() - headerSize - 4));
+    }
+    _remoteObserver.detach();
 
     _is.swap(is);
+
     Byte replyStatus;
     _is.read(replyStatus);
     
@@ -382,6 +400,7 @@ IceInternal::Outgoing::finished(BasicStream& is)
         
         case replyUserException:
         {
+            _observer.userException();
             _state = StateUserException; // The state must be set last, in case there is an exception.
             break;
         }
@@ -396,7 +415,7 @@ IceInternal::Outgoing::finished(BasicStream& is)
             // exception, you will have a memory leak.
             //
             Identity ident;
-            ident.__read(&_is);
+            _is.read(ident);
 
             //
             // For compatibility with the old FacetPath.
@@ -518,8 +537,11 @@ IceInternal::Outgoing::finished(const LocalException& ex, bool sent)
 {
     IceUtil::Monitor<IceUtil::Mutex>::Lock sync(_monitor);
     assert(_state <= StateInProgress);
+    _remoteObserver.failed(ex.ice_name());
+    _remoteObserver.detach();
+
     _state = StateFailed;
-    _exception.reset(dynamic_cast<LocalException*>(ex.ice_clone()));
+    _exception.reset(ex.ice_clone());
     _sent = sent;
     _monitor.notify();
 }
@@ -539,19 +561,22 @@ IceInternal::Outgoing::throwUserException()
     }
 }
 
-IceInternal::BatchOutgoing::BatchOutgoing(RequestHandler* handler) :
+IceInternal::BatchOutgoing::BatchOutgoing(RequestHandler* handler, InvocationObserver& observer) :
     _handler(handler),
     _connection(0),
     _sent(false),
-    _os(handler->getReference()->getInstance().get())
+    _os(handler->getReference()->getInstance().get(), Ice::currentProtocolEncoding),
+    _observer(observer)
 {
+    checkSupportedProtocol(handler->getReference()->getProtocol());
 }
 
-IceInternal::BatchOutgoing::BatchOutgoing(ConnectionI* connection, Instance* instance) :
+IceInternal::BatchOutgoing::BatchOutgoing(ConnectionI* connection, Instance* instance, InvocationObserver& observer) :
     _handler(0),
     _connection(connection),
     _sent(false), 
-    _os(instance)
+    _os(instance, Ice::currentProtocolEncoding),
+    _observer(observer)
 {
 }
 
@@ -566,7 +591,6 @@ IceInternal::BatchOutgoing::invoke()
         {
             _monitor.wait();
         }
-        
         if(_exception.get())
         {
             _exception->ice_throw();
@@ -577,6 +601,8 @@ IceInternal::BatchOutgoing::invoke()
 void
 IceInternal::BatchOutgoing::sent(bool notify)
 {
+    _remoteObserver.detach();
+
     if(notify)
     {
         IceUtil::Monitor<IceUtil::Mutex>::Lock sync(_monitor);
@@ -587,12 +613,20 @@ IceInternal::BatchOutgoing::sent(bool notify)
     {
         _sent = true;
     }
+
+    //
+    // NOTE: At this point the stack allocated BatchOutgoing object
+    // can be destroyed since the notify() on the monitor will release
+    // the thread waiting on the synchronous Ice call.
+    //
 }
 
 void
 IceInternal::BatchOutgoing::finished(const Ice::LocalException& ex, bool)
 {
     IceUtil::Monitor<IceUtil::Mutex>::Lock sync(_monitor);
-    _exception.reset(dynamic_cast<LocalException*>(ex.ice_clone()));
+    _remoteObserver.failed(ex.ice_name());
+    _remoteObserver.detach();
+    _exception.reset(ex.ice_clone());
     _monitor.notify();
 }

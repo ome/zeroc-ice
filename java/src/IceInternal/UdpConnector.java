@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -46,65 +46,37 @@ final class UdpConnector implements Connector
     // Only for use by TcpEndpoint
     //
     UdpConnector(Instance instance, java.net.InetSocketAddress addr, String mcastInterface, int mcastTtl, 
-                 byte protocolMajor, byte protocolMinor, byte encodingMajor, byte encodingMinor, String connectionId)
+                 String connectionId)
     {
         _instance = instance;
         _addr = addr;
         _mcastInterface = mcastInterface;
         _mcastTtl = mcastTtl;
-        _protocolMajor = protocolMajor;
-        _protocolMinor = protocolMinor;
-        _encodingMajor = encodingMajor;
-        _encodingMinor = encodingMinor;
         _connectionId = connectionId;
 
-        _hashCode = _addr.getAddress().getHostAddress().hashCode();
-        _hashCode = 5 * _hashCode + _addr.getPort();
-        _hashCode = 5 * _hashCode + _mcastInterface.hashCode();
-        _hashCode = 5 * _hashCode + _mcastTtl;
-        _hashCode = 5 * _hashCode + _connectionId.hashCode();
+        _hashCode = 5381;
+        _hashCode = IceInternal.HashUtil.hashAdd(_hashCode , _addr.getAddress().getHostAddress());
+        _hashCode = IceInternal.HashUtil.hashAdd(_hashCode , _addr.getPort());
+        _hashCode = IceInternal.HashUtil.hashAdd(_hashCode , _mcastInterface);
+        _hashCode = IceInternal.HashUtil.hashAdd(_hashCode , _mcastTtl);
+        _hashCode = IceInternal.HashUtil.hashAdd(_hashCode , _connectionId);
     }
 
     public boolean
     equals(java.lang.Object obj)
     {
-        UdpConnector p = null;
-
-        try
-        {
-            p = (UdpConnector)obj;
-        }
-        catch(ClassCastException ex)
+        if(!(obj instanceof UdpConnector))
         {
             return false;
         }
 
-        if(this == p)
+        if(this == obj)
         {
             return true;
         }
 
+        UdpConnector p = (UdpConnector)obj;
         if(!_connectionId.equals(p._connectionId))
-        {
-            return false;
-        }
-
-        if(_protocolMajor != p._protocolMajor)
-        {
-            return false;
-        }
-
-        if(_protocolMinor != p._protocolMinor)
-        {
-            return false;
-        }
-
-        if(_encodingMajor != p._encodingMajor)
-        {
-            return false;
-        }
-
-        if(_encodingMinor != p._encodingMinor)
         {
             return false;
         }
@@ -126,10 +98,6 @@ final class UdpConnector implements Connector
     private java.net.InetSocketAddress _addr;
     private String _mcastInterface;
     private int _mcastTtl;
-    private byte _protocolMajor;
-    private byte _protocolMinor;
-    private byte _encodingMajor;
-    private byte _encodingMinor;
     private String _connectionId;
     private int _hashCode;
 }

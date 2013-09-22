@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -10,6 +10,7 @@
 #ifndef ICE_INSTANCE_H
 #define ICE_INSTANCE_H
 
+#include <IceUtil/Config.h>
 #include <IceUtil/Shared.h>
 #include <IceUtil/Mutex.h>
 #include <IceUtil/RecMutex.h>
@@ -17,6 +18,7 @@
 #include <Ice/InstanceF.h>
 #include <Ice/CommunicatorF.h>
 #include <Ice/StatsF.h>
+#include <Ice/InstrumentationF.h>
 #include <Ice/TraceLevelsF.h>
 #include <Ice/DefaultsAndOverridesF.h>
 #include <Ice/RouterInfoF.h>
@@ -37,7 +39,7 @@
 #include <Ice/FacetMap.h>
 #include <Ice/Process.h>
 #include <list>
-#include <memory>
+#include <IceUtil/UniquePtr.h>
 
 namespace Ice
 {
@@ -48,6 +50,9 @@ class CommunicatorI;
 
 namespace IceInternal
 {
+
+class MetricsAdminI;
+typedef IceUtil::Handle<MetricsAdminI> MetricsAdminIPtr;
 
 class Instance : public IceUtil::Shared, public IceUtil::RecMutex
 {
@@ -67,8 +72,9 @@ public:
     ObjectFactoryManagerPtr servantFactoryManager() const;
     ObjectAdapterFactoryPtr objectAdapterFactory() const;
     ProtocolSupport protocolSupport() const;
+    bool preferIPv6() const;
     ThreadPoolPtr clientThreadPool();
-    ThreadPoolPtr serverThreadPool();
+    ThreadPoolPtr serverThreadPool(bool create = true);
     EndpointHostResolverPtr endpointHostResolver();
     RetryQueuePtr retryQueue();
     IceUtil::TimerPtr timer();
@@ -84,6 +90,7 @@ public:
     Ice::ObjectPrx getAdmin();
     void addAdminFacet(const Ice::ObjectPtr&, const std::string&);
     Ice::ObjectPtr removeAdminFacet(const std::string&);
+    Ice::ObjectPtr findAdminFacet(const std::string&);
     
     const Ice::ImplicitContextIPtr& getImplicitContext() const
     {
@@ -128,6 +135,7 @@ private:
     ObjectFactoryManagerPtr _servantFactoryManager;
     ObjectAdapterFactoryPtr _objectAdapterFactory;
     ProtocolSupport _protocolSupport;
+    bool _preferIPv6;
     ThreadPoolPtr _clientThreadPool;
     ThreadPoolPtr _serverThreadPool;
     EndpointHostResolverPtr _endpointHostResolver;
@@ -141,23 +149,7 @@ private:
     Ice::FacetMap _adminFacets;
     Ice::Identity _adminIdentity;
     std::set<std::string> _adminFacetFilter;
-};
-
-class UTF8BufferI : public Ice::UTF8Buffer
-{
-public:
-
-   UTF8BufferI();
-   ~UTF8BufferI();
-
-   Ice::Byte* getMoreBytes(size_t howMany, Ice::Byte* firstUnused);
-   Ice::Byte* getBuffer();
-   void reset();
-
-private:
-
-    Ice::Byte* _buffer;
-    size_t _offset;
+    IceInternal::MetricsAdminIPtr _metricsAdmin;
 };
 
 class ProcessI : public Ice::Process

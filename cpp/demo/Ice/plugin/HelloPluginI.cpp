@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -67,7 +67,7 @@ extern "C"
 {
 
 ICE_DECLSPEC_EXPORT ::Ice::Plugin*
-createHello(const Ice::CommunicatorPtr& communicator, const string& name, const Ice::StringSeq& args)
+createHello(const Ice::CommunicatorPtr& communicator, const string&, const Ice::StringSeq&)
 {
     return new HelloPluginI(communicator);
 }

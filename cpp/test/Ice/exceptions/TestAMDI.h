@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -11,6 +11,9 @@
 #define TEST_I_H
 
 #include <TestAMD.h>
+
+bool
+endsWith(const std::string&, const std::string&);
 
 class ThrowerI : public Test::Thrower
 {
@@ -56,8 +59,16 @@ public:
     virtual void throwAssertException_async(const Test::AMD_Thrower_throwAssertExceptionPtr&,
                                             const Ice::Current&);
 
+    virtual void throwLocalExceptionIdempotent_async(const Test::AMD_Thrower_throwLocalExceptionIdempotentPtr&,
+                                                     const Ice::Current&);
+
     virtual void throwAfterResponse_async(const Test::AMD_Thrower_throwAfterResponsePtr&, const Ice::Current&);
     virtual void throwAfterException_async(const Test::AMD_Thrower_throwAfterExceptionPtr&, const Ice::Current&);
+    
+    virtual void throwE_async(const Test::AMD_Thrower_throwEPtr&, const Ice::Current&);
+    virtual void throwF_async(const Test::AMD_Thrower_throwFPtr&, const Ice::Current&);
+    virtual void throwG_async(const Test::AMD_Thrower_throwGPtr&, const Ice::Current&);
+    virtual void throwH_async(const Test::AMD_Thrower_throwHPtr&, const Ice::Current&);
 };
 
 #endif

@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -8,12 +8,15 @@
 // **********************************************************************
 
 #include <Ice/Ice.h>
+#include <TestCommon.h>
 #include <TestI.h>
+
+DEFINE_TEST("server")
 
 using namespace std;
 
 int
-run(int argc, char* argv[], const Ice::CommunicatorPtr& communicator)
+run(int, char**, const Ice::CommunicatorPtr& communicator)
 {
     IceUtil::TimerPtr timer = new IceUtil::Timer();
 
@@ -35,6 +38,8 @@ run(int argc, char* argv[], const Ice::CommunicatorPtr& communicator)
 
     adapter1->activate();
     adapter2->activate();
+
+    TEST_READY
 
     communicator->waitForShutdown();
 

@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -20,12 +20,12 @@
 // doesn't work. Apple is supported for all architectures. Sun only
 // supports sparc (32 and 64 bit).
 
-#elif __GNUC__ >= 4 && __GNUC_MINOR__ >= 1 && \
-	((defined(__sun) && (defined(__sparc) || defined(__sparcv9))) || \
-	 defined(__APPLE__) || \
-	(defined(__linux) && \
-		(defined(__i486) || defined(__i586) || \
-		 defined(__i686) || defined(__x86_64))))
+#elif (__GNUC__ >= 4 && __GNUC_MINOR__ >= 1 || __clang__)  &&                         \
+        ((defined(__sun) && (defined(__sparc) || defined(__sparcv9))) || \
+         defined(__APPLE__) || \
+        (defined(__linux) && \
+                (defined(__i486) || defined(__i586) || \
+                 defined(__i686) || defined(__x86_64))))
 
 #   define ICE_HAS_GCC_BUILTINS
 

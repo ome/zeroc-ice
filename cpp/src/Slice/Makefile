@@ -1,6 +1,6 @@
 # **********************************************************************
 #
-# Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -9,10 +9,9 @@
 
 top_srcdir	= ../..
 
-LIBFILENAME     = $(call mklibfilename,Slice,$(VERSION))
-SONAME          = $(call mksoname,Slice,$(SOVERSION))  
+LIBFILENAME	= $(call mklibfilename,Slice,$(VERSION))
+SONAME		= $(call mksoname,Slice,$(SOVERSION))  
 LIBNAME		= $(call mklibname,Slice)
-
 TARGETS		= $(call mklibtargets,$(libdir)/$(LIBFILENAME),$(libdir)/$(SONAME),$(libdir)/$(LIBNAME))
 
 OBJS		= Scanner.o \
@@ -36,10 +35,11 @@ SRCS		= $(OBJS:.o=.cpp)
 
 include $(top_srcdir)/config/Make.rules
 
+
 CPPFLAGS	:= -I.. $(CPPFLAGS) -DSLICE_API_EXPORTS 
-LINKWITH	:= -lIceUtil $(MCPP_LIBS)
 BISONFLAGS	:= --name-prefix "slice_" $(BISONFLAGS)
 
+LINKWITH	:= $(BASELIBS) $(MCPP_LIBS)
 ifeq ($(STATICLIBS),yes)
 $(libdir)/$(LIBNAME): $(OBJS)
 	rm -f $@
@@ -56,10 +56,9 @@ $(libdir)/$(SONAME): $(libdir)/$(LIBFILENAME)
 $(libdir)/$(LIBNAME): $(libdir)/$(SONAME)
 	rm -f $@
 	ln -s $(SONAME) $@
-endif
 
 install:: all
 	$(call installlib,$(install_libdir),$(libdir),$(LIBFILENAME),$(SONAME),$(LIBNAME))
-
+endif
 
 include .depend

@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -1883,7 +1883,7 @@ FreezeScript::RecordDescriptor::RecordDescriptor(const DescriptorPtr& parent, in
 }
 
 void
-FreezeScript::RecordDescriptor::execute(const SymbolTablePtr& sym)
+FreezeScript::RecordDescriptor::execute(const SymbolTablePtr& /*sym*/)
 {
     //
     // Temporarily add an object factory.
@@ -1960,8 +1960,8 @@ FreezeScript::RecordDescriptor::transformRecord(const Ice::ByteSeq& inKeyBytes,
                                                 Ice::ByteSeq& outKeyBytes,
                                                 Ice::ByteSeq& outValueBytes)
 {
-    Ice::InputStreamPtr inKey = Ice::createInputStream(_info->communicator, inKeyBytes);
-    Ice::InputStreamPtr inValue = Ice::createInputStream(_info->communicator, inValueBytes);
+    Ice::InputStreamPtr inKey = Ice::wrapInputStream(_info->communicator, inKeyBytes);
+    Ice::InputStreamPtr inValue = Ice::wrapInputStream(_info->communicator, inValueBytes);
     inValue->startEncapsulation();
 
     Ice::OutputStreamPtr outKey = Ice::createOutputStream(_info->communicator);
@@ -2650,9 +2650,9 @@ FreezeScript::ObjectVisitor::visitObject(const ObjectRefPtr& data)
         if(p == _map.end())
         {
 #if (defined(_MSC_VER) && (_MSC_VER >= 1600))
-            _map.insert(ObjectDataMap::value_type(value.get(), nullptr));
+            _map.insert(ObjectDataMap::value_type(value.get(), static_cast<ObjectDataPtr>(nullptr)));
 #else
-	    _map.insert(ObjectDataMap::value_type(value.get(), 0));
+            _map.insert(ObjectDataMap::value_type(value.get(), 0));
 #endif
             DataMemberMap& members = value->getMembers();
             for(DataMemberMap::iterator q = members.begin(); q != members.end(); ++q)
@@ -2814,7 +2814,7 @@ FreezeScript::DescriptorHandler::DescriptorHandler(const TransformInfoIPtr& info
 
 void
 FreezeScript::DescriptorHandler::startElement(const string& name, const IceXML::Attributes& attributes, int line,
-                                              int column)
+                                              int /*column*/)
 {
     DescriptorPtr d;
 
@@ -2958,7 +2958,7 @@ FreezeScript::DescriptorHandler::startElement(const string& name, const IceXML::
 }
 
 void
-FreezeScript::DescriptorHandler::endElement(const string& name, int, int)
+FreezeScript::DescriptorHandler::endElement(const string&, int, int)
 {
     assert(_current);
     _current = _current->parent();
@@ -2970,7 +2970,7 @@ FreezeScript::DescriptorHandler::characters(const string&, int, int)
 }
 
 void
-FreezeScript::DescriptorHandler::error(const string& msg, int line, int col)
+FreezeScript::DescriptorHandler::error(const string& msg, int line, int)
 {
     _info->errorReporter->descriptorError(msg, line);
 }

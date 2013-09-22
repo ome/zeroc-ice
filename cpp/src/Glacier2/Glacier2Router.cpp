@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -24,26 +24,6 @@ using namespace Glacier2;
 
 namespace Glacier2
 {
-
-class AdminI : public Admin
-{
-public:
-    
-    AdminI(const CommunicatorPtr& communicator) :
-        _communicator(communicator)
-    {
-    }
-
-    virtual void
-    shutdown(const Current&)
-    {
-        _communicator->shutdown();
-    }
-
-private:
-
-    const CommunicatorPtr _communicator;
-};
 
 class RouterService : public Service
 {
@@ -69,7 +49,7 @@ class NullPermissionsVerifierI : public Glacier2::PermissionsVerifier
 {
 public:
 
-    bool checkPermissions(const string& userId, const string& password, string&, const Current&) const
+    bool checkPermissions(const string&, const string&, string&, const Current&) const
     {
         return true;
     }
@@ -171,17 +151,6 @@ Glacier2::RouterService::start(int argc, char* argv[], int& status)
         serverAdapter = communicator()->createObjectAdapter("Glacier2.Server");
     }
 
-    //
-    // Initialize the admin object adapter only if admin endpoints
-    // are defined.
-    //
-    const string adminEndpointsProperty = "Glacier2.Admin.Endpoints";
-    ObjectAdapterPtr adminAdapter;
-    if(!properties->getProperty(adminEndpointsProperty).empty())
-    {
-        adminAdapter = communicator()->createObjectAdapter("Glacier2.Admin");
-    }
-
     string instanceName = properties->getPropertyWithDefault("Glacier2.InstanceName", "Glacier2");
 
     //
@@ -231,11 +200,10 @@ Glacier2::RouterService::start(int argc, char* argv[], int& status)
                 return false;
             }
         }
-        catch(const Ice::Exception& ex)
+        catch(const std::exception& ex)
         {
-            ostringstream ostr;
-            ostr << ex;
-            error("permissions verifier `" + verifierPropertyValue + "' is invalid:\n" + ostr.str());
+            ServiceError err(this);
+            err << "permissions verifier `" << verifierPropertyValue + "' is invalid:\n" << ex;
             return false;
         }
 
@@ -259,9 +227,8 @@ Glacier2::RouterService::start(int argc, char* argv[], int& status)
             {
                 if(!nowarn)
                 {
-                    ostringstream ostr;
-                    ostr << ex;
-                    warning("unable to contact permissions verifier `" + verifierPropertyValue + "'\n" + ostr.str());
+                    ServiceWarning warn(this);
+                    warn << "unable to contact permissions verifier `" << verifierPropertyValue << "'\n" << ex;
                 }
                 verifier = PermissionsVerifierPrx::uncheckedCast(obj);
             }
@@ -323,11 +290,11 @@ Glacier2::RouterService::start(int argc, char* argv[], int& status)
         {
             obj = communicator()->propertyToProxy(sessionManagerProperty);
         }
-        catch(const Ice::Exception& ex)
+        catch(const std::exception& ex)
         {
-            ostringstream ostr;
-            ostr << ex;
-            error("session manager `" + sessionManagerPropertyValue + "' is invalid\n:" + ostr.str());
+            ServiceError err(this);
+            err << "session manager `" << sessionManagerPropertyValue 
+                << "' is invalid\n:" << ex;
             return false;
         }
         try
@@ -339,13 +306,13 @@ Glacier2::RouterService::start(int argc, char* argv[], int& status)
                 return false;
             }
         }
-        catch(const Ice::Exception& ex)
+        catch(const std::exception& ex)
         {
             if(!nowarn)
             {
-                ostringstream ostr;
-                ostr << ex;
-                warning("unable to contact session manager `" + sessionManagerPropertyValue + "'\n" + ostr.str());
+                ServiceWarning warn(this);
+                warn << "unable to contact session manager `" << sessionManagerPropertyValue << "'\n"
+                     << ex;
             }
             sessionManager = SessionManagerPrx::uncheckedCast(obj);
         }
@@ -392,11 +359,11 @@ Glacier2::RouterService::start(int argc, char* argv[], int& status)
                 return false;
             }
         }
-        catch(const Ice::Exception& ex)
+        catch(const std::exception& ex)
         {
-            ostringstream ostr;
-            ostr << ex;
-            error("ssl permissions verifier `" + sslVerifierPropertyValue + "' is invalid:\n" + ostr.str());
+            ServiceError err(this);
+            err << "ssl permissions verifier `" << sslVerifierPropertyValue << "' is invalid:\n"
+                << ex;
             return false;
         }
 
@@ -422,10 +389,9 @@ Glacier2::RouterService::start(int argc, char* argv[], int& status)
             {
                 if(!nowarn)
                 {
-                    ostringstream ostr;
-                    ostr << ex;
-                    warning("unable to contact ssl permissions verifier `" + sslVerifierPropertyValue + "'\n" + 
-                            ostr.str());
+                    ServiceWarning warn(this);
+                    warn << "unable to contact ssl permissions verifier `" << sslVerifierPropertyValue << "'\n"
+                         << ex;
                 }
                 sslVerifier = SSLPermissionsVerifierPrx::uncheckedCast(obj);
             }
@@ -445,11 +411,10 @@ Glacier2::RouterService::start(int argc, char* argv[], int& status)
         {
             obj = communicator()->propertyToProxy(sslSessionManagerProperty);
         }
-        catch(const Ice::Exception& ex)
+        catch(const std::exception& ex)
         {
-            ostringstream ostr;
-            ostr << ex;
-            error("ssl session manager `" + sslSessionManagerPropertyValue + "' is invalid:\n" + ostr.str());
+            ServiceError err(this);
+            err << "ssl session manager `" << sslSessionManagerPropertyValue << "' is invalid:\n" << ex;
             return false;
         }
         try
@@ -465,10 +430,9 @@ Glacier2::RouterService::start(int argc, char* argv[], int& status)
         {
             if(!nowarn)
             {
-                ostringstream ostr;
-                ostr << ex;
-                warning("unable to contact ssl session manager `" + sslSessionManagerPropertyValue + "'\n" +
-                        ostr.str());
+                ServiceWarning warn(this);
+                warn << "unable to contact ssl session manager `" << sslSessionManagerPropertyValue 
+                     << "'\n" << ex;
             }
             sslSessionManager = SSLSessionManagerPrx::uncheckedCast(obj);
         }
@@ -503,15 +467,9 @@ Glacier2::RouterService::start(int argc, char* argv[], int& status)
     //
     _sessionRouter = new SessionRouterI(_instance, verifier, sessionManager, sslVerifier, sslSessionManager);
 
-    //
-    // If we have an admin adapter, we add an admin object.
-    //
-    if(adminAdapter)
+    if(_instance->getObserver())
     {
-        Identity adminId;
-        adminId.category = instanceName;
-        adminId.name = "admin";
-        adminAdapter->add(new AdminI(communicator()), adminId);
+        _instance->getObserver()->setObserverUpdater(_sessionRouter);
     }
 
     //
@@ -524,16 +482,13 @@ Glacier2::RouterService::start(int argc, char* argv[], int& status)
         {
             serverAdapter->activate();
         }
-        if(adminAdapter)
-        {
-            adminAdapter->activate();
-        }
     }
-    catch(const Ice::Exception& ex)
+    catch(const std::exception& ex)
     {
-        ostringstream ostr;
-        ostr << ex;
-        error("caught exception activating object adapters\n" + ostr.str());
+        {
+            ServiceError err(this);
+            err << "caught exception activating object adapters\n" << ex;
+        }
 
         stop();
         return false;
@@ -553,6 +508,10 @@ Glacier2::RouterService::stop()
 
     if(_instance)
     {
+        if(_instance->getObserver())
+        {
+            _instance->getObserver()->setObserverUpdater(0);
+        }
         _instance->destroy();
         _instance = 0;
     }
@@ -612,8 +571,7 @@ Glacier2::RouterService::usage(const string& appName)
     print("Usage: " + appName + " [options]\n" + options);
 }
 
-//COMPILERFIX: Borland C++ 2010 doesn't support wmain for console applications.
-#if defined(_WIN32 ) && !defined(__BCPLUSPLUS__)
+#ifdef _WIN32
 
 int
 wmain(int argc, wchar_t* argv[])

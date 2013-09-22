@@ -1,6 +1,6 @@
 # **********************************************************************
 #
-# Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -88,6 +88,8 @@ module Ice
 
         def ice_ping(current=nil)
         end
+
+        attr_accessor :_ice_slicedData  # Only used for instances of preserved classes.
     end
 
     class Object
@@ -98,7 +100,7 @@ module Ice
         end
     end
 
-    T_Object.defineClass(nil, true, nil, [], [])
+    T_Object.defineClass(nil, -1, true, false, nil, [], [])
     Object_mixin::ICE_TYPE = T_Object
 
     T_ObjectPrx.defineProxy(ObjectPrx, T_Object)
@@ -108,7 +110,19 @@ module Ice
     # LocalObject.
     #
     T_LocalObject = Ice.__declareLocalClass('::Ice::LocalObject')
-    T_LocalObject.defineClass(nil, true, nil, [], [])
+    T_LocalObject.defineClass(nil, -1, true, false, nil, [], [])
+
+    #
+    # UnknownSlicedObject.
+    #
+    class UnknownSlicedObject
+        include ::Ice::Object_mixin
+
+        attr_accessor :unknownTypeId
+    end
+    T_UnknownSlicedObject = Ice.__declareClass('::Ice::UnknownSlicedObject')
+    T_UnknownSlicedObject.defineClass(UnknownSlicedObject, -1, false, true, nil, [], [])
+    UnknownSlicedObject::ICE_TYPE = T_UnknownSlicedObject
 
     #
     # InitializationData.
@@ -120,6 +134,68 @@ module Ice
         end
 
         attr_accessor :properties, :logger
+    end
+
+    #
+    # SlicedData
+    #
+    class SlicedData
+        attr_accessor :slices   # array of SliceInfo
+    end
+
+    #
+    # SliceInfo
+    #
+    class SliceInfo
+        attr_accessor :typeId, :bytes, :objects
+    end
+
+    class FormatType
+        include Comparable
+
+        def initialize(val)
+            fail("invalid value #{val} for FormatType") unless(val >= 0 and val < 3)
+            @val = val
+        end
+
+        def FormatType.from_int(val)
+            raise IndexError, "#{val} is out of range 0..2" if(val < 0 || val > 2)
+            @@_values[val]
+        end
+
+        def to_s
+            @@_names[@val]
+        end
+
+        def to_i
+            @val
+        end
+
+        def <=>(other)
+            other.is_a?(FormatType) or raise ArgumentError, "value must be a FormatType"
+            @val <=> other.to_i
+        end
+
+        def hash
+            @val.hash
+        end
+
+        def inspect
+            @@_names[@val] + "(#{@val})"
+        end
+
+        def FormatType.each(&block)
+            @@_values.each(&block)
+        end
+
+        @@_names = ['DefaultFormat', 'CompactFormat', 'SlicedFormat']
+        @@_values = [FormatType.new(0), FormatType.new(1), FormatType.new(2)]
+
+        DefaultFormat = @@_values[0]
+        CompactFormat = @@_values[1]
+        SlicedFormat = @@_values[2]
+
+        private_class_method :new
     end
 
     #
@@ -141,6 +217,9 @@ require 'Ice/ObjectFactory.rb'
 require 'Ice/Process.rb'
 require 'Ice/Router.rb'
 require 'Ice/Endpoint.rb'
+require 'Ice/Version.rb'
+require 'Ice/Instrumentation.rb'
+require 'Ice/Metrics.rb'
 
 module Ice
     #
@@ -568,9 +647,13 @@ module Ice
     def Ice.proxyIdentityAndFacetEqual(lhs, rhs)
         return proxyIdentityAndFacetCompare(lhs, rhs) == 0
     end
+
+    Protocol_1_0 = ProtocolVersion.new(1, 0)
+    Encoding_1_0 = EncodingVersion.new(1, 0)
+    Encoding_1_1 = EncodingVersion.new(1, 1)
 end
 
-Ice::Object_mixin::OP_ice_isA = ::Ice::__defineOperation('ice_isA', ::Ice::OperationMode::Idempotent, ::Ice::OperationMode::Nonmutating, false, [::Ice::T_string], [], ::Ice::T_bool, [])
-Ice::Object_mixin::OP_ice_ping = ::Ice::__defineOperation('ice_ping', ::Ice::OperationMode::Idempotent, ::Ice::OperationMode::Nonmutating, false, [], [], nil, [])
-Ice::Object_mixin::OP_ice_ids = ::Ice::__defineOperation('ice_ids', ::Ice::OperationMode::Idempotent, ::Ice::OperationMode::Nonmutating, false, [], [], ::Ice::T_StringSeq, [])
-Ice::Object_mixin::OP_ice_id = ::Ice::__defineOperation('ice_id', ::Ice::OperationMode::Idempotent, ::Ice::OperationMode::Nonmutating, false, [], [], ::Ice::T_string, [])
+Ice::Object_mixin::OP_ice_isA = ::Ice::__defineOperation('ice_isA', ::Ice::OperationMode::Idempotent, ::Ice::OperationMode::Nonmutating, false, nil, [[::Ice::T_string, false, 0]], [], [::Ice::T_bool, false, 0], [])
+Ice::Object_mixin::OP_ice_ping = ::Ice::__defineOperation('ice_ping', ::Ice::OperationMode::Idempotent, ::Ice::OperationMode::Nonmutating, false, nil, [], [], nil, [])
+Ice::Object_mixin::OP_ice_ids = ::Ice::__defineOperation('ice_ids', ::Ice::OperationMode::Idempotent, ::Ice::OperationMode::Nonmutating, false, nil, [], [], [::Ice::T_StringSeq, false, 0], [])
+Ice::Object_mixin::OP_ice_id = ::Ice::__defineOperation('ice_id', ::Ice::OperationMode::Idempotent, ::Ice::OperationMode::Nonmutating, false, nil, [], [], [::Ice::T_string, false, 0], [])

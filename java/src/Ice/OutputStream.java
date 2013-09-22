@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -175,11 +175,12 @@ public interface OutputStream
     void writeObject(Ice.Object v);
 
     /**
-     * Writes a Slice type ID to the stream.
+     * Write an enumerated value.
      *
-     * @param id The Slice type ID to write.
+     * @param v The enumerator.
+     * @param limit The maximum enumerator value in the definition.
      **/
-    void writeTypeId(String id);
+    void writeEnum(int v, int maxValue);
 
     /**
      * Writes a user exception to the stream.
@@ -189,14 +190,56 @@ public interface OutputStream
     void writeException(UserException ex);
 
     /**
-     * Writes the start of a slice to the stream.
+     * Marks the start of an Ice object.
+     *
+     * @param slicedData Preserved slices for this object, or null.
      **/
-    void startSlice();
+    void startObject(SlicedData slicedData);
 
     /**
-     * Ends the previous slice.
+     * Marks the end of an Ice object.
+     **/
+    void endObject();
+
+    /**
+     * Marks the start of a user exception.
+     *
+     * @param slicedData Preserved slices for this exception, or null.
+     **/
+    void startException(SlicedData slicedData);
+
+    /**
+     * Marks the end of a user exception.
+     **/
+    void endException();
+
+    /**
+     * Marks the start of a new slice for an Ice object or user exception.
+     *
+     * @param typeId The Slice type ID corresponding to this slice.
+
+     * @param compactId The Slice compact type ID corresponding to
+     *        this slice or -1 if no compact ID is defined for the
+     *        type ID.
+
+     * @param last True if this is the last slice, false otherwise.
+     **/
+    void startSlice(String typeId, int compactId, boolean last);
+
+    /**
+     * Marks the end of a slice for an Ice object or user exception.
      **/
     void endSlice();
+
+    /**
+     * Writes the start of an encapsulation to the stream.
+     *
+     * @param encoding The encoding version of the encapsulation.
+     *
+     * @param format Specify the compact or sliced format.
+     *
+     **/
+    void startEncapsulation(Ice.EncodingVersion encoding, Ice.FormatType format);
 
     /**
      * Writes the start of an encapsulation to the stream.
@@ -209,10 +252,52 @@ public interface OutputStream
     void endEncapsulation();
 
     /**
+     * Determines the current encoding version.
+     *
+     * @return The encoding version.
+     **/
+    EncodingVersion getEncoding();
+
+    /**
      * Writes the state of Slice classes whose index was previously
      * written with {@link #writeObject} to the stream.
      **/
     void writePendingObjects();
+
+    /**
+     * Write the header information for an optional value.
+     *
+     * @param tag The numeric tag associated with the value.
+     * @param type The optional format of the value.
+     **/
+    boolean writeOptional(int tag, Ice.OptionalFormat format);
+
+    /**
+     * Determines the current position in the stream.
+     *
+     * @return The current position.
+     **/
+    int pos();
+
+    /**
+     * Inserts a fixed 32-bit size value into the stream at the given position.
+     *
+     * @param sz The 32-bit size value.
+     * @param pos The position at which to write the value.
+     **/
+    void rewrite(int sz, int pos);
+
+    /**
+     * Records the current position and allocates four bytes for a fixed-length (32-bit)
+     * size value.
+     **/
+    void startSize();
+
+    /**
+     * Computes the amount of data written since the previous call to startSize and
+     * writes that value at the saved position.
+     **/
+    void endSize();
 
     /**
      * Indicates that marshaling of a request or reply is finished.

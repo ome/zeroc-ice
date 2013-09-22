@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -57,7 +57,7 @@ TestControllerI::TestControllerI()
 
 void
 TestControllerI::step(const Glacier2::SessionPrx& currentSession, const TestToken& currentState, TestToken& newState,
-                      const Ice::Current& current)
+                      const Ice::Current&)
 {
     switch(currentState.code)
     {

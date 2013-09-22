@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -14,6 +14,7 @@
 #include <IceUtil/Thread.h>
 #include <IceUtil/Monitor.h>
 #include <IceUtil/Mutex.h>
+#include <Ice/ObserverHelper.h>
 
 namespace IceInternal
 {
@@ -37,6 +38,9 @@ public:
     void stop();
     void collectGarbage();
 
+    void updateObserver(const Ice::Instrumentation::CommunicatorObserverPtr&);
+    void clearObserver(const Ice::Instrumentation::CommunicatorObserverPtr&);
+
 private:
 
     enum State { NotStarted, Started, Stopping, Stopped };
@@ -44,6 +48,8 @@ private:
     bool _collecting;
     int _interval;
     StatsCallback _statsCallback;
+    Ice::Instrumentation::CommunicatorObserverPtr _communicatorObserver;
+    ObserverHelperT<Ice::Instrumentation::ThreadObserver> _observer;
 };
 
 }

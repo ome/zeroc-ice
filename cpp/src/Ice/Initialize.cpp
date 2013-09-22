@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -39,6 +39,24 @@ extern IceUtil::Handle<IceInternal::GC> theCollector;
 
 }
 
+namespace
+{
+
+pair<const Byte*, const Byte*>
+makePair(const vector<Byte>& v)
+{
+    if(v.empty())
+    {
+        return pair<const Byte*, const Byte*>(static_cast<Byte*>(0), static_cast<Byte*>(0));
+    }
+    else
+    {
+        return pair<const Byte*, const Byte*>(&v[0], &v[0] + v.size());
+    }
+}
+
+}
+
 void
 Ice::collectGarbage()
 {
@@ -68,7 +86,7 @@ Ice::argsToStringSeq(int argc, wchar_t* argv[])
 }
 
 StringSeq
-Ice::argsToStringSeq(int argc, wchar_t* argv[], const StringConverterPtr& converter)
+Ice::argsToStringSeq(int /*argc*/, wchar_t* argv[], const StringConverterPtr& converter)
 {
     StringSeq args;
     for(int i=0; argv[i] != 0; i++)
@@ -253,19 +271,63 @@ Ice::initialize(const InitializationData& initData, Int version)
 InputStreamPtr
 Ice::createInputStream(const CommunicatorPtr& communicator, const vector<Byte>& bytes)
 {
-    return new InputStreamI(communicator, bytes);
+    return new InputStreamI(communicator, makePair(bytes), true);
+}
+
+InputStreamPtr
+Ice::createInputStream(const CommunicatorPtr& communicator, const vector<Byte>& bytes, const EncodingVersion& v)
+{
+    return new InputStreamI(communicator, makePair(bytes), v, true);
+}
+
+InputStreamPtr
+Ice::wrapInputStream(const CommunicatorPtr& communicator, const vector<Byte>& bytes)
+{
+    return new InputStreamI(communicator, makePair(bytes), false);
+}
+
+InputStreamPtr
+Ice::wrapInputStream(const CommunicatorPtr& communicator, const vector<Byte>& bytes, const EncodingVersion& v)
+{
+    return new InputStreamI(communicator, makePair(bytes), v, false);
 }
 
 InputStreamPtr
 Ice::createInputStream(const CommunicatorPtr& communicator, const pair<const Ice::Byte*, const Ice::Byte*>& bytes)
 {
-    return new InputStreamI(communicator, bytes);
+    return new InputStreamI(communicator, bytes, true);
+}
+
+InputStreamPtr
+Ice::createInputStream(const CommunicatorPtr& communicator, const pair<const Ice::Byte*, const Ice::Byte*>& bytes,
+                       const EncodingVersion& v)
+{
+    return new InputStreamI(communicator, bytes, v, true);
+}
+
+InputStreamPtr
+Ice::wrapInputStream(const CommunicatorPtr& communicator, const pair<const Ice::Byte*, const Ice::Byte*>& bytes)
+{
+    return new InputStreamI(communicator, bytes, false);
+}
+
+InputStreamPtr
+Ice::wrapInputStream(const CommunicatorPtr& communicator, const pair<const Ice::Byte*, const Ice::Byte*>& bytes,
+                     const EncodingVersion& v)
+{
+    return new InputStreamI(communicator, bytes, v, false);
 }
 
 OutputStreamPtr
 Ice::createOutputStream(const CommunicatorPtr& communicator)
 {
     return new OutputStreamI(communicator);
+}
+
+OutputStreamPtr
+Ice::createOutputStream(const CommunicatorPtr& communicator, const EncodingVersion& v)
+{
+    return new OutputStreamI(communicator, v);
 }
 
 static IceUtil::Mutex* processLoggerMutex = 0;
@@ -323,3 +385,11 @@ IceInternal::getInstance(const CommunicatorPtr& communicator)
     assert(p);
     return p->_instance;
 }
+
+#ifdef ICE_CPP11
+void
+IceInternal::Cpp11Dispatcher::dispatch(const ::Ice::DispatcherCallPtr& call, const ::Ice::ConnectionPtr& conn)
+{
+    _cb(call, conn);
+}
+#endif

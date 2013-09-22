@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -73,7 +73,7 @@ private:
 // Helper function for async-signal safe error reporting
 //
 void
-reportChildError(int err, int fd, const char* cannot, const char* name)
+reportChildError(int err, int fd, const char* cannot, const char* name, const TraceLevelsPtr& traceLevels)
 {
     //
     // Send any errors to the parent process, using the write
@@ -89,7 +89,12 @@ reportChildError(int err, int fd, const char* cannot, const char* name)
         strcat(msg, ": ");
         strcat(msg, strerror(err));
     }
-    write(fd, msg, strlen(msg));
+    ssize_t sz = write(fd, msg, strlen(msg));
+    if(sz == -1)
+    {
+        Ice::Warning out(traceLevels->logger);
+        out << "error rerporting child error msg: `" << msg << "'";
+    }
     close(fd);
 
     //
@@ -231,7 +236,7 @@ stringToSignal(const string& str)
     }
     else
 #endif
-	if(str == ICE_STRING(SIGKILL))
+        if(str == ICE_STRING(SIGKILL))
     {
         return SIGKILL;
     }
@@ -248,10 +253,10 @@ stringToSignal(const string& str)
             if(*end == '\0' && signal > 0 && signal < 64)
             {
 #ifdef _WIN32
-		if(signal == SIGKILL || signal == SIGTERM)
-		{
-		    return static_cast<int>(signal);
-		}
+                if(signal == SIGKILL || signal == SIGTERM)
+                {
+                    return static_cast<int>(signal);
+                }
 #else
                 return static_cast<int>(signal);
 #endif
@@ -453,8 +458,7 @@ Activator::activate(const string& name,
     // Compose command line.
     //
     string cmd;
-    StringSeq::const_iterator p;
-    for(p = args.begin(); p != args.end(); ++p)
+    for(StringSeq::const_iterator p = args.begin(); p != args.end(); ++p)
     {
         if(p != args.begin())
         {
@@ -481,11 +485,7 @@ Activator::activate(const string& name,
     //
     // Make a copy of the command line.
     //
-#if defined(_MSC_VER) && (_MSC_VER >= 1400)
     wchar_t* cmdbuf = _wcsdup(IceUtil::stringToWstring(cmd).c_str());
-#else
-    wchar_t* cmdbuf = wcsdup(IceUtil::stringToWstring(cmd).c_str());
-#endif
 
     //
     // Create the environment block for the child process. We start with the environment
@@ -523,7 +523,7 @@ Activator::activate(const string& name,
             var++; // Skip the '\0' byte
         }
         FreeEnvironmentStringsW(static_cast<wchar_t*>(parentEnv));
-        for(p = envs.begin(); p != envs.end(); ++p)
+        for(StringSeq::const_iterator p = envs.begin(); p != envs.end(); ++p)
         {
             wstring s = IceUtil::stringToWstring(*p);
             wstring::size_type pos = s.find(L'=');
@@ -656,14 +656,16 @@ Activator::activate(const string& name,
         {
             ostringstream os;
             os << gid;
-            reportChildError(getSystemErrno(), errorFds[1], "cannot set process group id", os.str().c_str());
+            reportChildError(getSystemErrno(), errorFds[1], "cannot set process group id", os.str().c_str(),
+                             _traceLevels);
         }           
         
         if(setuid(uid) == -1)
         {
             ostringstream os;
             os << uid;
-            reportChildError(getSystemErrno(), errorFds[1], "cannot set process user id", os.str().c_str());
+            reportChildError(getSystemErrno(), errorFds[1], "cannot set process user id", os.str().c_str(),
+                             _traceLevels);
         }
 
         //
@@ -692,7 +694,8 @@ Activator::activate(const string& name,
             //
             if(putenv(strdup(env.argv[i])) != 0)
             {
-                reportChildError(errno, errorFds[1], "cannot set environment variable",  env.argv[i]); 
+                reportChildError(errno, errorFds[1], "cannot set environment variable",  env.argv[i], 
+                                 _traceLevels); 
             }
         }
 
@@ -703,7 +706,8 @@ Activator::activate(const string& name,
         {
             if(chdir(pwdCStr) == -1)
             {
-                reportChildError(errno, errorFds[1], "cannot change working directory to",  pwdCStr);
+                reportChildError(errno, errorFds[1], "cannot change working directory to",  pwdCStr,
+                                 _traceLevels);
             }
         }
 
@@ -722,11 +726,11 @@ Activator::activate(const string& name,
         {
             if(errorFds[1] != -1)
             {
-                reportChildError(errno, errorFds[1], "cannot execute",  av.argv[0]);
+                reportChildError(errno, errorFds[1], "cannot execute",  av.argv[0], _traceLevels);
             }
             else
             {
-                reportChildError(errno, fds[1], "cannot execute",  av.argv[0]);
+                reportChildError(errno, fds[1], "cannot execute",  av.argv[0], _traceLevels);
             }
         }
     }
@@ -790,6 +794,40 @@ Activator::activate(const string& name,
 #endif
 }
 
+namespace
+{
+
+class ShutdownCallback : public IceUtil::Shared
+{
+public:
+
+    ShutdownCallback(const ActivatorPtr& activator, const string& name, const TraceLevelsPtr& traceLevels) :
+        _activator(activator), _name(name), _traceLevels(traceLevels)
+    {
+        
+    }
+
+    virtual void 
+    exception(const Ice::Exception& ex)
+    {
+        Ice::Warning out(_traceLevels->logger);
+        out << "exception occurred while deactivating `" << _name << "' using process proxy:\n" << ex;
+
+        //
+        // Send a SIGTERM to the process.
+        //
+        _activator->sendSignal(_name, SIGTERM);
+    }
+
+private:
+    
+    const ActivatorPtr _activator;
+    const string _name;
+    const TraceLevelsPtr _traceLevels;
+};
+
+}
+
 void
 Activator::deactivate(const string& name, const Ice::ProcessPrx& process)
 {
@@ -804,44 +842,6 @@ Activator::deactivate(const string& name, const Ice::ProcessPrx& process)
     }
 #endif
 
-    class ShutdownCallback : public Ice::AMI_Process_shutdown
-    {
-    public:
-
-        ShutdownCallback(const ActivatorPtr& activator, const string& name, const TraceLevelsPtr& traceLevels) :
-            _activator(activator), _name(name), _traceLevels(traceLevels)
-        {
-            
-        }
-
-        virtual void
-        ice_response()
-        {
-            //
-            // Nothing to do, server successfully shutdown, the activator will detect it
-            // once the pipe is closed.
-            //
-        }
-
-        virtual void 
-        ice_exception(const Ice::Exception& ex)
-        {
-            Ice::Warning out(_traceLevels->logger);
-            out << "exception occurred while deactivating `" << _name << "' using process proxy:\n" << ex;
-
-            //
-            // Send a SIGTERM to the process.
-            //
-            _activator->sendSignal(_name, SIGTERM);
-        }
-
-    private:
-        
-        const ActivatorPtr _activator;
-        const string _name;
-        const TraceLevelsPtr _traceLevels;
-    };
-
     //
     // Try to shut down the server gracefully using the process proxy.
     //
@@ -852,8 +852,8 @@ Activator::deactivate(const string& name, const Ice::ProcessPrx& process)
             Ice::Trace out(_traceLevels->logger, _traceLevels->activatorCat);
             out << "deactivating `" << name << "' using process proxy";
         }
-
-        process->shutdown_async(new ShutdownCallback(this, name, _traceLevels));
+        process->begin_shutdown(Ice::newCallback_Process_shutdown(new ShutdownCallback(this, name, _traceLevels),
+                                                                  &ShutdownCallback::exception));
         return;
     }
 
@@ -1363,7 +1363,13 @@ Activator::setInterrupt()
     SetEvent(_hIntr);
 #else
     char c = 0;
-    write(_fdIntrWrite, &c, 1);
+    ssize_t sz = write(_fdIntrWrite, &c, 1);
+    if(sz == -1)
+    {
+        SyscallException ex(__FILE__, __LINE__);
+        ex.error = IceInternal::getSystemErrno();
+        throw ex;
+    }
 #endif
 }
 

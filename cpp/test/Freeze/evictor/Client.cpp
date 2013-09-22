@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -372,12 +372,12 @@ public:
             //
             // Transfer 100 at random between two distinct accounts 
             //
-	    Test::AccountPrx from = _accounts[IceUtilInternal::random(static_cast<int>(_accounts.size()))];
+            Test::AccountPrx from = _accounts[IceUtilInternal::random(static_cast<int>(_accounts.size()))];
             
             Test::AccountPrx to;
             do
             {
-	        to = _accounts[IceUtilInternal::random(static_cast<int>(_accounts.size()))];
+                to = _accounts[IceUtilInternal::random(static_cast<int>(_accounts.size()))];
             }
             while(from == to);
                 
@@ -449,7 +449,7 @@ private:
 
 
 int
-run(int argc, char* argv[], const Ice::CommunicatorPtr& communicator, bool transactional, bool shutdown)
+run(int, char**, const Ice::CommunicatorPtr& communicator, bool transactional, bool shutdown)
 {
     string ref = "factory:default -p 12010";
     Ice::ObjectPrx base = communicator->stringToProxy(ref);
@@ -608,7 +608,18 @@ run(int argc, char* argv[], const Ice::CommunicatorPtr& communicator, bool trans
     {
     }
 
-   
+    //
+    // Call an operation that does not exist on the servant
+    //    
+    try
+    {
+        Test::AccountPrx::uncheckedCast(servants[0])->getBalance();
+        test(false);
+    }
+    catch(const Ice::OperationNotExistException&)
+    {
+    }
+  
     //
     // Remove all facets
     //

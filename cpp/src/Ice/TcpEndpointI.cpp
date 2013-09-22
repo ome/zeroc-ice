@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -24,16 +24,17 @@ using namespace IceInternal;
 
 IceInternal::TcpEndpointI::TcpEndpointI(const InstancePtr& instance, const string& ho, Int po, Int ti,
                                         const string& conId, bool co) :
+    EndpointI(conId),
     _instance(instance),
     _host(ho),
     _port(po),
     _timeout(ti),
-    _connectionId(conId),
     _compress(co)
 {
 }
 
 IceInternal::TcpEndpointI::TcpEndpointI(const InstancePtr& instance, const string& str, bool oaEndpoint) :
+    EndpointI(""),
     _instance(instance),
     _port(0),
     _timeout(-1),
@@ -153,8 +154,8 @@ IceInternal::TcpEndpointI::TcpEndpointI(const InstancePtr& instance, const strin
 
             default:
             {
-                EndpointParseException ex(__FILE__, __LINE__);
-                ex.str = "unknown option `" + option + "' in `tcp " + str + "'";
+                Ice::EndpointParseException ex(__FILE__, __LINE__);
+                ex.str = "unknown option `" + option + "' in endpoint `tcp " + str + "'";
                 throw ex;
             }
         }
@@ -285,6 +286,12 @@ IceInternal::TcpEndpointI::type() const
     return TCPEndpointType;
 }
 
+std::string
+IceInternal::TcpEndpointI::protocol() const
+{
+    return "tcp";
+}
+
 Int
 IceInternal::TcpEndpointI::timeout() const
 {
@@ -356,21 +363,21 @@ IceInternal::TcpEndpointI::transceiver(EndpointIPtr& endp) const
 }
 
 vector<ConnectorPtr>
-IceInternal::TcpEndpointI::connectors() const
+IceInternal::TcpEndpointI::connectors(EndpointSelectionType selType) const
 {
-    return connectors(getAddresses(_host, _port, _instance->protocolSupport(), true));
+    return _instance->endpointHostResolver()->resolve(_host, _port, selType, const_cast<TcpEndpointI*>(this));
 }
 
 void
-IceInternal::TcpEndpointI::connectors_async(const EndpointI_connectorsPtr& callback) const
+IceInternal::TcpEndpointI::connectors_async(EndpointSelectionType selType, const EndpointI_connectorsPtr& cb) const
 {
-    _instance->endpointHostResolver()->resolve(_host, _port, const_cast<TcpEndpointI*>(this), callback);
+    _instance->endpointHostResolver()->resolve(_host, _port, selType, const_cast<TcpEndpointI*>(this), cb);
 }
 
 AcceptorPtr
 IceInternal::TcpEndpointI::acceptor(EndpointIPtr& endp, const string&) const
 {
-    TcpAcceptor* p = new TcpAcceptor(_instance, _host, _port, _instance->protocolSupport());
+    TcpAcceptor* p = new TcpAcceptor(_instance, _host, _port);
     endp = new TcpEndpointI(_instance, _host, p->effectivePort(), _timeout, _connectionId, _compress);
     return p;
 }
@@ -518,7 +525,8 @@ IceInternal::TcpEndpointI::operator<(const LocalObject& r) const
 Ice::Int
 IceInternal::TcpEndpointI::hashInit() const
 {
-    Ice::Int h = 0;
+    Ice::Int h = 5381;
+    hashAdd(h, TCPEndpointType);
     hashAdd(h, _host);
     hashAdd(h, _port);
     hashAdd(h, _timeout);
@@ -526,9 +534,9 @@ IceInternal::TcpEndpointI::hashInit() const
     hashAdd(h, _compress);
     return h;
 }
- 
+
 vector<ConnectorPtr>
-IceInternal::TcpEndpointI::connectors(const vector<struct sockaddr_storage>& addresses) const
+IceInternal::TcpEndpointI::connectors(const vector<Address>& addresses) const
 {
     vector<ConnectorPtr> connectors;
     for(unsigned int i = 0; i < addresses.size(); ++i)

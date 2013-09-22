@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -107,7 +107,7 @@ IceInternal::Direct::throwUserException()
 void 
 IceInternal::Direct::setUserException(const Ice::UserException& ue)
 {
-    _userException.reset(dynamic_cast<Ice::UserException*>(ue.ice_clone()));
+    _userException.reset(ue.ice_clone());
 }
 
 void
@@ -142,7 +142,7 @@ IceInternal::Direct::destroy()
 }
 
 const ObjectPtr&
-IceInternal::Direct::servant()
+IceInternal::Direct::getServant()
 {
     return _servant;
 }

@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -10,6 +10,7 @@
 #ifndef ICE_PROTOCOL_PLUGIN_FACADE_H
 #define ICE_PROTOCOL_PLUGIN_FACADE_H
 
+#include <IceUtil/Config.h>
 #include <IceUtil/Shared.h>
 #include <Ice/ProtocolPluginFacadeF.h>
 #include <Ice/CommunicatorF.h>
@@ -47,6 +48,11 @@ public:
     std::string getDefaultHost() const;
 
     //
+    // Get the default encoding to be used in endpoints.
+    //
+    Ice::EncodingVersion getDefaultEncoding() const;
+
+    //
     // Get the network trace level and category name.
     //
     int getNetworkTraceLevel() const;
@@ -61,6 +67,11 @@ public:
     // Get the protocol support.
     //
     ProtocolSupport getProtocolSupport() const;
+
+    //
+    // Get the IP address preference
+    //
+    bool preferIPv6() const;
 
     //
     // Register an EndpointFactory.

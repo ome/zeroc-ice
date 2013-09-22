@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -11,6 +11,15 @@ package IceInternal;
 
 abstract public class EndpointI implements Ice.Endpoint, java.lang.Comparable<EndpointI>
 {
+    public EndpointI(String connectionId)
+    {
+        _connectionId = connectionId;
+    }
+
+    public EndpointI()
+    {
+    }
+
     public String
     toString()
     {
@@ -26,6 +35,11 @@ abstract public class EndpointI implements Ice.Endpoint, java.lang.Comparable<En
     // Return the endpoint type.
     //
     public abstract short type();
+    
+    //
+    // Return the protocol name.
+    //
+    public abstract String protocol();
     
     //
     // Return the timeout for the endpoint in milliseconds. 0 means
@@ -69,6 +83,14 @@ abstract public class EndpointI implements Ice.Endpoint, java.lang.Comparable<En
     public abstract boolean secure();
 
     //
+    // Return the connection ID 
+    //
+    public String connectionId()
+    {
+        return _connectionId;
+    }
+
+    //
     // Return a server side transceiver for this endpoint, or null if a
     // transceiver can only be created by an acceptor. In case a
     // transceiver is created, this operation also returns a new
@@ -81,8 +103,8 @@ abstract public class EndpointI implements Ice.Endpoint, java.lang.Comparable<En
     // Return connectors for this endpoint, or empty list if no connector
     // is available.
     //
-    public abstract java.util.List<Connector> connectors();
-    public abstract void connectors_async(EndpointI_connectors callback);
+    public abstract java.util.List<Connector> connectors(Ice.EndpointSelectionType selType);
+    public abstract void connectors_async(Ice.EndpointSelectionType selType, EndpointI_connectors callback);
 
     //
     // Return an acceptor for this endpoint, or null if no acceptors
@@ -107,8 +129,24 @@ abstract public class EndpointI implements Ice.Endpoint, java.lang.Comparable<En
     //
     // Compare endpoints for sorting purposes.
     //
-    public abstract boolean equals(java.lang.Object obj);
-    public abstract int compareTo(EndpointI obj); // From java.lang.Comparable.
+    public boolean equals(java.lang.Object obj)
+    {
+        if(!(obj instanceof EndpointI))
+        {
+            return false;
+        }
+        return compareTo((EndpointI)obj) == 0;
+    }
+
+    public int compareTo(EndpointI p) // From java.lang.Comparable. 
+    {
+        if(!_connectionId.equals(p._connectionId))
+        {
+            return _connectionId.compareTo(p._connectionId);
+        }
+
+        return 0;
+    }
 
     public java.util.List<Connector>
     connectors(java.util.List<java.net.InetSocketAddress> addresses)
@@ -120,4 +158,6 @@ abstract public class EndpointI implements Ice.Endpoint, java.lang.Comparable<En
         assert(false);
         return null;
     }
+
+    protected String _connectionId = "";
 }

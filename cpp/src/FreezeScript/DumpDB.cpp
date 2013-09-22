@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -314,7 +314,7 @@ run(const Ice::StringSeq& originalArgs, const Ice::CommunicatorPtr& communicator
     {
         selectExpr = opts.optArg("select");
     }
-
+    
     if(outputFile.empty() && args.size() != 2)
     {
         usage(appName);
@@ -357,15 +357,16 @@ run(const Ice::StringSeq& originalArgs, const Ice::CommunicatorPtr& communicator
     if(inputFile.empty())
     {
         const string evictorKeyTypeName = "::Ice::Identity";
-        const string evictorValueTypeName = "::Freeze::ObjectRecord";
+        const string oldEvictorValueTypeName = "::Freeze::ObjectRecord";
+        const string newEvictorValueTypeName = "Object";
 
-        if((!keyTypeName.empty() && valueTypeName.empty()) || (keyTypeName.empty() && !valueTypeName.empty()))
+        if((!keyTypeName.empty() && valueTypeName.empty()) || (keyTypeName.empty() && !valueTypeName.empty() && !evictor))
         {
             cerr << appName << ": a key type and a value type must be specified" << endl;
             usage(appName);
             return EXIT_FAILURE;
         }
-        else if(!evictor && keyTypeName.empty() && valueTypeName.empty())
+        else if(valueTypeName.empty())
         {
             try
             {
@@ -387,10 +388,12 @@ run(const Ice::StringSeq& originalArgs, const Ice::CommunicatorPtr& communicator
                     {
                         evictor = true;
                     }
-                    else
+                    keyTypeName = p->second.key;
+                    valueTypeName = p->second.value;
+
+                    if(evictor && valueTypeName.empty())
                     {
-                        keyTypeName = p->second.key;
-                        valueTypeName = p->second.value;
+                        valueTypeName = oldEvictorValueTypeName;
                     }
                 }
             }
@@ -403,8 +406,14 @@ run(const Ice::StringSeq& originalArgs, const Ice::CommunicatorPtr& communicator
 
         if(evictor)
         {
-            keyTypeName = evictorKeyTypeName;
-            valueTypeName = evictorValueTypeName;
+            if(keyTypeName.empty())
+            {
+                keyTypeName = evictorKeyTypeName;
+            }
+            if(valueTypeName.empty())
+            {
+                valueTypeName = newEvictorValueTypeName;
+            }
         }
 
         Slice::TypePtr keyType, valueType;
@@ -536,7 +545,7 @@ run(const Ice::StringSeq& originalArgs, const Ice::CommunicatorPtr& communicator
                     dbValue.set_flags(DB_DBT_USERMEM | DB_DBT_PARTIAL);
 
                     Dbc* dbc = 0;
-                    db.cursor(0, &dbc, 0);
+                    db.cursor(txn, &dbc, 0);
 
                     while(dbc->get(&dbKey, &dbValue, DB_NEXT) == 0)
                     {
@@ -629,8 +638,7 @@ run(const Ice::StringSeq& originalArgs, const Ice::CommunicatorPtr& communicator
     return status;
 }
 
-//COMPILERFIX: Borland C++ 2010 doesn't support wmain for console applications.
-#if defined(_WIN32 ) && !defined(__BCPLUSPLUS__)
+#ifdef _WIN32
 
 int
 wmain(int argc, wchar_t* argv[])
@@ -822,7 +830,7 @@ FreezeScript::DescriptorHandler::DescriptorHandler(const DataFactoryPtr& factory
 
 void
 FreezeScript::DescriptorHandler::startElement(const string& name, const IceXML::Attributes& attributes, int line,
-                                              int column)
+                                              int /*column*/)
 {
     DescriptorPtr d;
 
@@ -948,7 +956,7 @@ FreezeScript::DescriptorHandler::startElement(const string& name, const IceXML::
 }
 
 void
-FreezeScript::DescriptorHandler::endElement(const std::string& name, int, int)
+FreezeScript::DescriptorHandler::endElement(const std::string&, int, int)
 {
     assert(_current);
     _current = _current->parent();
@@ -960,7 +968,7 @@ FreezeScript::DescriptorHandler::characters(const std::string&, int, int)
 }
 
 void
-FreezeScript::DescriptorHandler::error(const std::string& msg, int line, int col)
+FreezeScript::DescriptorHandler::error(const std::string& msg, int line, int)
 {
     _errorReporter->descriptorError(msg, line);
 }

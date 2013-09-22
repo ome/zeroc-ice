@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -10,15 +10,17 @@
 #include <Ice/OpaqueEndpointI.h>
 #include <Ice/BasicStream.h>
 #include <Ice/Exception.h>
-#include <Ice/Instance.h>
+#include <Ice/DefaultsAndOverrides.h>
 #include <Ice/Base64.h>
 #include <Ice/HashUtil.h>
+#include <Ice/LocalException.h>
 
 using namespace std;
 using namespace Ice;
 using namespace IceInternal;
 
-IceInternal::OpaqueEndpointI::OpaqueEndpointI(const string& str)
+IceInternal::OpaqueEndpointI::OpaqueEndpointI(const string& str) : 
+    EndpointI(""), _rawEncoding(Encoding_1_0)
 {
     const string delim = " \t\n\r";
 
@@ -78,13 +80,13 @@ IceInternal::OpaqueEndpointI::OpaqueEndpointI(const string& str)
                 if(!(p >> t) || !p.eof())
                 {
                     EndpointParseException ex(__FILE__, __LINE__);
-                    ex.str = "invalid timeout value `" + argument + "' in endpoint `opaque " + str + "'";
+                    ex.str = "invalid type value `" + argument + "' in endpoint `opaque " + str + "'";
                     throw ex;
                 }
                 else if(t < 0 || t > 65535)
                 {
                     EndpointParseException ex(__FILE__, __LINE__);
-                    ex.str = "timeout value `" + argument + "' out of range in endpoint `opaque " + str + "'";
+                    ex.str = "type value `" + argument + "' out of range in endpoint `opaque " + str + "'";
                     throw ex;
                 }
                 _type = static_cast<Ice::Short>(t);
@@ -129,6 +131,28 @@ IceInternal::OpaqueEndpointI::OpaqueEndpointI(const string& str)
                 break;
             }
 
+            case 'e':
+            {
+                if(argument.empty())
+                {
+                    Ice::EndpointParseException ex(__FILE__, __LINE__);
+                    ex.str = "no argument provided for -e option in endpoint `opaque " + str + "'";
+                    throw ex;
+                }
+                
+                try 
+                {
+                    _rawEncoding = Ice::stringToEncodingVersion(argument);
+                }
+                catch(const Ice::VersionParseException& e)
+                {
+                    Ice::EndpointParseException ex(__FILE__, __LINE__);
+                    ex.str = "invalid encoding version `" + argument + "' in endpoint `opaque " + str + "':\n" + e.str;
+                    throw ex;
+                }
+                break;
+            }
+
             default:
             {
                 EndpointParseException ex(__FILE__, __LINE__);
@@ -153,9 +177,10 @@ IceInternal::OpaqueEndpointI::OpaqueEndpointI(const string& str)
 }
 
 IceInternal::OpaqueEndpointI::OpaqueEndpointI(Short type, BasicStream* s) :
+    EndpointI(""),
     _type(type)
 {
-    s->startReadEncaps();
+    _rawEncoding = s->startReadEncaps();
     Int sz = s->getReadEncapsSize();
     s->readBlob(const_cast<vector<Byte>&>(_rawBytes), sz);
     s->endReadEncaps();
@@ -165,7 +190,7 @@ void
 IceInternal::OpaqueEndpointI::streamWrite(BasicStream* s) const
 {
     s->write(_type);
-    s->startWriteEncaps();
+    s->startWriteEncaps(_rawEncoding, DefaultFormat);
     s->writeBlob(_rawBytes);
     s->endWriteEncaps();
 }
@@ -175,7 +200,7 @@ IceInternal::OpaqueEndpointI::toString() const
 {
     ostringstream s;
     string val = Base64::encode(_rawBytes);
-    s << "opaque -t " << _type << " -v " << val;
+    s << "opaque -t " << _type << " -e " << _rawEncoding << " -v " << val;
     return s.str();
 }
 
@@ -186,7 +211,7 @@ class InfoI : public Ice::OpaqueEndpointInfo
 {
 public:
     
-    InfoI(Ice::Short type, const Ice::ByteSeq& rawByes);
+    InfoI(Ice::Short type, const Ice::EncodingVersion& rawEncoding, const Ice::ByteSeq& rawByes);
 
     virtual Ice::Short
     type() const
@@ -215,7 +240,9 @@ private:
 //
 // COMPILERFIX: inlining this constructor causes crashes with gcc 4.0.1.
 //
-InfoI::InfoI(Ice::Short type, const Ice::ByteSeq& rawBytes) : Ice::OpaqueEndpointInfo(-1, false, rawBytes), _type(type)
+InfoI::InfoI(Ice::Short type, const Ice::EncodingVersion& rawEncoding, const Ice::ByteSeq& rawBytes) : 
+    Ice::OpaqueEndpointInfo(-1, false, rawEncoding, rawBytes), 
+    _type(type)
 {
 }
 
@@ -224,13 +251,19 @@ InfoI::InfoI(Ice::Short type, const Ice::ByteSeq& rawBytes) : Ice::OpaqueEndpoin
 Ice::EndpointInfoPtr
 IceInternal::OpaqueEndpointI::getInfo() const
 {
-    return new InfoI(_type, _rawBytes);
+    return new InfoI(_type, _rawEncoding, _rawBytes);
 }
 
 Short
 IceInternal::OpaqueEndpointI::type() const
 {
     return _type;
+}
+
+std::string
+IceInternal::OpaqueEndpointI::protocol() const
+{
+    return "opaque";
 }
 
 Int
@@ -283,16 +316,16 @@ IceInternal::OpaqueEndpointI::transceiver(EndpointIPtr& endp) const
 }
 
 vector<ConnectorPtr>
-IceInternal::OpaqueEndpointI::connectors() const
+IceInternal::OpaqueEndpointI::connectors(Ice::EndpointSelectionType) const
 {
     vector<ConnectorPtr> ret;
     return ret;
 }
 
 void
-IceInternal::OpaqueEndpointI::connectors_async(const EndpointI_connectorsPtr& callback) const
+IceInternal::OpaqueEndpointI::connectors_async(Ice::EndpointSelectionType, const EndpointI_connectorsPtr& cb) const
 {
-    callback->connectors(vector<ConnectorPtr>());
+    cb->connectors(vector<ConnectorPtr>());
 }
 
 AcceptorPtr
@@ -335,6 +368,11 @@ IceInternal::OpaqueEndpointI::operator==(const LocalObject& r) const
         return false;
     }
 
+    if(_rawEncoding != p->_rawEncoding)
+    {
+        return false;
+    }
+
     if(_rawBytes != p->_rawBytes)
     {
         return false;
@@ -371,6 +409,15 @@ IceInternal::OpaqueEndpointI::operator<(const LocalObject& r) const
         return false;
     }
 
+    if(_rawEncoding < p->_rawEncoding)
+    {
+        return true;
+    }
+    else if(p->_rawEncoding < _rawEncoding)
+    {
+        return false;
+    }
+
     if(_rawBytes < p->_rawBytes)
     {
         return true;
@@ -386,7 +433,10 @@ IceInternal::OpaqueEndpointI::operator<(const LocalObject& r) const
 Ice::Int
 IceInternal::OpaqueEndpointI::hashInit() const
 {
-    Ice::Int h = _type;
+    Ice::Int h = 5381;
+    hashAdd(h, _type);
+    hashAdd(h, _rawEncoding.major);
+    hashAdd(h, _rawEncoding.minor);
     hashAdd(h, _rawBytes);
     return h;
 }

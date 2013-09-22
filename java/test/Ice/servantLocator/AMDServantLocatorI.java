@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -151,6 +151,10 @@ public final class AMDServantLocatorI implements Ice.ServantLocator
         else if(current.operation.equals("javaException"))
         {
             throw new java.lang.RuntimeException("message");
+        }
+        else if(current.operation.equals("unknownExceptionWithServantException"))
+        {
+            throw new UnknownException("reason");
         }
         else if(current.operation.equals("impossibleException"))
         {

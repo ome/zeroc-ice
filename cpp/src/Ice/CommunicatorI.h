@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -15,6 +15,7 @@
 #include <Ice/DynamicLibraryF.h>
 #include <Ice/Initialize.h>
 #include <Ice/Communicator.h>
+#include <Ice/CommunicatorAsync.h>
 
 namespace Ice
 {
@@ -49,6 +50,7 @@ public:
     virtual PropertiesPtr getProperties() const;
     virtual LoggerPtr getLogger() const;
     virtual StatsPtr getStats() const;
+    virtual Ice::Instrumentation::CommunicatorObserverPtr getObserver() const;
 
     virtual RouterPrx getDefaultRouter() const;
     virtual void setDefaultRouter(const RouterPrx&);
@@ -60,6 +62,15 @@ public:
 
     virtual void flushBatchRequests();
 
+#ifdef ICE_CPP11
+    virtual ::Ice::AsyncResultPtr begin_flushBatchRequests(
+                            const ::IceInternal::Function<void (const ::Ice::Exception&)>& exception,
+                            const ::IceInternal::Function<void (bool)>& sent = ::IceInternal::Function<void (bool)>())
+    {
+        return __begin_flushBatchRequests(new Cpp11FnCallbackNC_Communicator_flushBatchRequests(exception, sent), 0);
+    }
+#endif
+
     virtual AsyncResultPtr begin_flushBatchRequests();
     virtual AsyncResultPtr begin_flushBatchRequests(const CallbackPtr&, const LocalObjectPtr& = 0);
     virtual AsyncResultPtr begin_flushBatchRequests(const Callback_Communicator_flushBatchRequestsPtr&,
@@ -69,6 +80,7 @@ public:
     virtual ObjectPrx getAdmin() const;
     virtual void addAdminFacet(const ObjectPtr&, const std::string&);
     virtual ObjectPtr removeAdminFacet(const std::string&);
+    virtual ObjectPtr findAdminFacet(const std::string&);
 
 private:
 
@@ -86,7 +98,7 @@ private:
     friend ICE_API CommunicatorPtr initialize(const InitializationData&, Int);
     friend ICE_API ::IceInternal::InstancePtr IceInternal::getInstance(const ::Ice::CommunicatorPtr&);
 
-    AsyncResultPtr begin_flushBatchRequestsInternal(const IceInternal::CallbackBasePtr&, const LocalObjectPtr&);
+    AsyncResultPtr __begin_flushBatchRequests(const IceInternal::CallbackBasePtr&, const LocalObjectPtr&);
 
     const ::IceInternal::InstancePtr _instance;
 

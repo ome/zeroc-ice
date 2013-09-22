@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -150,6 +150,23 @@ public:
     virtual void opOutRangeByteSeq_async(const ::Test::AMD_TestIntf_opOutRangeByteSeqPtr&,
                                          const ::Test::ByteSeq&,
                                          const ::Ice::Current&);
+
+    virtual void opIntStringDict_async(const ::Test::AMD_TestIntf_opIntStringDictPtr&,
+                                       const ::Test::IntStringDict&,
+                                       const ::Ice::Current&);
+    
+    virtual void opVarDict_async(const ::Test::AMD_TestIntf_opVarDictPtr&,
+                                 const ::Test::CustomMap<std::string, Ice::Int>&,                          
+                                 const ::Ice::Current&);
+    
+    void opShortBuffer_async(const ::Test::AMD_TestIntf_opShortBufferPtr&,
+                             const Test::ShortBuffer&, const Ice::Current&);
+
+    void opBoolBuffer_async(const ::Test::AMD_TestIntf_opBoolBufferPtr&,
+                            const Test::CustomBuffer<bool>&, const Ice::Current&);
+
+    void opBufferStruct_async(const ::Test::AMD_TestIntf_opBufferStructPtr&, const Test::BufferStruct&,
+                              const Ice::Current&);
 
     virtual void shutdown_async(const Test::AMD_TestIntf_shutdownPtr&,
                                 const Ice::Current&);

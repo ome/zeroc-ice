@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -48,11 +48,7 @@ FREEZE_API TransactionalEvictorPtr
 createTransactionalEvictor(const Ice::ObjectAdapterPtr& adapter,
                            const std::string& envName, 
                            const std::string& filename,
-#if defined(_MSC_VER) && (_MSC_VER < 1300)
-                           const FacetTypeMap& facetTypes = FacetTypeMap(std::less<std::string>()),
-#else
                            const FacetTypeMap& facetTypes = FacetTypeMap(),
-#endif
                            const ServantInitializerPtr& initializer = 0,
                            const std::vector<IndexPtr>& indices = std::vector<IndexPtr>(),
                            bool createDb = true);
@@ -62,11 +58,7 @@ createTransactionalEvictor(const Ice::ObjectAdapterPtr& adapter,
                            const std::string& envName,
                            DbEnv& dbEnv, 
                            const std::string& filename,
-#if defined(_MSC_VER) && (_MSC_VER < 1300)
-                           const FacetTypeMap& facetTypes = FacetTypeMap(std::less<std::string>()),
-#else
                            const FacetTypeMap& facetTypes = FacetTypeMap(),
-#endif                   
                            const ServantInitializerPtr& initializer = 0,
                            const std::vector<IndexPtr>& indices = std::vector<IndexPtr>(),
                            bool createDb = true);
@@ -84,8 +76,7 @@ public:
     virtual ~TransactionalEvictorDeadlockException() throw();
 
     virtual std::string ice_name() const;
-    virtual void ice_print(std::ostream&) const;
-    virtual Ice::Exception* ice_clone() const;
+    virtual TransactionalEvictorDeadlockException* ice_clone() const;
     virtual void ice_throw() const;
 
     TransactionPtr tx;

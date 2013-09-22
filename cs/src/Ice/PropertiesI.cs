@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -42,8 +42,8 @@ namespace Ice
             lock(this)
             {
                 string result = "";
-                PropertyValue pv = (PropertyValue)_properties[key];
-                if(pv != null)
+                PropertyValue pv;
+                if(_properties.TryGetValue(key, out pv))
                 {
                     pv.used = true;
                     result = pv.val;
@@ -57,8 +57,8 @@ namespace Ice
             lock(this)
             {
                 string result = val;
-                PropertyValue pv = (PropertyValue)_properties[key];
-                if(pv != null)
+                PropertyValue pv;
+                if(_properties.TryGetValue(key, out pv))
                 {
                     pv.used = true;
                     result = pv.val;
@@ -76,24 +76,21 @@ namespace Ice
         {
             lock(this)
             {
-                PropertyValue pv = (PropertyValue)_properties[key];
-                if(pv == null)
+                PropertyValue pv;
+                if(!_properties.TryGetValue(key, out pv))
                 {
-                    return val;
+                    return val; 
                 }
-                else
+                pv.used = true;
+                try
                 {
-                    pv.used = true;
-                    try
-                    {
-                        return System.Int32.Parse(pv.val, CultureInfo.InvariantCulture);
-                    }
-                    catch(System.FormatException)
-                    {
-                        Ice.Util.getProcessLogger().warning("numeric property " + key + 
-                                                            " set to non-numeric value, defaulting to " + val);
-                        return val;
-                    }
+                    return System.Int32.Parse(pv.val, CultureInfo.InvariantCulture);
+                }
+                catch(System.FormatException)
+                {
+                    Ice.Util.getProcessLogger().warning("numeric property " + key + 
+                                                        " set to non-numeric value, defaulting to " + val);
+                    return val;
                 }
             }
         }
@@ -112,26 +109,24 @@ namespace Ice
 
             lock(this)
             {
-                PropertyValue pv = (PropertyValue)_properties[key];
-                if(pv == null)
+                PropertyValue pv;
+                if(!_properties.TryGetValue(key, out pv))
                 {
+                    return val;
+                }
+
+                pv.used = true;
+
+                string[] result = IceUtilInternal.StringUtil.splitString(pv.val, ", \t\r\n");
+                if(result == null)
+                {
+                    Ice.Util.getProcessLogger().warning("mismatched quotes in property " + key 
+                                            + "'s value, returning default value");
                     return val;
                 }
                 else
                 {
-                    pv.used = true;
-
-                    string[] result = IceUtilInternal.StringUtil.splitString(pv.val, ", \t\r\n");
-                    if(result == null)
-                    {
-                        Ice.Util.getProcessLogger().warning("mismatched quotes in property " + key 
-                                                            + "'s value, returning default value");
-                        return val;
-                    }
-                    else
-                    {
-                        return result;
-                    }
+                    return result;
                 }
             }
         }
@@ -184,7 +179,9 @@ namespace Ice
                     dotPos = pattern.IndexOf('.');
                     Debug.Assert(dotPos != -1);
                     string propPrefix = pattern.Substring(1, dotPos - 2);
-                    if(!propPrefix.Equals(prefix))
+                    bool mismatchCase = false;
+                    string otherKey = "";
+                    if(!propPrefix.ToUpper().Equals(prefix.ToUpper()))
                     {
                         continue;
                     }
@@ -203,10 +200,29 @@ namespace Ice
                                 key = IceInternal.PropertyNames.validProps[i][j].deprecatedBy();
                             }
                         }
+
+                        if(!found)
+                        {
+                            r = new Regex(IceInternal.PropertyNames.validProps[i][j].pattern().ToUpper());
+                            m = r.Match(key.ToUpper());
+                            if(m.Success)
+                            {
+                                found = true;
+                                mismatchCase = true;
+                                otherKey = IceInternal.PropertyNames.validProps[i][j].pattern().Replace("\\", "").
+                                                                                                Replace("^", "").
+                                                                                                Replace("$", "");
+                                break;
+                            }
+                        }
                     }
                     if(!found)
                     {
                         logger.warning("unknown property: " + key);
+                    }
+                    else if(mismatchCase)
+                    {
+                        logger.warning("unknown property: `" + key + "'; did you mean `" + otherKey + "'");
                     }
                 }
             }
@@ -219,8 +235,8 @@ namespace Ice
                 //
                 if(val != null && val.Length > 0)
                 {
-                    PropertyValue pv = (PropertyValue)_properties[key];
-                    if(pv != null)
+                    PropertyValue pv;
+                    if(_properties.TryGetValue(key, out pv))
                     {
                         pv.val = val;
                     }
@@ -243,9 +259,9 @@ namespace Ice
             {
                 string[] result = new string[_properties.Count];
                 int i = 0;
-                foreach(DictionaryEntry entry in _properties)
+                foreach(KeyValuePair<string, PropertyValue> entry in _properties)
                 {
-                    result[i++] = "--" + entry.Key + "=" + ((PropertyValue)entry.Value).val;
+                    result[i++] = "--" + entry.Key + "=" + entry.Value.val;
                 }
                 return result;
             }
@@ -259,7 +275,7 @@ namespace Ice
             }
             pfx = "--" + pfx;
 
-            ArrayList result = new ArrayList();
+            List<string> result = new List<string>();
             for(int i = 0; i < options.Length; i++)
             {
                 string opt = options[i];
@@ -297,6 +313,10 @@ namespace Ice
         
         public void load(string file)
         {
+#if UNITY
+            throw new FeatureNotSupportedException("File I/O not supported in UNITY build");
+#else
+#   if !SILVERLIGHT
             if(IceInternal.AssemblyUtil.platform_ == IceInternal.AssemblyUtil.Platform.Windows &&
                (file.StartsWith("HKLM\\", StringComparison.Ordinal)))
             {
@@ -319,6 +339,7 @@ namespace Ice
             }
             else
             {
+#   endif
                 try
                 {
                     using(System.IO.StreamReader sr = new System.IO.StreamReader(file))
@@ -332,7 +353,10 @@ namespace Ice
                     fe.path = file;
                     throw fe;
                 }
+#   if !SILVERLIGHT
             }
+#   endif
+#endif
         }
         
         public Properties ice_clone_()
@@ -342,15 +366,15 @@ namespace Ice
                 return new PropertiesI(this);
             }
         }
-
-        public ArrayList getUnusedProperties()
+        
+        public List<string> getUnusedProperties()
         {
             lock(this)
             {
-                ArrayList unused = new ArrayList();
-                foreach(DictionaryEntry entry in _properties)
+                List<string> unused = new List<string>();
+                foreach(KeyValuePair<string, PropertyValue> entry in _properties)
                 {
-                    if(!((PropertyValue)entry.Value).used)
+                    if(!entry.Value.used)
                     {
                         unused.Add(entry.Key);
                     }
@@ -361,37 +385,51 @@ namespace Ice
         
         internal PropertiesI(PropertiesI p)
         {
-            _properties = new Hashtable();
-            foreach(DictionaryEntry entry in p._properties)
+            //
+            // NOTE: we can't just do a shallow copy of the map as the map values
+            // would otherwise be shared between the two PropertiesI object.
+            //
+            //_properties = new Dictionary<string, PropertyValue>(p._properties);
+            _properties = new Dictionary<string, PropertyValue>();
+            foreach(KeyValuePair<string, PropertyValue> entry in p._properties)
             {
-                _properties[entry.Key] = new PropertyValue((PropertyValue)entry.Value);
+                _properties[entry.Key] = new PropertyValue(entry.Value);
             }
         }
 
         internal PropertiesI()
         {
-            _properties = new Hashtable();
+            _properties = new Dictionary<string, PropertyValue>();
         }
         
         internal PropertiesI(ref string[] args, Properties defaults)
         {
             if(defaults == null)
             {
-                _properties = new Hashtable();
+                _properties = new Dictionary<string, PropertyValue>();
             }
             else
             {
-                _properties = ((PropertiesI)defaults)._properties;
+                //
+                // NOTE: we can't just do a shallow copy of the map as the map values
+                // would otherwise be shared between the two PropertiesI object.
+                //
+                //_properties = ((PropertiesI)defaults)._properties;
+                _properties = new Dictionary<string, PropertyValue>();
+                foreach(KeyValuePair<string, PropertyValue> entry in ((PropertiesI)defaults)._properties)
+                {
+                    _properties[entry.Key] = new PropertyValue(entry.Value);
+                }
             }
             
-            PropertyValue pv = (PropertyValue)_properties["Ice.ProgramName"];
-            if(pv == null)
+            PropertyValue pv;
+            if(_properties.TryGetValue("Ice.ProgramName", out pv))
             {
-                _properties["Ice.ProgramName"] = new PropertyValue(System.AppDomain.CurrentDomain.FriendlyName, true);
+                pv.used = true;
             }
             else
             {
-                pv.used = true;
+                _properties["Ice.ProgramName"] = new PropertyValue(System.AppDomain.CurrentDomain.FriendlyName, true);
             }
 
             bool loadConfigFiles = false;
@@ -423,7 +461,7 @@ namespace Ice
                 //
                 // If Ice.Config is not set, load from ICE_CONFIG (if set)
                 //
-                loadConfigFiles = (_properties["Ice.Config"] == null);
+                loadConfigFiles = !_properties.ContainsKey("Ice.Config");
             }
             
             if(loadConfigFiles)
@@ -626,7 +664,7 @@ namespace Ice
         {
             string val = getProperty("Ice.Config");
 
-#if !COMPACT
+#if !COMPACT && !SILVERLIGHT
             if(val.Length == 0 || val.Equals("1"))
             {
                 string s = System.Environment.GetEnvironmentVariable("ICE_CONFIG");
@@ -650,6 +688,6 @@ namespace Ice
             _properties["Ice.Config"] = new PropertyValue(val, true);
         }        
 
-        private Hashtable _properties;
+        private Dictionary<string, PropertyValue> _properties;
     }
 }

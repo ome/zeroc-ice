@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -11,6 +11,8 @@
 #define ICE_SELECTOR_H
 
 #include <IceUtil/StringUtil.h>
+#include <IceUtil/Monitor.h>
+#include <IceUtil/Mutex.h>
 
 #include <Ice/Network.h>
 #include <Ice/InstanceF.h>
@@ -26,6 +28,10 @@
 #   include <sys/poll.h>
 #endif
 
+#if defined(ICE_OS_WINRT)
+#    include <deque>
+#endif
+
 namespace IceInternal
 {
 
@@ -36,7 +42,41 @@ class SelectorTimeoutException
 {
 };
 
-#ifdef ICE_USE_IOCP
+#if defined(ICE_OS_WINRT)
+
+struct SelectEvent
+{
+    SelectEvent(IceInternal::EventHandler* handler, SocketOperation status) : handler(handler), status(status)
+    {
+    }
+
+    IceInternal::EventHandler* handler;
+    SocketOperation status;
+};
+
+class Selector : IceUtil::Monitor<IceUtil::Mutex>
+{
+public:
+
+    Selector(const InstancePtr&);
+
+    void destroy();
+
+    void initialize(IceInternal::EventHandler*);
+    void update(IceInternal::EventHandler*, SocketOperation, SocketOperation);    
+    void finish(IceInternal::EventHandler*);
+
+    IceInternal::EventHandler* getNextHandler(SocketOperation&, int);
+    
+    void completed(IceInternal::EventHandler*, SocketOperation);
+
+private:
+
+    const InstancePtr _instance;
+    std::deque<SelectEvent> _events;
+};
+
+#elif defined(ICE_USE_IOCP)
 
 class Selector
 {

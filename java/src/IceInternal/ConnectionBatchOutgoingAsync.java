@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -11,9 +11,10 @@ package IceInternal;
 
 public class ConnectionBatchOutgoingAsync extends BatchOutgoingAsync
 {
-    public ConnectionBatchOutgoingAsync(Ice.ConnectionI con, Instance instance, String operation, CallbackBase callback)
+    public ConnectionBatchOutgoingAsync(Ice.ConnectionI con, Ice.Communicator communicator, Instance instance,
+                                        String operation, CallbackBase callback)
     {
-        super(instance, operation, callback);
+        super(communicator, instance, operation, callback);
         _connection = con;
     }
 

@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -16,6 +16,7 @@
 #include <IceUtil/FileUtil.h>
 #include <Ice/LocalException.h>
 #include <Ice/Network.h>
+#include <Ice/Object.h>
 
 #ifdef _WIN32
 #   include <direct.h>
@@ -175,7 +176,7 @@ convertDH(unsigned char* p, int plen, unsigned char* g, int glen)
     return dh;
 }
 
-IceUtil::Shared* IceInternal::upCast(IceSSL::DHParams* p) { return p; }
+IceUtil::Shared* IceSSL::upCast(IceSSL::DHParams* p) { return p; }
 
 IceSSL::DHParams::DHParams() :
     _dh512(0), _dh1024(0), _dh2048(0), _dh4096(0)
@@ -184,8 +185,7 @@ IceSSL::DHParams::DHParams() :
 
 IceSSL::DHParams::~DHParams()
 {
-    ParamList::iterator p;
-    for(p = _params.begin(); p != _params.end(); ++p)
+    for(ParamList::iterator p = _params.begin(); p != _params.end(); ++p)
     {
         DH_free(p->second);
     }
@@ -226,8 +226,7 @@ IceSSL::DHParams::get(int keyLength)
     // First check the set of parameters specified by the user.
     // Return the first set whose key length is at least keyLength.
     //
-    ParamList::iterator p;
-    for(p = _params.begin(); p != _params.end(); ++p)
+    for(ParamList::iterator p = _params.begin(); p != _params.end(); ++p)
     {
         if(p->first >= keyLength)
         {

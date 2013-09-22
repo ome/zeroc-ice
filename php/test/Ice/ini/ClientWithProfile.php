@@ -1,7 +1,7 @@
 <?php
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -37,9 +37,9 @@ $communicator = null;
 
 if($NS)
 {
-    $initData = eval("new Ice\\InitializationData;");
-    $initData->properties = eval("Ice\\getProperties();");
-    $communicator = eval("Ice\\initialize($initData);");
+    $initData = eval("return new Ice\\InitializationData;");
+    $initData->properties = eval("return Ice\\getProperties();");
+    $communicator = eval("return Ice\\initialize(\$initData);");
 }
 else
 {
@@ -53,7 +53,7 @@ test($communicator != null);
 $properties = null;
 if($NS)
 {
-    $properties = eval("Ice\\getProperties(\"Test\");");
+    $properties = eval("return Ice\\getProperties(\"Test\");");
 }
 else
 {

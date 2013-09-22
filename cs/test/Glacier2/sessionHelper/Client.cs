@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -353,7 +353,7 @@ public class Client
 
                 Console.Out.Write("testing SessionHelper communicator after destroy... ");
                 Console.Out.Flush();
-                test(_session.communicator() == null);
+                test(_session.communicator() != null);
                 Console.Out.WriteLine("ok");
 
 
@@ -431,7 +431,7 @@ public class Client
 
                 Console.Out.Write("testing SessionHelper communicator after connect failure... ");
                 Console.Out.Flush();
-                test(_session.communicator() == null);
+                test(_session.communicator() != null);
                 Console.Out.WriteLine("ok");
 
                 Console.Out.Write("testing SessionHelper destroy after connect failure... ");
@@ -471,10 +471,6 @@ public class Client
 
     public static int Main(string[] args)
     {
-#if !COMPACT
-        Debug.Listeners.Add(new ConsoleTraceListener());
-#endif
-
         App app = new App();
         app.getInitData().properties.setProperty("Ice.Warn.Connections", "0");
         return app.main(args, app.getInitData());

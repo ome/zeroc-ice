@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -67,7 +67,7 @@ public:
     }    
 
     virtual void
-    findAdapterById_async(const AMD_Locator_findAdapterByIdPtr& cb, const string& id, const Current& current) const 
+    findAdapterById_async(const AMD_Locator_findAdapterByIdPtr& cb, const string&, const Current&) const 
     {
        cb->ice_response(_adapter->createDirectProxy(_adapter->getCommunicator()->stringToIdentity("dummy")));   
     }

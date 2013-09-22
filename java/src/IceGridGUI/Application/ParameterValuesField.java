@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -44,6 +44,16 @@ public class ParameterValuesField extends JTable
 
         _useDefaultCombo.setEditable(true);
         _notSetCombo.setEditable(true);
+
+        //
+        // Adjust row height for larger fonts
+        //
+        int fontSize = getFont().getSize();
+        int minRowHeight = fontSize + fontSize / 3;
+        if(rowHeight < minRowHeight)
+        {
+            setRowHeight(minRowHeight);
+        }
     }
 
     public void set(java.util.List<String> names,
@@ -162,9 +172,9 @@ public class ParameterValuesField extends JTable
 
     private static final String _notSet = "Not set";
 
-    private JComboBox _useDefaultCombo = new JComboBox(new Object[]{_useDefault});
+    private JComboBox<String> _useDefaultCombo = new JComboBox<String>(new String[]{_useDefault});
 
-    private JComboBox _notSetCombo = new JComboBox(new Object[]{_notSet});
+    private JComboBox<String> _notSetCombo = new JComboBox<String>(new String[]{_notSet});
 
     private TableCellEditor _useDefaultEditor = new DefaultCellEditor(_useDefaultCombo);
     private TableCellEditor _notSetEditor = new DefaultCellEditor(_notSetCombo);

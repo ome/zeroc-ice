@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -107,6 +107,36 @@ public final class ObjectAdapterFactory
         }
     }
     
+    public void
+    updateConnectionObservers()
+    {
+        java.util.List<Ice.ObjectAdapterI> adapters;
+        synchronized(this)
+        {
+            adapters = new java.util.LinkedList<Ice.ObjectAdapterI>(_adapters);
+        }
+
+        for(Ice.ObjectAdapterI adapter : adapters)
+        {
+            adapter.updateConnectionObservers();
+        }
+    }
+
+    public void
+    updateThreadObservers()
+    {
+        java.util.List<Ice.ObjectAdapterI> adapters;
+        synchronized(this)
+        {
+            adapters = new java.util.LinkedList<Ice.ObjectAdapterI>(_adapters);
+        }
+
+        for(Ice.ObjectAdapterI adapter : adapters)
+        {
+            adapter.updateThreadObservers();
+        }
+    }
+
     public synchronized Ice.ObjectAdapter
     createObjectAdapter(String name, Ice.RouterPrx router)
     {
@@ -206,11 +236,19 @@ public final class ObjectAdapterFactory
     finalize()
         throws Throwable
     {
-        IceUtilInternal.Assert.FinalizerAssert(_instance == null);
-        IceUtilInternal.Assert.FinalizerAssert(_communicator == null);
-        //IceUtilInternal.Assert.FinalizerAssert(_adapters.isEmpty())
-
-        super.finalize();
+        try
+        {
+            IceUtilInternal.Assert.FinalizerAssert(_instance == null);
+            IceUtilInternal.Assert.FinalizerAssert(_communicator == null);
+            IceUtilInternal.Assert.FinalizerAssert(_adapters.isEmpty());
+        }
+        catch(java.lang.Exception ex)
+        {
+        }
+        finally
+        {
+            super.finalize();
+        }
     }
 
     private Instance _instance;

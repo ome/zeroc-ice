@@ -1,6 +1,6 @@
 # **********************************************************************
 #
-# Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -198,6 +198,76 @@ def allTests(communicator)
     rescue
         test(false)
     end
+    puts "ok"
+
+    print "unknown most derived in compact format... "
+    STDOUT.flush
+    begin
+        t.unknownMostDerived2AsBaseCompact()
+        test(false)
+    rescue Test::Base
+        #
+        # For the 1.0 encoding, the unknown exception is sliced to Base.
+        #
+        test(t.ice_getEncodingVersion() == Ice::Encoding_1_0)
+    rescue Ice::UnknownUserException
+        #
+        # An UnkonwnUserException is raised for the compact format because the
+        # most-derived type is unknown and the exception cannot be sliced.
+        #
+        test(t.ice_getEncodingVersion() != Ice::Encoding_1_0)
+    rescue
+        test(false)
+    end
+    puts "ok"
+
+    print "preserved exceptions... "
+    STDOUT.flush
+
+    begin
+        t.knownPreservedAsBase()
+        test(false)
+    rescue Test::KnownPreservedDerived => ex
+        test(ex.b == "base")
+        test(ex.kp == "preserved")
+        test(ex.kpd == "derived")
+    rescue
+        test(false)
+    end
+
+    begin
+        t.knownPreservedAsKnownPreserved()
+        test(false)
+    rescue Test::KnownPreservedDerived => ex
+        test(ex.b == "base")
+        test(ex.kp == "preserved")
+        test(ex.kpd == "derived")
+    rescue
+        test(false)
+    end
+
+    begin
+        t.unknownPreservedAsBase()
+        test(false)
+    rescue Test::KnownPreservedDerived => ex
+        test(ex.b == "base")
+        test(ex.kp == "preserved")
+        test(ex.kpd == "derived")
+    rescue
+        test(false)
+    end
+
+    begin
+        t.unknownPreservedAsKnownPreserved()
+        test(false)
+    rescue Test::KnownPreservedDerived => ex
+        test(ex.b == "base")
+        test(ex.kp == "preserved")
+        test(ex.kpd == "derived")
+    rescue
+        test(false)
+    end
+
     puts "ok"
 
     return t

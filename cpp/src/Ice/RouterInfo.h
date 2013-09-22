@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -15,8 +15,10 @@
 #include <Ice/RouterInfoF.h>
 #include <Ice/RouterF.h>
 #include <Ice/ProxyF.h>
+#include <Ice/ReferenceF.h>
 #include <Ice/EndpointIF.h>
 #include <Ice/BuiltinSequences.h>
+#include <Ice/Identity.h>
 
 #include <set>
 
@@ -48,7 +50,7 @@ class RouterInfo : public IceUtil::Shared, public IceUtil::Mutex
 {
 public:
 
-    class GetClientEndpointsCallback : virtual public IceUtil::Shared
+    class GetClientEndpointsCallback : virtual public Ice::LocalObject
     {
     public:
         
@@ -74,10 +76,48 @@ public:
     bool operator!=(const RouterInfo&) const;
     bool operator<(const RouterInfo&) const;
 
-    Ice::RouterPrx getRouter() const;
+    const Ice::RouterPrx& getRouter() const
+    {
+        //
+        // No mutex lock necessary, _router is immutable.
+        //
+        return _router;
+    }
+    void getClientProxyResponse(const Ice::ObjectPrx&, const GetClientEndpointsCallbackPtr&);
+    void getClientProxyException(const Ice::Exception&, const GetClientEndpointsCallbackPtr&);
     std::vector<EndpointIPtr> getClientEndpoints();
     void getClientEndpoints(const GetClientEndpointsCallbackPtr&);
     std::vector<EndpointIPtr> getServerEndpoints();
+    
+    class AddProxyCookie : public Ice::LocalObject
+    {
+    public:
+        
+        AddProxyCookie(const AddProxyCallbackPtr cb, const Ice::ObjectPrx& proxy) :
+            _cb(cb),
+            _proxy(proxy)
+        {
+        }
+        
+        AddProxyCallbackPtr cb() const
+        {
+            return _cb;
+        }
+        
+        Ice::ObjectPrx proxy() const
+        {
+            return _proxy;
+        }
+        
+    private:
+        
+        const AddProxyCallbackPtr _cb;
+        const Ice::ObjectPrx _proxy;
+    };
+    typedef IceUtil::Handle<AddProxyCookie> AddProxyCookiePtr;
+    
+    void addProxyResponse(const Ice::ObjectProxySeq&, const AddProxyCookiePtr&);
+    void addProxyException(const Ice::Exception&, const AddProxyCookiePtr&);
     void addProxy(const Ice::ObjectPrx&);
     bool addProxy(const Ice::ObjectPrx&, const AddProxyCallbackPtr&);
 

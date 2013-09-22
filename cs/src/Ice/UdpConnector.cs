@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -29,65 +29,40 @@ namespace IceInternal
         //
         // Only for use by TcpEndpoint
         //
-        internal UdpConnector(Instance instance, IPEndPoint addr, string mcastInterface, int mcastTtl,
-                              byte protocolMajor, byte protocolMinor, byte encodingMajor, byte encodingMinor,
+        internal UdpConnector(Instance instance, EndPoint addr, string mcastInterface, int mcastTtl,
                               string connectionId)
         {
             instance_ = instance;
-            _addr = addr;
+#if SILVERLIGHT
+            _addr = (DnsEndPoint)addr;
+#else
+            _addr = (IPEndPoint)addr;
+#endif
             _mcastInterface = mcastInterface;
             _mcastTtl = mcastTtl;
-            _protocolMajor = protocolMajor;
-            _protocolMinor = protocolMinor;
-            _encodingMajor = encodingMajor;
-            _encodingMinor = encodingMinor;
             _connectionId = connectionId;
 
-            _hashCode = _addr.GetHashCode();
-            _hashCode = 5 * _hashCode + _mcastInterface.GetHashCode();
-            _hashCode = 5 * _hashCode + _mcastTtl.GetHashCode();
-            _hashCode = 5 * _hashCode + _connectionId.GetHashCode();
+            _hashCode = 5381;
+            IceInternal.HashUtil.hashAdd(ref _hashCode, _addr);
+            IceInternal.HashUtil.hashAdd(ref _hashCode, _mcastInterface);
+            IceInternal.HashUtil.hashAdd(ref _hashCode, _mcastTtl);
+            IceInternal.HashUtil.hashAdd(ref _hashCode, _connectionId);
         }
 
         public override bool Equals(object obj)
         {
-            UdpConnector p = null;
-
-            try
-            {
-                p = (UdpConnector)obj;
-            }
-            catch(InvalidCastException)
+            if(!(obj is UdpConnector))
             {
                 return false;
             }
 
-            if(this == p)
+            if(this == obj)
             {
                 return true;
             }
 
+            UdpConnector p = (UdpConnector)obj;
             if(!_connectionId.Equals(p._connectionId))
-            {
-                return false;
-            }
-
-            if(_protocolMajor != p._protocolMajor)
-            {
-                return false;
-            }
-
-            if(_protocolMinor != p._protocolMinor)
-            {
-                return false;
-            }
-
-            if(_encodingMajor != p._encodingMajor)
-            {
-                return false;
-            }
-
-            if(_encodingMinor != p._encodingMinor)
             {
                 return false;
             }
@@ -102,7 +77,7 @@ namespace IceInternal
                 return false;
             }
 
-            return Network.compareAddress(_addr, p._addr) == 0;
+            return _addr.Equals(p._addr);
         }
 
         public override string ToString()
@@ -116,13 +91,13 @@ namespace IceInternal
         }
 
         private Instance instance_;
+#if SILVERLIGHT
+        private DnsEndPoint _addr;
+#else
         private IPEndPoint _addr;
+#endif
         private string _mcastInterface;
         private int _mcastTtl;
-        private byte _protocolMajor;
-        private byte _protocolMinor;
-        private byte _encodingMajor;
-        private byte _encodingMinor;
         private string _connectionId;
         private int _hashCode;
     }

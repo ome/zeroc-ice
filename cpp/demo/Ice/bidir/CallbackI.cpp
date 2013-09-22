@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -9,6 +9,10 @@
 
 #include <Ice/Ice.h>
 #include <CallbackI.h>
+
+#if defined(_MSC_VER) && (_MSC_VER < 1700)
+#    pragma warning( 4 : 4355 ) // C4355 'this' : used in base member initializer list
+#endif
 
 using namespace std;
 using namespace Ice;

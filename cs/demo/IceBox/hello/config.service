@@ -2,7 +2,7 @@
 # The server creates one single object adapter with the name of the
 # service. The following line sets the endpoints for this adapter.
 #
-Hello.Endpoints=tcp -p 10000:udp -p 10000:ssl -p 10001
+Hello.Endpoints=tcp -p 10000 -h localhost:udp -p 10000 -h localhost:ssl -p 10001 -h localhost
 
 #
 # Warn about connection exceptions
@@ -30,7 +30,7 @@ Ice.Warn.Connections=1
 #
 # SSL plug-in configuration
 #
-Ice.Plugin.IceSSL=IceSSL:IceSSL.PluginFactory
+Ice.Plugin.IceSSL="IceSSL,Version=3.5.0.0":IceSSL.PluginFactory
 IceSSL.DefaultDir=../../../../certs
 IceSSL.ImportCert.CurrentUser.Root=cacert.pem
 IceSSL.CertFile=s_rsa1024.pfx

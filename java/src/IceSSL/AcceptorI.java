@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -38,8 +38,8 @@ final class AcceptorI implements IceInternal.Acceptor
 
         if(_instance.networkTraceLevel() >= 1)
         {
-            StringBuffer s = new StringBuffer("accepting ssl connections at ");
-	    s.append(toString());
+            StringBuffer s = new StringBuffer("listening for ssl connections at ");
+            s.append(toString());
 
             java.util.List<String> interfaces = 
                 IceInternal.Network.getHostsForEndpointExpand(_addr.getAddress().getHostAddress(), 
@@ -133,7 +133,8 @@ final class AcceptorI implements IceInternal.Acceptor
                 //
                 IceInternal.Network.setReuseAddress(_fd, true);
             }
-            _addr = IceInternal.Network.getAddressForServer(host, port, _instance.protocolSupport());
+            _addr = IceInternal.Network.getAddressForServer(host, port, _instance.protocolSupport(), 
+                                                            _instance.preferIPv6());
             if(_instance.networkTraceLevel() >= 2)
             {
                 String s = "attempting to bind to ssl socket " + toString();
@@ -152,9 +153,17 @@ final class AcceptorI implements IceInternal.Acceptor
     finalize()
         throws Throwable
     {
-        IceUtilInternal.Assert.FinalizerAssert(_fd == null);
-
-        super.finalize();
+        try
+        {
+            IceUtilInternal.Assert.FinalizerAssert(_fd == null);
+        }
+        catch(java.lang.Exception ex)
+        {
+        }
+        finally
+        {
+            super.finalize();
+        }
     }
 
     private Instance _instance;

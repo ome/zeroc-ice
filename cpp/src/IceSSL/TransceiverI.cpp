@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -13,10 +13,11 @@
 #include <IceSSL/Util.h>
 #include <Ice/Communicator.h>
 #include <Ice/LoggerUtil.h>
-#include <Ice/Stats.h>
 #include <Ice/Buffer.h>
-#include <Ice/Network.h>
 #include <Ice/LocalException.h>
+
+#include <IceUtil/DisableWarnings.h>
+#include <Ice/Stats.h>
 
 #include <openssl/err.h>
 #include <openssl/bio.h>
@@ -222,7 +223,7 @@ IceSSL::TransceiverI::initialize()
                 }
                 case SSL_ERROR_SSL:
                 {
-                    struct sockaddr_storage remoteAddr;
+                    IceInternal::Address remoteAddr;
                     string desc = "<not available>";
                     if(IceInternal::fdToRemoteAddress(_fd, remoteAddr))
                     {
@@ -247,14 +248,25 @@ IceSSL::TransceiverI::initialize()
         if(_instance->networkTraceLevel() >= 2)
         {
             Trace out(_logger, _instance->networkTraceCategory());
-
-            struct sockaddr_storage localAddr;
-            IceInternal::fdToLocalAddress(_fd, localAddr);
-
-            out << "failed to establish ssl connection\n"
-                    << "local address: " << IceInternal::addrToString(localAddr) << "\n"
-                    << "remote address: " << IceInternal::addrToString(_connectAddr) << "\n"
-                    << ex;
+            out << "failed to establish ssl connection\n";
+            if(_incoming)
+            {
+                out << IceInternal::fdToString(_fd) << "\n" << ex;
+            }
+            else
+            {
+#ifndef _WIN32
+                //
+                // The local address is only accessible with connected sockets on Windows.
+                //
+                IceInternal::Address localAddr;
+                IceInternal::fdToLocalAddress(_fd, localAddr);
+                out << "local address: " << IceInternal::addrToString(localAddr) << "\n";
+#else
+                out << "local address: <not available>\n";
+#endif
+                out << "remote address: " << IceInternal::addrToString(_connectAddr) << "\n" << ex;
+            }
         }
         throw;
     }
@@ -633,12 +645,11 @@ IceSSL::TransceiverI::read(IceInternal::Buffer& buf)
 
 #ifdef ICE_USE_IOCP
 bool
-IceSSL::TransceiverI::startWrite(IceInternal::Buffer& buf)
+IceSSL::TransceiverI::startWrite(IceInternal::Buffer& /*buf*/)
 {
     if(_state < StateConnected)
     {
         IceInternal::doConnectAsync(_fd, _connectAddr, _write);
-        _desc = IceInternal::fdToString(_fd);
         return false;
     }
 
@@ -675,14 +686,14 @@ IceSSL::TransceiverI::startWrite(IceInternal::Buffer& buf)
 }
 
 void
-IceSSL::TransceiverI::finishWrite(IceInternal::Buffer& buf)
+IceSSL::TransceiverI::finishWrite(IceInternal::Buffer& /*buf*/)
 {
     if(_state < StateConnected)
     {
         return;
     }
 
-    if(_write.count == SOCKET_ERROR)
+    if(static_cast<int>(_write.count) == SOCKET_ERROR)
     {
         WSASetLastError(_write.error);
         if(IceInternal::connectionLost())
@@ -711,7 +722,10 @@ IceSSL::TransceiverI::startRead(IceInternal::Buffer& buf)
         assert(!BIO_ctrl_get_read_request(_iocpBio));
 
         ERR_clear_error(); // Clear any spurious errors.
-        int ret = SSL_read(_ssl, reinterpret_cast<void*>(&*buf.i), static_cast<int>(buf.b.end() - buf.i));
+#ifndef NDEBUG
+        int ret = 
+#endif
+            SSL_read(_ssl, reinterpret_cast<void*>(&*buf.i), static_cast<int>(buf.b.end() - buf.i));
         assert(ret <= 0 && SSL_get_error(_ssl, ret) == SSL_ERROR_WANT_READ);
 
         assert(BIO_ctrl_get_read_request(_iocpBio));
@@ -751,9 +765,9 @@ IceSSL::TransceiverI::startRead(IceInternal::Buffer& buf)
 }
 
 void
-IceSSL::TransceiverI::finishRead(IceInternal::Buffer& buf)
+IceSSL::TransceiverI::finishRead(IceInternal::Buffer& /*buf*/)
 {
-    if(_read.count == SOCKET_ERROR)
+    if(static_cast<int>(_read.count) == SOCKET_ERROR)
     {
         WSASetLastError(_read.error);
         if(IceInternal::connectionLost())
@@ -815,7 +829,7 @@ IceSSL::TransceiverI::checkSendSize(const IceInternal::Buffer& buf, size_t messa
 }
 
 IceSSL::TransceiverI::TransceiverI(const InstancePtr& instance, SOCKET fd, const string& host,
-                                   const struct sockaddr_storage& addr) :
+                                   const IceInternal::Address& addr) :
     IceInternal::NativeInfo(fd),
     _instance(instance),
     _logger(instance->communicator()->getLogger()),
@@ -880,46 +894,48 @@ IceSSL::TransceiverI::~TransceiverI()
 NativeConnectionInfoPtr
 IceSSL::TransceiverI::getNativeConnectionInfo() const
 {
-    assert(_fd != INVALID_SOCKET && _ssl != 0);
-
     NativeConnectionInfoPtr info = new NativeConnectionInfo();
     IceInternal::fdToAddressAndPort(_fd, info->localAddress, info->localPort, info->remoteAddress, info->remotePort);
 
-    //
-    // On the client side, SSL_get_peer_cert_chain returns the entire chain of certs.
-    // On the server side, the peer certificate must be obtained separately.
-    //
-    // Since we have no clear idea whether the connection is server or client side,
-    // the peer certificate is obtained separately and compared against the first
-    // certificate in the chain. If they are not the same, it is added to the chain.
-    //
-    X509* cert = SSL_get_peer_certificate(_ssl);
-    STACK_OF(X509)* chain = SSL_get_peer_cert_chain(_ssl);
-    if(cert != 0 && (chain == 0 || sk_X509_num(chain) == 0 || cert != sk_X509_value(chain, 0)))
+    if(_ssl != 0)
     {
-        CertificatePtr certificate = new Certificate(cert);
-        info->nativeCerts.push_back(certificate);
-        info->certs.push_back(certificate->encode());
-    }
-    else
-    {
-        X509_free(cert);
-    }
-
-    if(chain != 0)
-    {
-        for(int i = 0; i < sk_X509_num(chain); ++i)
+        //
+        // On the client side, SSL_get_peer_cert_chain returns the entire chain of certs.
+        // On the server side, the peer certificate must be obtained separately.
+        //
+        // Since we have no clear idea whether the connection is server or client side,
+        // the peer certificate is obtained separately and compared against the first
+        // certificate in the chain. If they are not the same, it is added to the chain.
+        //
+        X509* cert = SSL_get_peer_certificate(_ssl);
+        STACK_OF(X509)* chain = SSL_get_peer_cert_chain(_ssl);
+        if(cert != 0 && (chain == 0 || sk_X509_num(chain) == 0 || cert != sk_X509_value(chain, 0)))
         {
-            //
-            // Duplicate the certificate since the stack comes straight from the SSL connection.
-            //
-            CertificatePtr certificate = new Certificate(X509_dup(sk_X509_value(chain, i)));
+            CertificatePtr certificate = new Certificate(cert);
             info->nativeCerts.push_back(certificate);
             info->certs.push_back(certificate->encode());
         }
+        else
+        {
+            X509_free(cert);
+        }
+        
+        if(chain != 0)
+        {
+            for(int i = 0; i < sk_X509_num(chain); ++i)
+            {
+                //
+                // Duplicate the certificate since the stack comes straight from the SSL connection.
+                //
+                CertificatePtr certificate = new Certificate(X509_dup(sk_X509_value(chain, i)));
+                info->nativeCerts.push_back(certificate);
+                info->certs.push_back(certificate->encode());
+            }
+        }
+
+        info->cipher = SSL_get_cipher_name(_ssl); // Nothing needs to be free'd.
     }
 
-    info->cipher = SSL_get_cipher_name(_ssl); // Nothing needs to be free'd.
     info->adapterName = _adapterName;
     info->incoming = _incoming;
     return info;
@@ -988,7 +1004,11 @@ IceSSL::TransceiverI::receive()
     }
 
     assert(_readI == _readBuffer.end());
-    int n = BIO_write(_iocpBio, &_readBuffer[0], static_cast<int>(_readBuffer.size()));
+#ifndef NDEBUG
+    int n = 
+#endif
+        BIO_write(_iocpBio, &_readBuffer[0], static_cast<int>(_readBuffer.size()));
+
     assert(n == static_cast<int>(_readBuffer.size()));
     return true;
 }
@@ -1000,7 +1020,10 @@ IceSSL::TransceiverI::send()
     {
         assert(BIO_ctrl_pending(_iocpBio));
         _writeBuffer.resize(BIO_ctrl_pending(_iocpBio));
-        int n = BIO_read(_iocpBio, &_writeBuffer[0], static_cast<int>(_writeBuffer.size()));
+#ifndef NDEBUG
+        int n = 
+#endif
+            BIO_read(_iocpBio, &_writeBuffer[0], static_cast<int>(_writeBuffer.size()));
         assert(n == static_cast<int>(_writeBuffer.size()));
         _writeI = _writeBuffer.begin();
     }

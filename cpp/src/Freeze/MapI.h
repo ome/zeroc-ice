@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -12,6 +12,9 @@
 
 #include <Freeze/Map.h>
 #include <Freeze/ConnectionI.h>
+#ifdef ICE_CPP11
+#  include <memory> 
+#endif
 
 namespace Freeze
 {
@@ -24,12 +27,11 @@ class IteratorHelperI : public IteratorHelper
 {  
 public:
 
-    IteratorHelperI(const MapHelperI& m, bool readOnly, 
-                    const MapIndexBasePtr& index, bool onlyDups);
+    IteratorHelperI(const MapHelperI& m, bool readOnly, const MapIndexBasePtr& index, bool onlyDups);
     IteratorHelperI(const IteratorHelperI&);
 
     virtual 
-    ~IteratorHelperI();
+    ~IteratorHelperI() ICE_NOEXCEPT_FALSE;
   
     bool 
     find(const Key& k) const;
@@ -63,12 +65,15 @@ public:
     void
     close();
 
-    class Tx : public IceUtil::SimpleShared
+    class Tx
+#ifndef ICE_CPP11 
+        : public IceUtil::SimpleShared
+#endif
     {
     public:
 
         Tx(const MapHelperI&);
-        ~Tx();
+        ~Tx() ICE_NOEXCEPT_FALSE;
 
         void dead();
 
@@ -83,7 +88,11 @@ public:
         bool _dead;
     };
 
+#ifdef ICE_CPP11
+    typedef std::shared_ptr<Tx> TxPtr;
+#else
     typedef IceUtil::Handle<Tx> TxPtr;
+#endif
 
     const TxPtr&
     tx() const;
@@ -108,10 +117,8 @@ class MapHelperI : public MapHelper
 {
 public:
    
-    MapHelperI(const ConnectionIPtr&, const std::string&, 
-               const std::string&, const std::string&,
-               const KeyCompareBasePtr&,
-               const std::vector<MapIndexBasePtr>&, bool);
+    MapHelperI(const ConnectionIPtr&, const std::string&, const std::string&, const std::string&, 
+               const KeyCompareBasePtr&, const std::vector<MapIndexBasePtr>&, bool);
 
     virtual ~MapHelperI();
 

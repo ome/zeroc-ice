@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -9,19 +9,24 @@
 
 package IceInternal;
 
+import Ice.Instrumentation.RemoteObserver;
+import Ice.Instrumentation.InvocationObserver;
+
 public final class Outgoing implements OutgoingMessageCallback
 {
     public
-    Outgoing(RequestHandler handler, String operation, Ice.OperationMode mode, java.util.Map<String, String> context)
+    Outgoing(RequestHandler handler, String operation, Ice.OperationMode mode, java.util.Map<String, String> context,
+             InvocationObserver observer)
         throws LocalExceptionWrapper
     {
         _state = StateUnsent;
         _sent = false;
         _handler = handler;
+        _observer = observer;
+        _encoding = Protocol.getCompatibleEncoding(handler.getReference().getEncoding());
+        _os = new BasicStream(_handler.getReference().getInstance(), Protocol.currentProtocolEncoding);
 
-        Instance instance = _handler.getReference().getInstance();
-        _is = new BasicStream(instance);
-        _os = new BasicStream(instance);
+        Protocol.checkSupportedProtocol(Protocol.getCompatibleProtocol(_handler.getReference().getProtocol()));
 
         writeHeader(operation, mode, context);
     }
@@ -30,13 +35,18 @@ public final class Outgoing implements OutgoingMessageCallback
     // These functions allow this object to be reused, rather than reallocated.
     //
     public void
-    reset(RequestHandler handler, String operation, Ice.OperationMode mode, java.util.Map<String, String> context)
+    reset(RequestHandler handler, String operation, Ice.OperationMode mode, java.util.Map<String, String> context,
+          InvocationObserver observer)
         throws LocalExceptionWrapper
     {
         _state = StateUnsent;
         _exception = null;
         _sent = false;
         _handler = handler;
+        _observer = observer;
+        _encoding = Protocol.getCompatibleEncoding(handler.getReference().getEncoding());
+
+        Protocol.checkSupportedProtocol(Protocol.getCompatibleProtocol(_handler.getReference().getProtocol()));
 
         writeHeader(operation, mode, context);
     }
@@ -44,7 +54,10 @@ public final class Outgoing implements OutgoingMessageCallback
     public void
     reclaim()
     {
-        _is.reset();
+        if(_is != null)
+        {
+            _is.reset();
+        }
         _os.reset();
     }
 
@@ -54,8 +67,6 @@ public final class Outgoing implements OutgoingMessageCallback
         throws LocalExceptionWrapper
     {
         assert(_state == StateUnsent);
-
-        _os.endWriteEncaps();
 
         switch(_handler.getReference().getMode())
         {
@@ -276,6 +287,12 @@ public final class Outgoing implements OutgoingMessageCallback
             //
             _sent = true;
         }
+
+        if(_remoteObserver != null && _handler.getReference().getMode() != Reference.ModeTwoway)
+        {
+            _remoteObserver.detach();
+            _remoteObserver = null;
+        }
     }
     
     public synchronized void
@@ -285,6 +302,17 @@ public final class Outgoing implements OutgoingMessageCallback
         
         assert(_state <= StateInProgress);
         
+        if(_remoteObserver != null)
+        {
+            _remoteObserver.reply(is.size() - Protocol.headerSize - 4);
+            _remoteObserver.detach();
+            _remoteObserver = null;
+        }
+
+        if(_is == null)
+        {
+            _is = new IceInternal.BasicStream(_handler.getReference().getInstance(), Protocol.currentProtocolEncoding);
+        }
         _is.swap(is);
         byte replyStatus = _is.readByte();
         
@@ -298,6 +326,10 @@ public final class Outgoing implements OutgoingMessageCallback
             
             case ReplyStatus.replyUserException:
             {
+                if(_observer != null)
+                {
+                    _observer.userException();
+                }
                 _state = StateUserException; // The state must be set last, in case there is an exception.
                 break;
             }
@@ -415,6 +447,12 @@ public final class Outgoing implements OutgoingMessageCallback
     finished(Ice.LocalException ex, boolean sent)
     {
         assert(_state <= StateInProgress);
+        if(_remoteObserver != null)
+        {
+            _remoteObserver.failed(ex.ice_name());
+            _remoteObserver.detach();
+            _remoteObserver = null;
+        }
         _state = StateFailed;
         _exception = ex;
         _sent = sent;
@@ -422,15 +460,72 @@ public final class Outgoing implements OutgoingMessageCallback
     }
 
     public BasicStream
-    is()
-    {
-        return _is;
-    }
-
-    public BasicStream
     os()
     {
         return _os;
+    }
+
+    public BasicStream 
+    startReadParams()
+    {
+        _is.startReadEncaps();
+        return _is;
+    }
+
+    public void 
+    endReadParams()
+    {
+        _is.endReadEncaps();
+    }
+
+    public void
+    readEmptyParams()
+    {
+        _is.skipEmptyEncaps(null);
+    }
+
+    public byte[]
+    readParamEncaps()
+    {
+        return _is.readEncaps(null);
+    }
+
+    public BasicStream
+    startWriteParams(Ice.FormatType format)
+    {
+        _os.startWriteEncaps(_encoding, format);
+        return _os;
+    }
+
+    public void
+    endWriteParams()
+    {
+        _os.endWriteEncaps();
+    }
+
+    public void
+    writeEmptyParams()
+    {
+        _os.writeEmptyEncaps(_encoding);
+    }
+
+    public void 
+    writeParamEncaps(byte[] encaps)
+    {
+        if(encaps == null || encaps.length == 0)
+        {
+            _os.writeEmptyEncaps(_encoding);
+        }
+        else
+        {
+            _os.writeEncaps(encaps);
+        }
+    }
+
+    public boolean 
+    hasResponse()
+    {
+        return _is != null && !_is.isEmpty();
     }
 
     public void 
@@ -440,12 +535,25 @@ public final class Outgoing implements OutgoingMessageCallback
         try
         {
             _is.startReadEncaps();
-            _is.throwException();
+            _is.throwException(null);
         }
         catch(Ice.UserException ex)
         {
             _is.endReadEncaps();
             throw ex;
+        }
+    }
+
+    public void 
+    attachRemoteObserver(Ice.ConnectionInfo info, Ice.Endpoint endpt, int requestId, int size)
+    {
+        if(_observer != null)
+        {
+            _remoteObserver = _observer.getRemoteObserver(info, endpt, requestId, size);
+            if(_remoteObserver != null)
+            {
+                _remoteObserver.attach();
+            }
         }
     }
 
@@ -491,7 +599,7 @@ public final class Outgoing implements OutgoingMessageCallback
 
             _os.writeString(operation);
 
-            _os.writeByte((byte)mode.ordinal());
+            _os.writeByte((byte)mode.value());
 
             if(context != null)
             {
@@ -517,13 +625,6 @@ public final class Outgoing implements OutgoingMessageCallback
                     implicitContext.write(prxContext, _os);
                 }
             }
-
-            //
-            // Input and output parameters are always sent in an
-            // encapsulation, which makes it possible to forward requests as
-            // blobs.
-            //
-            _os.startWriteEncaps();
         }
         catch(Ice.LocalException ex)
         {
@@ -532,6 +633,7 @@ public final class Outgoing implements OutgoingMessageCallback
     }
 
     private RequestHandler _handler;
+    private Ice.EncodingVersion _encoding;
     private BasicStream _is;
     private BasicStream _os;
     private boolean _sent;
@@ -545,6 +647,9 @@ public final class Outgoing implements OutgoingMessageCallback
     private static final int StateLocalException = 4;
     private static final int StateFailed = 5;
     private int _state;
+
+    private InvocationObserver _observer;
+    private RemoteObserver _remoteObserver;
 
     public Outgoing next; // For use by Ice._ObjectDelM
 }

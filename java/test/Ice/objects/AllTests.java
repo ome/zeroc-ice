@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -21,11 +21,16 @@ import test.Ice.objects.Test.E;
 import test.Ice.objects.Test.F;
 import test.Ice.objects.Test.H;
 import test.Ice.objects.Test.I;
+import test.Ice.objects.Test.Base;
+import test.Ice.objects.Test.S;
+import test.Ice.objects.Test.BaseSeqHolder;
 import test.Ice.objects.Test.InitialPrx;
 import test.Ice.objects.Test.InitialPrxHelper;
 import test.Ice.objects.Test.J;
 import test.Ice.objects.Test.UnexpectedObjectExceptionTestPrx;
 import test.Ice.objects.Test.UnexpectedObjectExceptionTestPrxHelper;
+import test.Ice.objects.Test.Compact;
+import test.Ice.objects.Test.CompactExt;
 
 public class AllTests
 {
@@ -41,7 +46,7 @@ public class AllTests
     public static InitialPrx
     allTests(Ice.Communicator communicator, boolean collocated, PrintWriter out)
     {
-		out.print("testing stringToProxy... ");
+        out.print("testing stringToProxy... ");
         out.flush();
         String ref = "initial:default -p 12010";
         Ice.ObjectPrx base = communicator.stringToProxy(ref);
@@ -199,6 +204,36 @@ public class AllTests
         initial.setI(i);
         initial.setI(j);
         initial.setI(h);
+        out.println("ok");
+        
+        out.print("testing sequences...");
+        try
+        {
+            out.flush();
+            Base[] inS = new Base[0];
+            BaseSeqHolder outS = new BaseSeqHolder();
+            Base[] retS;
+            retS = initial.opBaseSeq(inS, outS);
+            
+            inS = new Base[1];
+            inS[0] = new Base(new S(), "");
+            retS = initial.opBaseSeq(inS, outS);
+            test(retS.length == 1 && outS.value.length == 1);
+        }
+        catch(Ice.OperationNotExistException ex)
+        {
+        }
+        out.println("ok");
+
+        out.print("testing compact ID...");
+        out.flush();
+        try
+        {
+            test(initial.getCompact() != null);
+        }
+        catch(Ice.OperationNotExistException ex)
+        {
+        }
         out.println("ok");
 
         if(!collocated)

@@ -1,14 +1,13 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
-#ifndef FREEZE_EVICTOR_ICE
-#define FREEZE_EVICTOR_ICE
+#pragma once
 
 [["cpp:header-ext:h"]]
 
@@ -93,7 +92,7 @@ local interface EvictorIterator
      *
      * Obtains the next identity in the iteration.
      *
-     * @returns The next identity in the iteration.
+     * @return The next identity in the iteration.
      *
      * @throws NoSuchElementException Raised if there is no further
      * elements in the iteration.
@@ -302,7 +301,7 @@ local interface Evictor extends Ice::ServantLocator
     /**
      * 
      * Like {@link #hasObject}, but with a facet. Calling <tt>hasObject(id)</tt>
-     * is equivalent to calling {@link #hasFacet] with an empty
+     * is equivalent to calling {@link #hasFacet} with an empty
      * facet.
      *
      * @return true if the identity is managed by the evictor for the
@@ -338,4 +337,3 @@ local interface Evictor extends Ice::ServantLocator
 
 };
 
-#endif

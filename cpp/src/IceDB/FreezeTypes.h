@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -24,9 +24,10 @@ public:
     virtual ~DatabaseException() throw();
 
     virtual void ice_print(::std::ostream&) const;
-    virtual ::IceUtil::Exception* ice_clone() const;
+    virtual DatabaseException* ice_clone() const;
     virtual void ice_throw() const;
 
+private:
     std::string message;
 };
 
@@ -38,9 +39,10 @@ public:
     virtual ~DeadlockException() throw();
 
     virtual void ice_print(::std::ostream&) const;
-    virtual ::IceUtil::Exception* ice_clone() const;
+    virtual DeadlockException* ice_clone() const;
     virtual void ice_throw() const;
 
+private:
     std::string message;
 };
 
@@ -51,24 +53,25 @@ public:
     NotFoundException(const char*, int);
     virtual ~NotFoundException() throw();
 
-    virtual ::IceUtil::Exception* ice_clone() const;
+    virtual NotFoundException* ice_clone() const;
     virtual void ice_throw() const;
 };
 
 void throwDatabaseException(const char*, int, const Freeze::DatabaseException&);
 
-class DatabaseConnection : public IceDB::DatabaseConnection
+class DatabaseConnection : public virtual IceDB::DatabaseConnection
 {
 public:
 
     DatabaseConnection(const Freeze::ConnectionPtr&);
 
+    virtual Ice::EncodingVersion getEncoding() const;
+
     virtual void beginTransaction();
     virtual void commitTransaction();
     virtual void rollbackTransaction();
 
-    Freeze::ConnectionPtr
-    freezeConnection()
+    Freeze::ConnectionPtr freezeConnection() const
     {
         return _connection;
     }
@@ -78,11 +81,11 @@ private:
     Freeze::ConnectionPtr _connection;
 };
 
-class DatabaseCache : virtual public IceDB::DatabaseCache
+class ConnectionPool : public virtual IceDB::ConnectionPool
 {
 public:
 
-    DatabaseCache(const Ice::CommunicatorPtr&, const std::string&);
+    ConnectionPool(const Ice::CommunicatorPtr&, const std::string&);
 
     virtual IceDB::DatabaseConnectionPtr getConnection();
     virtual IceDB::DatabaseConnectionPtr newConnection();
@@ -98,7 +101,8 @@ template<class Dict, class Key, class Value> class Wrapper : public virtual IceD
 {
 public:
 
-    Wrapper(const Freeze::ConnectionPtr& connection, const std::string& dbName) : _dict(connection, dbName)
+    Wrapper(const Freeze::ConnectionPtr& connection, const std::string& dbName) : 
+        _dict(connection, dbName)
     {
     }
 
@@ -107,17 +111,13 @@ public:
         try
         {
             std::map<Key, Value> m;
-#if defined(_MSC_VER) && (_MSC_VER < 1300)
-            for(Dict::const_iterator p = _dict.begin(); p != _dict.end(); ++p)
-#else
             for(typename Dict::const_iterator p = _dict.begin(); p != _dict.end(); ++p)
-#endif
             {
 #ifdef __SUNPRO_CC             
                 std::map<Key, Value>::value_type v(p->first, p->second);
                 m.insert(v);
 #else
-		m.insert(*p);
+                m.insert(*p);
 #endif
             }
             return m;
@@ -134,11 +134,7 @@ public:
     {
         try
         {
-#if defined(_MSC_VER) && (_MSC_VER < 1300)
-            _dict.put(Dict::value_type(key, data));
-#else
             _dict.put(typename Dict::value_type(key, data));
-#endif
         }
         catch(const Freeze::DatabaseException& ex)
         {
@@ -152,11 +148,7 @@ public:
     {
         try
         {
-#if defined(_MSC_VER) && (_MSC_VER < 1300)
-	    Dict::const_iterator p = _dict.find(key);
-#else
             typename Dict::const_iterator p = _dict.find(key);
-#endif
             if(p == _dict.end())
             {
                 throw NotFoundException(__FILE__, __LINE__);

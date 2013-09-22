@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -34,7 +34,7 @@ public:
                                const Ice::LocalException& ex) :
         DispatchWorkItem(instance),
         _handler(handler),
-        _exception(dynamic_cast<Ice::LocalException*>(ex.ice_clone()))
+        _exception(ex.ice_clone())
     {
     }
     
@@ -47,7 +47,7 @@ public:
 private:
     
     const ConnectRequestHandlerPtr _handler;
-    const auto_ptr<Ice::LocalException> _exception;
+    const IceUtil::UniquePtr<Ice::LocalException> _exception;
 };
 
 class FlushRequestsWithExceptionWrapper : public DispatchWorkItem
@@ -112,7 +112,7 @@ ConnectRequestHandler::ConnectRequestHandler(const ReferencePtr& ref,
     _flushing(false),
     _batchRequestInProgress(false),
     _batchRequestsSize(sizeof(requestBatchHdr)),
-    _batchStream(ref->getInstance().get(), _batchAutoFlush),
+    _batchStream(ref->getInstance().get(), Ice::currentProtocolEncoding, _batchAutoFlush),
     _updateRequestHandler(false)
 {
 }
@@ -182,7 +182,7 @@ ConnectRequestHandler::finishBatchRequest(BasicStream* os)
             _batchRequestsSize += _batchStream.b.size();
 
             Request req;
-            req.os = new BasicStream(_reference->getInstance().get(), _batchAutoFlush);
+            req.os = new BasicStream(_reference->getInstance().get(), Ice::currentProtocolEncoding, _batchAutoFlush);
             req.os->swap(_batchStream);
             _requests.push_back(req);
             return;
@@ -202,7 +202,7 @@ ConnectRequestHandler::abortBatchRequest()
             _batchRequestInProgress = false;
             notifyAll();
 
-            BasicStream dummy(_reference->getInstance().get(), _batchAutoFlush);
+            BasicStream dummy(_reference->getInstance().get(), Ice::currentProtocolEncoding, _batchAutoFlush);
             _batchStream.swap(dummy);
             _batchRequestsSize = sizeof(requestBatchHdr);
 
@@ -220,11 +220,11 @@ ConnectRequestHandler::sendRequest(Outgoing* out)
     assert(connection);
     if(!connection->sendRequest(out, _compress, _response) || _response)
     {
-        return _connection.get(); // The request has been sent or we're expecting a response.
+        return _connection.get(); // The request hasn't been sent or we're expecting a response.
     }
     else
     {
-        return 0; // The request hasn't been sent yet.
+        return 0; // The request has been sent.
     }
 }
 
@@ -328,7 +328,7 @@ ConnectRequestHandler::setException(const Ice::LocalException& ex)
     assert(!_initialized && !_exception.get());
     assert(_updateRequestHandler || _requests.empty());
 
-    _exception.reset(dynamic_cast<Ice::LocalException*>(ex.ice_clone()));
+    _exception.reset(ex.ice_clone());
     _proxy = 0; // Break cyclic reference count.
     _delegate = 0; // Break cyclic reference count.
 
@@ -427,7 +427,7 @@ ConnectRequestHandler::flushRequests()
             }
             else
             {
-                BasicStream os(req.os->instance());
+                BasicStream os(req.os->instance(), Ice::currentProtocolEncoding);
                 _connection->prepareBatchRequest(&os);
                 try
                 {
@@ -451,7 +451,7 @@ ConnectRequestHandler::flushRequests()
     {
         Lock sync(*this);
         assert(!_exception.get() && !_requests.empty());
-        _exception.reset(dynamic_cast<Ice::LocalException*>(ex.get()->ice_clone()));
+        _exception.reset(ex.get()->ice_clone());
         const InstancePtr instance = _reference->getInstance();
         instance->clientThreadPool()->execute(new FlushRequestsWithExceptionWrapper(instance, this, ex));
     }
@@ -459,7 +459,7 @@ ConnectRequestHandler::flushRequests()
     {
         Lock sync(*this);
         assert(!_exception.get() && !_requests.empty());
-        _exception.reset(dynamic_cast<Ice::LocalException*>(ex.ice_clone()));
+        _exception.reset(ex.ice_clone());
         const InstancePtr instance = _reference->getInstance();
         instance->clientThreadPool()->execute(new FlushRequestsWithException(instance, this, ex));
     }

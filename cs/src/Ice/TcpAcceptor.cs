@@ -1,11 +1,13 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
+
+#if !SILVERLIGHT
 
 namespace IceInternal
 {
@@ -39,8 +41,8 @@ namespace IceInternal
 
             if(_traceLevels.network >= 1)
             {
-                StringBuilder s = new StringBuilder("accepting tcp connections at ");
-		s.Append(ToString());
+                StringBuilder s = new StringBuilder("listening for tcp connections at ");
+                s.Append(ToString());
 
                 List<string> interfaces =
                     Network.getHostsForEndpointExpand(_addr.Address.ToString(), instance_.protocolSupport(), true);
@@ -57,7 +59,13 @@ namespace IceInternal
         {
             try
             {
-                _result = _fd.BeginAccept(callback, state);
+                _result = _fd.BeginAccept(delegate(IAsyncResult result)
+                                          {
+                                              if(!result.CompletedSynchronously)
+                                              {
+                                                  callback(result.AsyncState);
+                                              }
+                                          }, state);
             }
             catch(SocketException ex)
             {
@@ -90,9 +98,9 @@ namespace IceInternal
             }
 
             Network.setBlock(_acceptFd, false);
-#if !COMPACT
+#  if !COMPACT
             Network.setTcpBufSize(_acceptFd, instance_.initializationData().properties, _logger);
-#endif
+#  endif
 
             if(_traceLevels.network >= 1)
             {
@@ -125,12 +133,13 @@ namespace IceInternal
 
             try
             {
-                _addr = Network.getAddressForServer(host, port, instance_.protocolSupport());
-                _fd = Network.createSocket(false, _addr.AddressFamily);
+                int protocol = instance_.protocolSupport();
+                _addr = (IPEndPoint)Network.getAddressForServer(host, port, protocol, instance_.preferIPv6());
+                _fd = Network.createServerSocket(false, _addr.AddressFamily, protocol);
                 Network.setBlock(_fd, false);
-#if !COMPACT
+#  if !COMPACT
                 Network.setTcpBufSize(_fd, instance_.initializationData().properties, _logger);
-#endif
+#  endif
                 if(AssemblyUtil.platform_ != AssemblyUtil.Platform.Windows)
                 {
                     //
@@ -172,5 +181,5 @@ namespace IceInternal
         private IPEndPoint _addr;
         private IAsyncResult _result;
     }
-
 }
+#endif

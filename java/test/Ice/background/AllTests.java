@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -1177,7 +1177,7 @@ public class AllTests
 
         ctl.holdAdapter(); // Hold to block in request send.
 
-        byte[] seq = new byte[512 * 1024];
+        byte[] seq = new byte[1024 * 1024];
         new java.util.Random().nextBytes(seq); // Make sure the request doesn't compress too well.
         NoResponse noResponse = new NoResponse();
         while(backgroundOneway.begin_opWithPayload(seq, noResponse).sentSynchronously())

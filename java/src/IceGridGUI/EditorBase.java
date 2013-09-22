@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -49,9 +49,9 @@ public abstract class EditorBase
         FormLayout layout = new FormLayout("right:pref, 3dlu, fill:pref:grow, 3dlu, pref", "");
 
         DefaultFormBuilder builder = new DefaultFormBuilder(layout);
-        builder.setBorder(Borders.DLU2_BORDER);
-        builder.setRowGroupingEnabled(true);
-        builder.setLineGapSize(LayoutStyle.getCurrent().getLinePad());
+        builder.border(Borders.DLU2);
+        builder.rowGroupingEnabled(true);
+        builder.lineGapSize(LayoutStyle.getCurrent().getLinePad());
 
         appendProperties(builder);
 
@@ -60,11 +60,19 @@ public abstract class EditorBase
                             JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED,
                             JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
 
-        scrollPane.setBorder(Borders.DIALOG_BORDER);
+        scrollPane.setBorder(Borders.DIALOG);
 
-        _propertiesPanel = new JPanel(new BorderLayout());
+        if(_propertiesPanel == null)
+        {
+            _propertiesPanel = new JPanel(new BorderLayout());
+        }
+        else
+        {
+            _propertiesPanel.removeAll();
+        }
         _propertiesPanel.add(scrollPane, BorderLayout.CENTER);
-        _propertiesPanel.setBorder(Borders.EMPTY_BORDER);
+        _propertiesPanel.setBorder(Borders.EMPTY);
+        _propertiesPanel.revalidate();
     }
 
     protected JPanel _propertiesPanel;

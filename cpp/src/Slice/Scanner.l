@@ -2,7 +2,7 @@
 
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -27,6 +27,31 @@
 // Puts a pointer-difference into an int
 //
 #   pragma warning( 4 : 4244 )
+#endif
+
+#if defined(_MSC_VER) && defined(ICE_32)
+//
+// '<' : signed/unsigned mismatch
+//
+#   pragma warning( 4 : 4018 )
+#endif
+
+#ifdef _MSC_VER
+#   ifdef slice_wrap
+#      undef slice_wrap
+#      define slice_wrap() 1
+#   endif
+#   define YY_NO_UNISTD_H
+#endif
+
+#ifdef __SUNPRO_CC
+#   ifdef slice_wrap
+#      undef slice_wrap
+#      define slice_wrap() 1
+#   endif
+#   ifdef ICE_64
+#       pragma error_messages(off,truncwarn)      
+#   endif
 #endif
 
 using namespace std;
@@ -185,7 +210,19 @@ floating_literal	(({fractional_constant}{exponent_part}?)|((\+|-)?[[:digit:]]+{e
     {
         return ICE_IDENT_OP;
     }
-    return checkKeyword(ident->v) == ICE_IDENTIFIER ? ICE_IDENT_OP : ICE_KEYWORD_OP;
+    int st = checkKeyword(ident->v);
+    if(st == ICE_IDENTIFIER)
+    {
+        return ICE_IDENT_OP;
+    }
+    else if(st == ICE_OPTIONAL)
+    {
+        return ICE_OPTIONAL_OP;
+    }
+    else
+    {
+        return ICE_KEYWORD_OP;
+    }
 }
 
 {identifier} {
@@ -477,6 +514,7 @@ initScanner()
     keywordMap["false"] = ICE_FALSE;
     keywordMap["true"] = ICE_TRUE;
     keywordMap["idempotent"] = ICE_IDEMPOTENT;
+    keywordMap["optional"] = ICE_OPTIONAL;
 }
 
 //

@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -60,7 +60,6 @@ public class LiveActions
         {
             _array[i].setEnabled(availableActions[i]);
         }
-
         return availableActions;
     }
 
@@ -188,6 +187,21 @@ public class LiveActions
                 }
             };
 
+        _array[TreeNode.ENABLE_METRICS_VIEW] = new AbstractAction("Enable Metrics View")
+            {
+                public void actionPerformed(ActionEvent e)
+                {
+                    _target.enableMetricsView(true);
+                }
+            };
+
+        _array[TreeNode.DISABLE_METRICS_VIEW] = new AbstractAction("Disable Metrics View")
+            {
+                public void actionPerformed(ActionEvent e)
+                {
+                    _target.enableMetricsView(false);
+                }
+            };
     }
 
     private TreeNode _target;

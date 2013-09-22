@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -13,6 +13,8 @@
 #include <IceUtil/Thread.h>
 #include <IceUtil/Monitor.h>
 #include <Ice/Ice.h>
+
+#include <Glacier2/Instrumentation.h>
 
 #include <deque>
 
@@ -65,7 +67,13 @@ public:
     bool addRequest(const RequestPtr&);
     void flushRequests(std::set<Ice::ObjectPrx>&);
 
+    void destroy();
+
+    void updateObserver(const Glacier2::Instrumentation::SessionObserverPtr&);
+
 private:
+
+    void destroyInternal();
 
     void flush();
     void flush(std::set<Ice::ObjectPrx>&);
@@ -83,6 +91,8 @@ private:
     std::deque<RequestPtr> _requests;
     bool _pendingSend;
     RequestPtr _pendingSendRequest;
+    bool _destroyed;
+    Glacier2::Instrumentation::SessionObserverPtr _observer;
 };
 typedef IceUtil::Handle<RequestQueue> RequestQueuePtr;
 

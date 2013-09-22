@@ -1,13 +1,13 @@
 # **********************************************************************
 #
-# Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
 #
 # **********************************************************************
 
-require 'TestI.rb'
+require './TestI.rb'
 
 #
 # Ice for Ruby behaves differently than Ice for C++, because
@@ -198,6 +198,23 @@ def allTests(communicator)
     initial.setI(i)
     initial.setI(j)
     initial.setI(h)
+    puts "ok"
+
+    print "testing sequences... "
+    STDOUT.flush
+    initial.opBaseSeq([])
+
+    retS, outS = initial.opBaseSeq([Test::Base.new])
+    test(retS.length == 1 && outS.length == 1)
+    puts "ok"
+
+    print "testing compact ID... "
+    STDOUT.flush
+    begin
+        r = initial.getCompact()
+        test(r != nil)
+    rescue Ice::OperationNotExistException
+    end
     puts "ok"
 
     print "testing UnexpectedObjectException... "

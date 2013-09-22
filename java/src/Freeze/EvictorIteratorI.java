@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -58,10 +58,10 @@ class EvictorIteratorI implements EvictorIterator
     private java.util.Iterator<Ice.Identity>
     nextBatch()
     {
-	if(!_more)
+        if(!_more)
         {
-	    return null;
-	}
+            return null;
+        }
 
         EvictorI.DeactivateController deactivateController = _store.evictor().deactivateController();
         deactivateController.lock();
@@ -71,6 +71,7 @@ class EvictorIteratorI implements EvictorIterator
         try
         {
             Ice.Communicator communicator = _store.communicator();
+            Ice.EncodingVersion encoding = _store.encoding();
 
             byte[] firstKey = null;
             if(_key.getSize() > 0)
@@ -122,7 +123,7 @@ class EvictorIteratorI implements EvictorIterator
 
                             if(_batch.size() < _batchSize)
                             {
-                                Ice.Identity ident = ObjectStore.unmarshalKey(_key.getData(), communicator);
+                                Ice.Identity ident = ObjectStore.unmarshalKey(_key.getData(), communicator, encoding);
                                 _batch.add(ident);
                             }
                             else

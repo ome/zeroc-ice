@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -11,7 +11,6 @@
 #define ICE_REFERENCE_H
 
 #include <IceUtil/Shared.h>
-#include <IceUtil/RecMutex.h>
 #include <Ice/ReferenceF.h>
 #include <Ice/ReferenceFactoryF.h>
 #include <Ice/EndpointIF.h>
@@ -23,6 +22,7 @@
 #include <Ice/ConnectionIF.h>
 #include <Ice/SharedContext.h>
 #include <Ice/Identity.h>
+#include <Ice/Protocol.h>
 #include <Ice/Properties.h>
 
 namespace IceInternal
@@ -55,6 +55,8 @@ public:
 
     Mode getMode() const { return _mode; }
     bool getSecure() const { return _secure; }
+    const Ice::ProtocolVersion& getProtocol() const { return _protocol; }
+    const Ice::EncodingVersion& getEncoding() const { return _encoding; }
     const Ice::Identity& getIdentity() const { return _identity; }
     const std::string& getFacet() const { return _facet; }
     const InstancePtr& getInstance() const { return _instance; }
@@ -84,6 +86,7 @@ public:
     ReferencePtr changeSecure(bool) const;
     ReferencePtr changeIdentity(const Ice::Identity&) const;
     ReferencePtr changeFacet(const std::string&) const;
+    virtual ReferencePtr changeEncoding(const Ice::EncodingVersion&) const;
     virtual ReferencePtr changeCompress(bool) const;
 
     virtual ReferencePtr changeEndpoints(const std::vector<EndpointIPtr>&) const = 0;
@@ -136,7 +139,8 @@ public:
 
 protected:
 
-    Reference(const InstancePtr&, const Ice::CommunicatorPtr&, const Ice::Identity&, const std::string&, Mode, bool);
+    Reference(const InstancePtr&, const Ice::CommunicatorPtr&, const Ice::Identity&, const std::string&, Mode, bool,
+              const Ice::ProtocolVersion&, const Ice::EncodingVersion&);
     Reference(const Reference&);
 
     virtual Ice::Int hashInit() const;
@@ -154,6 +158,8 @@ private:
     Ice::Identity _identity;
     SharedContextPtr _context;
     std::string _facet;
+    Ice::ProtocolVersion _protocol;
+    Ice::EncodingVersion _encoding;
 
 protected:
 
@@ -166,7 +172,7 @@ class FixedReference : public Reference
 public:
 
     FixedReference(const InstancePtr&, const Ice::CommunicatorPtr&, const Ice::Identity&, const std::string&, Mode,
-                   bool, const Ice::ConnectionIPtr&);
+                   bool, const Ice::EncodingVersion&, const Ice::ConnectionIPtr&);
 
     virtual std::vector<EndpointIPtr> getEndpoints() const;
     virtual std::string getAdapterId() const;
@@ -218,8 +224,9 @@ class RoutableReference : public Reference
 public:
 
     RoutableReference(const InstancePtr&, const Ice::CommunicatorPtr&, const Ice::Identity&, const std::string&, Mode,
-                      bool, const std::vector<EndpointIPtr>&, const std::string&, const LocatorInfoPtr&,
-                      const RouterInfoPtr&, bool, bool, bool, Ice::EndpointSelectionType, int);
+                      bool, const Ice::ProtocolVersion&, const Ice::EncodingVersion&, const std::vector<EndpointIPtr>&,
+                      const std::string&, const LocatorInfoPtr&, const RouterInfoPtr&, bool, bool, bool, 
+                      Ice::EndpointSelectionType, int);
 
     virtual std::vector<EndpointIPtr> getEndpoints() const;
     virtual std::string getAdapterId() const;
@@ -232,6 +239,7 @@ public:
     virtual int getLocatorCacheTimeout() const;
     virtual std::string getConnectionId() const;
 
+    virtual ReferencePtr changeEncoding(const Ice::EncodingVersion&) const;
     virtual ReferencePtr changeCompress(bool) const;
     virtual ReferencePtr changeEndpoints(const std::vector<EndpointIPtr>&) const;
     virtual ReferencePtr changeAdapterId(const std::string&) const;

@@ -1,14 +1,13 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
-#ifndef ICE_GRID_OBSERVER_ICE
-#define ICE_GRID_OBSERVER_ICE
+#pragma once
 
 [["cpp:header-ext:h"]]
 
@@ -135,7 +134,7 @@ sequence<NodeDynamicInfo> NodeDynamicInfoSeq;
  * nodes.
  * 
  **/
-["ami"] interface NodeObserver
+interface NodeObserver
 {
     /**
      *
@@ -214,7 +213,7 @@ interface ApplicationObserver
      * the registry.
      *
      **/
-    ["ami"] void applicationInit(int serial, ApplicationInfoSeq applications);
+    void applicationInit(int serial, ApplicationInfoSeq applications);
 
     /**
      * 
@@ -270,7 +269,7 @@ interface AdapterObserver
      * with the registry (not through the deployment mechanism).
      *
      **/
-    ["ami"] void adapterInit(AdapterInfoSeq adpts);
+    void adapterInit(AdapterInfoSeq adpts);
 
     /**
      *
@@ -318,7 +317,7 @@ interface ObjectObserver
      * interface (not through the deployment mechanism).
      *
      **/
-    ["ami"] void objectInit(ObjectInfoSeq objects);
+    void objectInit(ObjectInfoSeq objects);
 
     /**
      *
@@ -367,7 +366,7 @@ interface RegistryObserver
      * @param registries The current state of the registries.
      *
      **/
-    ["ami"] void registryInit(RegistryInfoSeq registries);
+    void registryInit(RegistryInfoSeq registries);
 
     /**
      *
@@ -392,4 +391,3 @@ interface RegistryObserver
 
 };
 
-#endif

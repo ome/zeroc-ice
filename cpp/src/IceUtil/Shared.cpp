@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -36,9 +36,9 @@ namespace IceUtilInternal
 static inline void atomicInc(volatile int* counter)
 {
     __asm__ __volatile__(
-	"lock ; incl %0"
-	:"=m" (*counter)
-	:"m" (*counter));
+        "lock ; incl %0"
+        :"=m" (*counter)
+        :"m" (*counter));
 }
 
 /**
@@ -55,9 +55,9 @@ static inline int atomicDecAndTest(volatile int* counter)
 {
     unsigned char c;
     __asm__ __volatile__(
-	"lock ; decl %0; sete %1"
-	:"=m" (*counter), "=qm" (c)
-	:"m" (*counter) : "memory");
+        "lock ; decl %0; sete %1"
+        :"=m" (*counter), "=qm" (c)
+        :"m" (*counter) : "memory");
     return c != 0;
 }
 
@@ -72,10 +72,10 @@ static inline int atomicExchangeAdd(volatile int* counter, int i)
 {
     int tmp = i;
     __asm__ __volatile__(
-	"lock ; xadd %0,(%2)"
-	:"+r"(tmp), "=m"(*counter)
-	:"r"(counter), "m"(*counter)
-	: "memory");
+        "lock ; xadd %0,(%2)"
+        :"+r"(tmp), "=m"(*counter)
+        :"r"(counter), "m"(*counter)
+        : "memory");
     return tmp + i;
 }
 
@@ -115,7 +115,11 @@ IceUtil::Shared::__incRef()
     assert(InterlockedExchangeAdd(&_ref, 0) >= 0);
     InterlockedIncrement(&_ref);
 #elif defined(ICE_HAS_GCC_BUILTINS)
-    int c = __sync_fetch_and_add(&_ref, 1);
+
+#   ifndef NDEBUG
+    int c = 
+#   endif
+        __sync_fetch_and_add(&_ref, 1);
     assert(c >= 0);
 #elif defined(ICE_HAS_ATOMIC_FUNCTIONS)
     assert(IceUtilInternal::atomicExchangeAdd(&_ref, 0) >= 0);

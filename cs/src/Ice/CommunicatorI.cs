@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -124,6 +124,11 @@ namespace Ice
             return instance_.initializationData().stats;
         }
 
+        public Ice.Instrumentation.CommunicatorObserver getObserver()
+        {
+            return instance_.initializationData().observer;
+        }
+
         public RouterPrx getDefaultRouter()
         {
             return instance_.referenceFactory().getDefaultRouter();
@@ -220,6 +225,12 @@ namespace Ice
         removeAdminFacet(string facet)
         {
             return instance_.removeAdminFacet(facet);
+        }
+
+        public Ice.Object
+        findAdminFacet(string facet)
+        {
+            return instance_.findAdminFacet(facet);
         }
 
 

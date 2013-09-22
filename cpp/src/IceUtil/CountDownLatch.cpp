@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -19,7 +19,11 @@ IceUtilInternal::CountDownLatch::CountDownLatch(int count) :
     }
 
 #ifdef _WIN32
+#   ifndef ICE_OS_WINRT
     _event = CreateEvent(0, TRUE, FALSE, 0);
+#   else
+    _event = CreateEventExW(0, 0,  CREATE_EVENT_MANUAL_RESET, SEMAPHORE_ALL_ACCESS);
+#   endif
     if(_event == 0)
     {
         throw  IceUtil::ThreadSyscallException(__FILE__, __LINE__, GetLastError());
@@ -44,11 +48,15 @@ IceUtilInternal::CountDownLatch::~CountDownLatch()
 #ifdef _WIN32
     CloseHandle(_event);
 #else
-    int rc = 0;
-    rc = pthread_mutex_destroy(&_mutex);
+#  ifndef NDEBUG
+    int rc = pthread_mutex_destroy(&_mutex);
     assert(rc == 0);
     rc = pthread_cond_destroy(&_cond);
     assert(rc == 0);
+#  else
+    pthread_mutex_destroy(&_mutex);
+    pthread_cond_destroy(&_cond);
+#  endif
 #endif
 }
 
@@ -58,7 +66,11 @@ IceUtilInternal::CountDownLatch::await() const
 #ifdef _WIN32
     while(InterlockedExchangeAdd(&_count, 0) > 0)
     {
+#   ifndef ICE_OS_WINRT
         DWORD rc = WaitForSingleObject(_event, INFINITE);
+#   else
+        DWORD rc = WaitForSingleObjectEx(_event, INFINITE, false);
+#   endif
         assert(rc == WAIT_OBJECT_0 || rc == WAIT_FAILED);
         
         if(rc == WAIT_FAILED)
@@ -103,8 +115,9 @@ IceUtilInternal::CountDownLatch::countDown()
     }
 #if defined(__APPLE__)
     //
-    // On MacOS X we do the broadcast with the mutex held. This seems to be necessary to prevent the 
-    // broadcast call to hang (spinning in an infinite loop).
+    // On OS X we do the broadcast with the mutex held. This seems to
+    // be necessary to prevent the broadcast call to hang (spinning in
+    // an infinite loop).
     //
     if(broadcast)
     {

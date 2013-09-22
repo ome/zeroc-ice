@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -12,8 +12,10 @@
 #include <IceStorm/DB.h>
 #include <IceStorm/Observers.h>
 #include <IceStorm/NodeI.h>
+#include <IceStorm/InstrumentationI.h>
 #include <IceUtil/Timer.h>
 
+#include <Ice/InstrumentationI.h>
 #include <Ice/Communicator.h>
 #include <Ice/Properties.h>
 
@@ -25,7 +27,7 @@ Instance::Instance(
     const string& instanceName,
     const string& name,
     const Ice::CommunicatorPtr& communicator,
-    const DatabaseCachePtr& databaseCache,
+    const ConnectionPoolPtr& connectionPool,
     const Ice::ObjectAdapterPtr& publishAdapter,
     const Ice::ObjectAdapterPtr& topicAdapter,
     const Ice::ObjectAdapterPtr& nodeAdapter,
@@ -44,7 +46,7 @@ Instance::Instance(
                                                    name + ".Flush.Timeout", 1000))), // default one second.
     // default one minute.
     _sendTimeout(communicator->getProperties()->getPropertyAsIntWithDefault(name + ".Send.Timeout", 60 * 1000)),
-    _databaseCache(databaseCache)
+    _connectionPool(connectionPool)
 {
     try
     {
@@ -67,6 +69,17 @@ Instance::Instance(
         _observers = new Observers(this);
         _batchFlusher = new IceUtil::Timer();
         _timer = new IceUtil::Timer();
+        
+        //
+        // If an Ice metrics observer is setup on the communicator, also
+        // enable metrics for IceStorm.
+        //
+        IceInternal::CommunicatorObserverIPtr o = 
+            IceInternal::CommunicatorObserverIPtr::dynamicCast(communicator->getObserver());
+        if(o)
+        {
+            _observer = new TopicManagerObserverI(o->getMetricsAdmin());
+        }
     }
     catch(...)
     {
@@ -180,10 +193,16 @@ Instance::publisherReplicaProxy() const
     return _publisherReplicaProxy;
 }
 
-DatabaseCachePtr
-Instance::databaseCache() const
+ConnectionPoolPtr
+Instance::connectionPool() const
 {
-    return _databaseCache;
+    return _connectionPool;
+}
+
+IceStorm::Instrumentation::TopicManagerObserverPtr
+Instance::observer() const
+{
+    return _observer;
 }
 
 IceUtil::Time

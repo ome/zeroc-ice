@@ -1,6 +1,6 @@
 # **********************************************************************
 #
-# Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -29,7 +29,7 @@ SRCS		= $(OBJS:.o=.cpp)
 
 include $(top_srcdir)/config/Make.rules.php
 
-CPPFLAGS	:= -I. $(CPPFLAGS) $(ICE_FLAGS) $(PHP_FLAGS)
+CPPFLAGS	:= -I. $(CPPFLAGS) $(ICE_FLAGS) $(PHP_FLAGS) -DPHP_DEBUG
 
 LINKWITH        := $(ICE_LIBS) $(PHP_LIBS) $(CXXLIBS)
 

@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -104,9 +104,9 @@ SqlStringApplicationInfoDict::put(const DatabaseConnectionPtr& connection,
                                   const ApplicationInfo& info)
 {
     IceInternal::InstancePtr instance = IceInternal::getInstance(_communicator);
-    IceInternal::BasicStream stream(instance.get());
+    IceInternal::BasicStream stream(instance.get(), connection->getEncoding());
     stream.startWriteEncaps();
-    info.descriptor.__write(&stream);
+    stream.write(info.descriptor);
     stream.writePendingObjects();
     stream.endWriteEncaps();
 
@@ -241,22 +241,22 @@ SqlStringApplicationInfoDict::find(const DatabaseConnectionPtr& connection,
     if(query.next())
     {
         IceGrid::ApplicationInfo info;
-        info.uuid = query.value(1).toString().toStdString();
+        info.uuid = query.value(1).toString().toUtf8().data();
         info.createTime = query.value(2).toLongLong();
-        info.createUser = query.value(3).toString().toStdString();
+        info.createUser = query.value(3).toString().toUtf8().data();
         info.updateTime = query.value(4).toLongLong();
-        info.updateUser = query.value(5).toString().toStdString();
+        info.updateUser = query.value(5).toString().toUtf8().data();
         info.revision = query.value(6).toInt();
 
         QByteArray bytes = query.value(7).toByteArray();
 
         IceInternal::InstancePtr instance = IceInternal::getInstance(_communicator);
-        IceInternal::BasicStream stream(instance.get());
+        IceInternal::BasicStream stream(instance.get(), connection->getEncoding());
         stream.b.resize(bytes.size());
         ::memcpy(&stream.b[0], bytes.data(), bytes.size());
         stream.i = stream.b.begin();
         stream.startReadEncaps();
-        info.descriptor.__read(&stream);
+        stream.read(info.descriptor);
         stream.readPendingObjects();
         stream.endReadEncaps();
 
@@ -284,25 +284,25 @@ SqlStringApplicationInfoDict::getMap(const DatabaseConnectionPtr& connection,
 
     while(query.next())
     {
-        string name = query.value(0).toString().toStdString();
+        string name = query.value(0).toString().toUtf8().data();
 
         IceGrid::ApplicationInfo info;
-        info.uuid = query.value(1).toString().toStdString();
+        info.uuid = query.value(1).toString().toUtf8().data();
         info.createTime = query.value(2).toLongLong();
-        info.createUser = query.value(3).toString().toStdString();
+        info.createUser = query.value(3).toString().toUtf8().data();
         info.updateTime = query.value(4).toLongLong();
-        info.updateUser = query.value(5).toString().toStdString();
+        info.updateUser = query.value(5).toString().toUtf8().data();
         info.revision = query.value(6).toInt();
 
         QByteArray bytes = query.value(7).toByteArray();
 
         IceInternal::InstancePtr instance = IceInternal::getInstance(_communicator);
-        IceInternal::BasicStream stream(instance.get());
+        IceInternal::BasicStream stream(instance.get(), connection->getEncoding());
         stream.b.resize(bytes.size());
         ::memcpy(&stream.b[0], bytes.data(), bytes.size());
         stream.i = stream.b.begin();
         stream.startReadEncaps();
-        info.descriptor.__read(&stream);
+        stream.read(info.descriptor);
         stream.readPendingObjects();
         stream.endReadEncaps();
 

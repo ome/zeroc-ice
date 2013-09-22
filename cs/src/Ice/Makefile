@@ -1,6 +1,6 @@
 # **********************************************************************
 #
-# Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -11,7 +11,7 @@ top_srcdir	= ../..
 
 PKG		= Ice
 LIBNAME		= $(PKG).dll
-TARGETS		= $(bindir)/$(LIBNAME)
+TARGETS		= $(assembliesdir)/$(LIBNAME)
 POLICY_TARGET	= $(POLICY).dll
 
 SRCS		= Acceptor.cs \
@@ -46,22 +46,26 @@ SRCS		= Acceptor.cs \
 		  EndpointHostResolver.cs \
 		  EventHandler.cs \
 		  Exception.cs \
+		  FormatType.cs \
 		  ImplicitContextI.cs \
 		  IncomingAsync.cs \
 		  Incoming.cs \
 		  Instance.cs \
-		  LinkedList.cs \
-		  LocalObject.cs \
+		  InstrumentationI.cs \
 		  LocatorInfo.cs \
 		  LoggerI.cs \
 		  LoggerPlugin.cs \
+		  MetricsAdminI.cs \
+		  MetricsObserverI.cs \
 		  Monitor.cs \
 		  Network.cs \
 		  ObjectAdapterFactory.cs \
 		  ObjectAdapterI.cs \
 		  Object.cs \
 		  ObjectFactoryManager.cs \
+		  ObserverHelper.cs \
 		  OpaqueEndpointI.cs \
+		  Optional.cs \
 		  Options.cs \
 		  OutgoingAsync.cs \
 		  Outgoing.cs \
@@ -86,6 +90,7 @@ SRCS		= Acceptor.cs \
 		  RouterInfo.cs \
 		  ServantManager.cs \
 		  SliceChecksums.cs \
+		  SlicedData.cs \
 		  SocketOperation.cs \
 		  Stream.cs \
 		  StreamI.cs \
@@ -107,10 +112,10 @@ SRCS		= Acceptor.cs \
 		  UdpEndpointI.cs \
 		  UdpConnector.cs \
 		  UdpTransceiver.cs \
+		  UnknownSlicedObject.cs \
 		  UserExceptionFactory.cs \
 		  Util.cs \
-		  ValueWriter.cs \
-		  XMLOutput.cs
+		  ValueWriter.cs
 
 SLICE_SRCS	= $(SDIR)/BuiltinSequences.ice \
 		  $(SDIR)/Communicator.ice \
@@ -124,15 +129,18 @@ SLICE_SRCS	= $(SDIR)/BuiltinSequences.ice \
 		  $(SDIR)/LocalException.ice \
 		  $(SDIR)/Locator.ice \
 		  $(SDIR)/Logger.ice \
+		  $(SDIR)/Metrics.ice \
 		  $(SDIR)/ObjectAdapter.ice \
 		  $(SDIR)/ObjectFactory.ice \
+		  $(SDIR)/Instrumentation.ice \
 		  $(SDIR)/Plugin.ice \
 		  $(SDIR)/Process.ice \
 		  $(SDIR)/Properties.ice \
 		  $(SDIR)/Router.ice \
 		  $(SDIR)/ServantLocator.ice \
 		  $(SDIR)/SliceChecksumDict.ice \
-		  $(SDIR)/Stats.ice
+		  $(SDIR)/Stats.ice \
+		  $(SDIR)/Version.ice
 
 SDIR		= $(slicedir)/Ice
 GDIR		= generated
@@ -141,7 +149,7 @@ include $(top_srcdir)/config/Make.rules.cs
 
 MCSFLAGS	:= $(MCSFLAGS) -target:library -out:$(TARGETS) -warnaserror-
 MCSFLAGS	:= $(MCSFLAGS) -keyfile:$(KEYFILE)
-MCSFLAGS	:= $(MCSFLAGS) /doc:$(bindir)/$(PKG).xml /nowarn:1591
+MCSFLAGS	:= $(MCSFLAGS) /doc:$(assembliesdir)/$(PKG).xml /nowarn:1591
 
 ifeq ($(MANAGED),yes)
     MCSFLAGS	:= $(MCSFLAGS) -define:MANAGED
@@ -153,26 +161,26 @@ SLICE2CSFLAGS	:= $(SLICE2CSFLAGS) --ice -I$(slicedir)
 
 $(TARGETS):: $(SRCS) $(GEN_SRCS)
 	$(MCS) $(MCSFLAGS) $(subst /,$(DSEP),$^)
-	$(INSTALL) $(LIBNAME).config $(bindir)
+	$(INSTALL) $(LIBNAME).config $(assembliesdir)
 
 clean::
-	-rm -f $(bindir)/$(LIBNAME).config
+	-rm -f $(assembliesdir)/$(LIBNAME).config
 
 ifeq ($(GACINSTALL),yes)
 install:: all
 	$(call installdata,../../lib/pkgconfig/$(PKG).pc,$(install_pkgconfigdir))
 else
 install:: all
-	$(call installdata,$(TARGETS).config,$(install_bindir))
+	$(call installdata,$(TARGETS).config,$(install_assembliesdir))
 endif
 
 install:: all
-	(cd $(bindir); $(call installassembly,$(LIBNAME),$(PKG)); $(call installpolicy,$(POLICY)); \
+	(cd $(assembliesdir); $(call installassembly,$(LIBNAME),$(PKG)); $(call installpolicy,$(POLICY)); \
 	 $(call installmdb,$(LIBNAME).mdb); \
-	 $(call installdata,$(PKG).xml,$(install_bindir)))
+	 $(call installdata,$(PKG).xml,$(install_assembliesdir)))
 
 clean::
-	-rm -f $(bindir)/$(PKG).xml
+	-rm -f $(assembliesdir)/$(PKG).xml
 
 $(GDIR)/BuiltinSequences.cs: $(SDIR)/BuiltinSequences.ice $(SLICE2CPP) $(SLICEPARSERLIB)
 	rm -f $(GDIR)/BuiltinSequences.cs

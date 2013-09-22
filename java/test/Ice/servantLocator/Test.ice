@@ -1,14 +1,13 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
-#ifndef TEST_ICE
-#define TEST_ICE
+#pragma once
 
 [["java:package:test.Ice.servantLocator"]]
 module Test
@@ -32,6 +31,8 @@ interface TestIntf
     //void userException();
     void javaException();
 
+    void unknownExceptionWithServantException();
+
     string impossibleException(bool throw) throws TestImpossibleException;
     string intfUserException(bool throw) throws TestIntfUserException, TestImpossibleException;
 
@@ -52,5 +53,3 @@ local class Cookie
 };
 
 };
-
-#endif

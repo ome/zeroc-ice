@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -33,7 +33,11 @@ IceUtil::RecMutex::RecMutex(const IceUtil::MutexProtocol protocol) :
 void
 IceUtil::RecMutex::init(const MutexProtocol)
 {
+#   ifdef ICE_OS_WINRT
+    InitializeCriticalSectionEx(&_mutex, 0, 0);
+#   else
     InitializeCriticalSection(&_mutex);
+#   endif
 }
 
 IceUtil::RecMutex::~RecMutex()
@@ -75,6 +79,21 @@ IceUtil::RecMutex::unlock() const
     }
 }
 
+#   ifdef ICE_HAS_WIN32_CONDVAR
+void
+IceUtil::RecMutex::unlock(LockState& state) const
+{
+    state.mutex = &_mutex;
+    state.count = _count;
+    _count = 0;
+}
+
+void
+IceUtil::RecMutex::lock(LockState& state) const
+{
+    _count = state.count;
+}
+#   else
 void
 IceUtil::RecMutex::unlock(LockState& state) const
 {
@@ -89,6 +108,7 @@ IceUtil::RecMutex::lock(LockState& state) const
     EnterCriticalSection(&_mutex);
     _count = state.count;
 }
+#   endif
 
 #else
 
@@ -148,9 +168,12 @@ IceUtil::RecMutex::init(const MutexProtocol protocol)
 IceUtil::RecMutex::~RecMutex()
 {
     assert(_count == 0);
-    int rc = 0;
-    rc = pthread_mutex_destroy(&_mutex);
+#ifndef NDEBUG
+    int rc = pthread_mutex_destroy(&_mutex);
     assert(rc == 0);
+#else
+    pthread_mutex_destroy(&_mutex);
+#endif
 }
 
 void
@@ -196,9 +219,12 @@ IceUtil::RecMutex::unlock() const
 {
     if(--_count == 0)
     {
-        int rc = 0; // Prevent warnings when NDEBUG is defined.
-        rc = pthread_mutex_unlock(&_mutex);
+#ifndef NDEBUG
+        int rc = pthread_mutex_unlock(&_mutex);
         assert(rc == 0);
+#else
+        pthread_mutex_unlock(&_mutex);
+#endif
     }
 }
 

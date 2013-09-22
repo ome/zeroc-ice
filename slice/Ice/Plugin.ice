@@ -1,15 +1,14 @@
 
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
-#ifndef ICE_PLUGIN_ICE
-#define ICE_PLUGIN_ICE
+#pragma once
 
 [["cpp:header-ext:h"]]
 
@@ -116,4 +115,3 @@ local interface PluginManager
 
 };
 
-#endif

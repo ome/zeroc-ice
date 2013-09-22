@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -29,7 +29,7 @@ public:
     virtual void close() = 0;
     virtual bool write(Buffer&) = 0;
     virtual bool read(Buffer&) = 0;
-#ifdef ICE_USE_IOCP
+#if defined(ICE_USE_IOCP) || defined(ICE_OS_WINRT)
     virtual bool startWrite(Buffer&) = 0;
     virtual void finishWrite(Buffer&) = 0;
     virtual void startRead(Buffer&) = 0;

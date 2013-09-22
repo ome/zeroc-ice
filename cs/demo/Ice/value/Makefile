@@ -1,6 +1,6 @@
 # **********************************************************************
 #
-# Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -11,8 +11,8 @@ top_srcdir	= ../../..
 
 TARGETS		= client.exe server.exe
 
-C_SRCS		= Client.cs DerivedPrinterI.cs ObjectFactory.cs PrinterI.cs
-S_SRCS		= DerivedPrinterI.cs InitialI.cs PrinterI.cs Server.cs
+C_SRCS		= Client.cs ClientPrinterI.cs DerivedPrinterI.cs ObjectFactory.cs PrinterI.cs
+S_SRCS		= ClientPrinterI.cs DerivedPrinterI.cs InitialI.cs ObjectFactory.cs PrinterI.cs Server.cs
 
 SLICE_SRCS	= $(SDIR)/Value.ice
 

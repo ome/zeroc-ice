@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -11,11 +11,13 @@
 #   include <IceUtil/Config.h>
 #endif
 #include <Connection.h>
+#include <Communicator.h>
 #include <ConnectionInfo.h>
 #include <Endpoint.h>
 #include <ObjectAdapter.h>
 #include <Operation.h>
 #include <Proxy.h>
+#include <Thread.h>
 #include <Util.h>
 #include <Ice/ConnectionAsync.h>
 
@@ -40,9 +42,10 @@ struct ConnectionObject
 extern "C"
 #endif
 static ConnectionObject*
-connectionNew(PyObject* /*arg*/)
+connectionNew(PyTypeObject* type, PyObject* /*args*/, PyObject* /*kwds*/)
 {
-    ConnectionObject* self = PyObject_New(ConnectionObject, &ConnectionType);
+    assert(type && type->tp_alloc);
+    ConnectionObject* self = reinterpret_cast<ConnectionObject*>(type->tp_alloc(type, 0));
     if(!self)
     {
         return 0;
@@ -60,27 +63,63 @@ connectionDealloc(ConnectionObject* self)
 {
     delete self->connection;
     delete self->communicator;
-    PyObject_Del(self);
+    Py_TYPE(self)->tp_free(reinterpret_cast<PyObject*>(self));
 }
 
 #ifdef WIN32
 extern "C"
 #endif
-static int
-connectionCompare(ConnectionObject* c1, ConnectionObject* c2)
+static PyObject*
+connectionCompare(ConnectionObject* c1, PyObject* other, int op)
 {
-    if(*c1->connection < *c2->connection)
+    bool result = false;
+
+    if(PyObject_TypeCheck(other, &ConnectionType))
     {
-        return -1;
-    }
-    else if(*c1->connection == *c2->connection)
-    {
-        return 0;
+        ConnectionObject* c2 = reinterpret_cast<ConnectionObject*>(other);
+
+        switch(op)
+        {
+        case Py_EQ:
+            result = *c1->connection == *c2->connection;
+            break;
+        case Py_NE:
+            result = *c1->connection != *c2->connection;
+            break;
+        case Py_LE:
+            result = *c1->connection <= *c2->connection;
+            break;
+        case Py_GE:
+            result = *c1->connection >= *c2->connection;
+            break;
+        case Py_LT:
+            result = *c1->connection < *c2->connection;
+            break;
+        case Py_GT:
+            result = *c1->connection > *c2->connection;
+            break;
+        }
     }
     else
     {
-        return 1;
+        if(op == Py_EQ)
+        {
+            result = false;
+        }
+        else if(op == Py_NE)
+        {
+            result = true;
+        }
+        else
+        {
+            PyErr_Format(PyExc_TypeError, "can't compare %s to %s", Py_TYPE(c1)->tp_name, Py_TYPE(other)->tp_name);
+            return 0;
+        }
     }
+
+    PyObject* r = result ? getTrue() : getFalse();
+    Py_INCREF(r);
+    return r;
 }
 
 #ifdef WIN32
@@ -287,7 +326,8 @@ connectionBeginFlushBatchRequests(ConnectionObject* self, PyObject* args, PyObje
         return 0;
     }
 
-    return createAsyncResult(result, 0, reinterpret_cast<PyObject*>(self), 0);
+    PyObjectHandle communicator = getCommunicatorWrapper(*self->communicator);
+    return createAsyncResult(result, 0, reinterpret_cast<PyObject*>(self), communicator.get());
 }
 
 #ifdef WIN32
@@ -359,7 +399,7 @@ connectionTimeout(ConnectionObject* self)
         return 0;
     }
 
-    return PyInt_FromLong(timeout);
+    return PyLong_FromLong(timeout);
 }
 
 #ifdef WIN32
@@ -457,8 +497,7 @@ PyTypeObject ConnectionType =
 {
     /* The ob_type field must be initialized in the module init function
      * to be portable to Windows without using C++. */
-    PyObject_HEAD_INIT(0)
-    0,                              /* ob_size */
+    PyVarObject_HEAD_INIT(0, 0)
     STRCAST("IcePy.Connection"),    /* tp_name */
     sizeof(ConnectionObject),       /* tp_basicsize */
     0,                              /* tp_itemsize */
@@ -467,7 +506,7 @@ PyTypeObject ConnectionType =
     0,                              /* tp_print */
     0,                              /* tp_getattr */
     0,                              /* tp_setattr */
-    reinterpret_cast<cmpfunc>(connectionCompare), /* tp_compare */
+    0,                              /* tp_reserved */
     0,                              /* tp_repr */
     0,                              /* tp_as_number */
     0,                              /* tp_as_sequence */
@@ -478,11 +517,16 @@ PyTypeObject ConnectionType =
     0,                              /* tp_getattro */
     0,                              /* tp_setattro */
     0,                              /* tp_as_buffer */
+#if PY_VERSION_HEX >= 0x03000000
     Py_TPFLAGS_DEFAULT,             /* tp_flags */
+#else
+    Py_TPFLAGS_DEFAULT |
+    Py_TPFLAGS_HAVE_RICHCOMPARE,    /* tp_flags */
+#endif
     0,                              /* tp_doc */
     0,                              /* tp_traverse */
     0,                              /* tp_clear */
-    0,                              /* tp_richcompare */
+    reinterpret_cast<richcmpfunc>(connectionCompare), /* tp_richcompare */
     0,                              /* tp_weaklistoffset */
     0,                              /* tp_iter */
     0,                              /* tp_iternext */
@@ -522,7 +566,7 @@ IcePy::initConnection(PyObject* module)
 PyObject*
 IcePy::createConnection(const Ice::ConnectionPtr& connection, const Ice::CommunicatorPtr& communicator)
 {
-    ConnectionObject* obj = connectionNew(0);
+    ConnectionObject* obj = connectionNew(&ConnectionType, 0, 0);
     if(obj)
     {
         obj->connection = new Ice::ConnectionPtr(connection);

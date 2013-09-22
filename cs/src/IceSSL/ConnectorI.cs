@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -55,7 +55,7 @@ namespace IceSSL
                 //
                 // Nonblocking connect is handled by the transceiver.
                 //
-                return new TransceiverI(_instance, fd, _addr, _host, false, null);
+                return new TransceiverI(_instance, fd, _host, false, false, null, _addr);
             }
             catch(Ice.LocalException ex)
             {
@@ -76,38 +76,34 @@ namespace IceSSL
         //
         // Only for use by EndpointI.
         //
-        internal ConnectorI(Instance instance, string host, IPEndPoint addr, int timeout, string connectionId)
+        internal ConnectorI(Instance instance, string host, EndPoint addr, int timeout, string connectionId)
         {
             _instance = instance;
             _host = host;
             _logger = instance.communicator().getLogger();
-            _addr = addr;
+            _addr = (IPEndPoint)addr;
             _timeout = timeout;
             _connectionId = connectionId;
 
-            _hashCode = _addr.GetHashCode();
-            _hashCode = 5 * _hashCode + _timeout;
-            _hashCode = 5 * _hashCode + _connectionId.GetHashCode();
+            _hashCode = 5381;
+            IceInternal.HashUtil.hashAdd(ref _hashCode, _addr);
+            IceInternal.HashUtil.hashAdd(ref _hashCode, _timeout);
+            IceInternal.HashUtil.hashAdd(ref _hashCode, _connectionId);
         }
 
         public override bool Equals(object obj)
         {
-            ConnectorI p = null;
-
-            try
-            {
-                p = (ConnectorI)obj;
-            }
-            catch(System.InvalidCastException)
+            if(!(obj is ConnectorI))
             {
                 return false;
             }
 
-            if(this == p)
+            if(this == obj)
             {
                 return true;
             }
 
+            ConnectorI p = (ConnectorI)obj;
             if(_timeout != p._timeout)
             {
                 return false;
@@ -118,7 +114,7 @@ namespace IceSSL
                 return false;
             }
 
-            return IceInternal.Network.compareAddress(_addr, p._addr) == 0;
+            return _addr.Equals(p._addr);
         }
 
         public override string ToString()

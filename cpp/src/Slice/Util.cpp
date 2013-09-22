@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -14,10 +14,6 @@
 #include <climits>
 
 #include <unistd.h> // For readlink()
-
-#ifdef __BCPLUSPLUS__
-#  include <dir.h>
-#endif
 
 using namespace std;
 using namespace Slice;
@@ -119,7 +115,7 @@ Slice::fullPath(const string& path)
         }
 
         char buf[PATH_MAX + 1];
-        int len = readlink(subpath.c_str(), buf, sizeof(buf));
+        int len = static_cast<int>(readlink(subpath.c_str(), buf, sizeof(buf)));
         if(len > 0)
         {
             buf[len] = '\0';

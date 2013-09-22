@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -14,12 +14,8 @@
 #include <IceUtil/Time.h>
 #include <IceUtil/ThreadException.h>
 
-#ifdef _WIN32
-#    include <IceUtil/Mutex.h>
-#endif
-
-
-#ifdef _WIN32
+#if defined(_WIN32) && !defined(ICE_HAS_WIN32_CONDVAR)
+#   include <IceUtil/Mutex.h>
 
 namespace IceUtilInternal
 {
@@ -59,12 +55,12 @@ class Mutex;
 // Condition variable implementation. Conforms to the same semantics
 // as a POSIX threads condition variable.
 //
-class Cond : private noncopyable
+class ICE_UTIL_API Cond : private noncopyable
 {
 public:
 
-    ICE_UTIL_API Cond();
-    ICE_UTIL_API ~Cond();
+    Cond();
+    ~Cond();
 
     //
     // signal restarts one of the threads that are waiting on the
@@ -72,14 +68,14 @@ public:
     // nothing happens. If several threads are waiting on cond,
     // exactly one is restarted, but it is not specified which.
     //
-    ICE_UTIL_API void signal();
+    void signal();
 
     //
     // broadcast restarts all the threads that are waiting on the
     // condition variable cond. Nothing happens if no threads are
     // waiting on cond.
     //
-    ICE_UTIL_API void broadcast();
+    void broadcast();
 
     //
     // MSVC doesn't support out-of-class definitions of member
@@ -126,7 +122,7 @@ private:
     //
     // The Monitor implementation uses waitImpl & timedWaitImpl.
     //
-#ifdef _WIN32
+#if defined(_WIN32) && !defined(ICE_HAS_WIN32_CONDVAR)
 
     template <typename M> void
     waitImpl(const M& mutex) const
@@ -180,11 +176,14 @@ private:
 #endif
 
 #ifdef _WIN32
-    ICE_UTIL_API void wake(bool);
-    ICE_UTIL_API void preWait() const;
-    ICE_UTIL_API void postWait(bool) const;
-    ICE_UTIL_API bool timedDowait(const Time&) const;
-    ICE_UTIL_API void dowait() const;
+#  ifdef ICE_HAS_WIN32_CONDVAR
+    mutable CONDITION_VARIABLE _cond;   
+#  else
+    void wake(bool);
+    void preWait() const;
+    void postWait(bool) const;
+    bool timedDowait(const Time&) const;
+    void dowait() const;
 
     Mutex _internal;
     IceUtilInternal::Semaphore _gate;
@@ -198,13 +197,65 @@ private:
         StateBroadcast
     };
     mutable State _state;
+#  endif
 #else
     mutable pthread_cond_t _cond;
 #endif
 
 };
 
-#ifndef _WIN32
+#ifdef _WIN32
+
+#   ifdef ICE_HAS_WIN32_CONDVAR
+
+template <typename M> inline void
+Cond::waitImpl(const M& mutex) const
+{
+    typedef typename M::LockState LockState;
+    
+    LockState state;
+    mutex.unlock(state);
+    BOOL ok = SleepConditionVariableCS(&_cond, state.mutex, INFINITE);  
+    mutex.lock(state);
+    
+    if(!ok)
+    {
+        throw ThreadSyscallException(__FILE__, __LINE__, GetLastError());
+    }
+}
+
+template <typename M> inline bool
+Cond::timedWaitImpl(const M& mutex, const Time& timeout) const
+{
+    IceUtil::Int64 msTimeout = timeout.toMilliSeconds();
+    if(msTimeout < 0 || msTimeout > 0x7FFFFFFF)
+    {
+        throw IceUtil::InvalidTimeoutException(__FILE__, __LINE__, timeout);
+    } 
+
+    typedef typename M::LockState LockState;
+
+    LockState state;
+    mutex.unlock(state);
+    BOOL ok = SleepConditionVariableCS(&_cond, state.mutex, static_cast<DWORD>(msTimeout));  
+    mutex.lock(state);
+   
+    if(!ok)
+    {
+        DWORD err = GetLastError();
+        
+        if(err != ERROR_TIMEOUT)
+        {
+            throw ThreadSyscallException(__FILE__, __LINE__, err);
+        }
+        return false;
+    }
+    return true;
+}
+
+#   endif
+
+#else
 template <typename M> inline void
 Cond::waitImpl(const M& mutex) const
 {
@@ -234,7 +285,16 @@ Cond::timedWaitImpl(const M& mutex, const Time& timeout) const
     LockState state;
     mutex.unlock(state);
     
+#   ifdef __APPLE__
+    //
+    // The monotonic time is based on mach_absolute_time and pthread
+    // condition variables require time from gettimeofday  so we get
+    // the realtime time.
+    //
+    timeval tv = Time::now(Time::Realtime) + timeout;
+#   else
     timeval tv = Time::now(Time::Monotonic) + timeout;
+#   endif
     timespec ts;
     ts.tv_sec = tv.tv_sec;
     ts.tv_nsec = tv.tv_usec * 1000;

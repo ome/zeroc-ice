@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -21,11 +21,6 @@ public interface Object
      * @return The cloned object.
      **/
     java.lang.Object clone() throws java.lang.CloneNotSupportedException;
-
-     /**
-      * @deprecated This method is deprecated, use hashCode instead.
-      **/
-    int ice_hash();
 
     /**
      * Tests whether this object supports a specific Slice interface.
@@ -163,8 +158,8 @@ public interface Object
     DispatchStatus __collocDispatch(IceInternal.Direct request);
 
     void __write(IceInternal.BasicStream __os);
-    void __read(IceInternal.BasicStream __is, boolean __rid);
-
+    void __read(IceInternal.BasicStream __is);
+   
     void __write(OutputStream __outS);
-    void __read(InputStream __inS, boolean __rid);
+    void __read(InputStream __inS);
 }

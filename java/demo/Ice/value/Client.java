@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -150,7 +150,7 @@ public class Client extends Ice.Application
         derivedAsBase = initial.getDerivedPrinter();
         DerivedPrinter derived = (Demo.DerivedPrinter)derivedAsBase;
 
-        System.out.println("==> class cast to derived object succeded");
+        System.out.println("==> class cast to derived object succeeded");
         System.out.println("==> The type ID of the received object is \"" + derived.ice_id() + "\"");
 
         System.out.println();
@@ -163,6 +163,23 @@ public class Client extends Ice.Application
         System.out.println("==> " + derived.derivedMessage);
         System.out.print("==> ");
         derived.printUppercase();
+
+        System.out.println();
+        System.out.println("Now let's make sure that slice is preserved with [\"preserve-slice\"]");
+        System.out.println("metadata. We create a derived type on the client and pass it to the");
+        System.out.println("server, which does not have a factory for the derived type. We do a");
+        System.out.println("class cast to make sure we can still access the derived type when");
+        System.out.println("it has been returned from the server.");
+        System.out.println("[press enter]");
+        readline(in);
+
+    	ClientPrinter clientp = new ClientPrinterI();
+    	clientp.message = "a message 4 u";
+    	communicator().addObjectFactory(factory, Demo.ClientPrinter.ice_staticId());
+
+    	derivedAsBase = initial.updatePrinterMessage(clientp);
+    	clientp = (Demo.ClientPrinter)derivedAsBase;
+        System.out.println("==> " + clientp.message);
 
         System.out.println();
         System.out.println("Finally, we try the same again, but instead of returning the");

@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -9,6 +9,7 @@
 
 #include <Ice/ObjectAdapterFactory.h>
 #include <Ice/ObjectAdapterI.h>
+#include <Ice/Object.h>
 #include <Ice/LocalException.h>
 #include <Ice/Functional.h>
 #include <IceUtil/UUID.h>
@@ -108,6 +109,19 @@ IceInternal::ObjectAdapterFactory::destroy()
         IceUtil::Monitor<IceUtil::RecMutex>::Lock sync(*this);
         _adapters.clear();
     }
+}
+
+void
+IceInternal::ObjectAdapterFactory::updateObservers(void (ObjectAdapterI::*fn)())
+{
+    list<ObjectAdapterIPtr> adapters;
+
+    {
+        IceUtil::Monitor<IceUtil::RecMutex>::Lock sync(*this);
+        adapters = _adapters;
+    }
+
+    for_each(adapters.begin(), adapters.end(), IceUtil::voidMemFun(fn));
 }
 
 ObjectAdapterPtr

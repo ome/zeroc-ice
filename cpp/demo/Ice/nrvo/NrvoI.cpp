@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -54,9 +54,9 @@ NrvoI::op3(int size, const Ice::Current&)
     if(size < 10)
     {
         //
-	// RVO (Return Value Optimization): return value
-	// is constructed in place.
-	//
+        // RVO (Return Value Optimization): return value
+        // is constructed in place.
+        //
         return MyStringSeq(size, "hello");
     }
 

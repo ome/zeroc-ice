@@ -1,14 +1,13 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
-#ifndef ICE_GRID_ADMIN_ICE
-#define ICE_GRID_ADMIN_ICE
+#pragma once
 
 [["cpp:header-ext:h"]]
 
@@ -96,6 +95,7 @@ dictionary<string, Object*> StringObjectProxyDict;
  * Information about an Ice object.
  *
  **/
+["cpp:comparable"]
 struct ObjectInfo
 {
     /**
@@ -125,6 +125,7 @@ sequence<ObjectInfo> ObjectInfoSeq;
  * Information about an adapter registered with the IceGrid registry.
  *
  **/
+["cpp:comparable"]
 struct AdapterInfo
 {
     /** 
@@ -259,7 +260,9 @@ struct NodeInfo
 
     /**
      *
-     * The number of processors.
+     * The number of processor threads on the node.
+     * For example, nProcessors is 8 on a computer with a single quad-core
+     * processor and two HT threads per core.
      *
      **/
     int nProcessors;
@@ -399,7 +402,7 @@ interface Admin
      * failed.
      *
      **/
-    ["ami"] void addApplication(ApplicationDescriptor descriptor)
+    void addApplication(ApplicationDescriptor descriptor)
         throws AccessDeniedException, DeploymentException;
 
     /**
@@ -421,7 +424,7 @@ interface Admin
      * doesn't exist.
      *
      **/
-    ["ami"] void syncApplication(ApplicationDescriptor descriptor)
+    void syncApplication(ApplicationDescriptor descriptor)
         throws AccessDeniedException, DeploymentException, ApplicationNotExistException;
 
     /**
@@ -442,7 +445,57 @@ interface Admin
      * doesn't exist.
      *
      **/
-    ["ami"] void updateApplication(ApplicationUpdateDescriptor descriptor)
+    void updateApplication(ApplicationUpdateDescriptor descriptor)
+        throws AccessDeniedException, DeploymentException, ApplicationNotExistException;
+
+
+    /**
+     *
+     * Synchronize a deployed application with the given application
+     * descriptor. This operation will replace the current descriptor
+     * with this new descriptor only if no server restarts are
+     * necessary for the update of the application. If some servers
+     * need to be restarted, the synchronization is rejected with a
+     * DeploymentException.
+     *
+     * @param descriptor The application descriptor.
+     *
+     * @throws AccessDeniedException Raised if the session doesn't
+     * hold the exclusive lock or if another session is holding the
+     * lock.
+     *
+     * @throws DeploymentException Raised if application deployment
+     * failed.
+     *
+     * @throws ApplicationNotExistException Raised if the application
+     * doesn't exist.
+     *
+     **/
+    ["ami"] void syncApplicationWithoutRestart(ApplicationDescriptor descriptor)
+        throws AccessDeniedException, DeploymentException, ApplicationNotExistException;
+
+    /**
+     *
+     * Update a deployed application with the given update application
+     * descriptor only if no server restarts are necessary for the
+     * update of the application. If some servers need to be
+     * restarted, the synchronization is rejected with a
+     * DeploymentException.
+     *
+     * @param descriptor The update descriptor.
+     *
+     * @throws AccessDeniedException Raised if the session doesn't
+     * hold the exclusive lock or if another session is holding the
+     * lock.
+     *
+     * @throws DeploymentException Raised if application deployment
+     * failed.
+     *
+     * @throws ApplicationNotExistException Raised if the application
+     * doesn't exist.
+     *
+     **/
+    ["ami"] void updateApplicationWithoutRestart(ApplicationUpdateDescriptor descriptor)
         throws AccessDeniedException, DeploymentException, ApplicationNotExistException;
 
     /**
@@ -459,7 +512,7 @@ interface Admin
      * doesn't exist.
      *
      **/
-    ["ami"] void removeApplication(string name)
+    void removeApplication(string name)
         throws AccessDeniedException, DeploymentException, ApplicationNotExistException;
 
     /**
@@ -503,7 +556,7 @@ interface Admin
      * @throws PatchException Raised if the patch failed.
      *
      **/
-    ["ami", "amd"] void patchApplication(string name, bool shutdown)
+    ["amd"] void patchApplication(string name, bool shutdown)
         throws ApplicationNotExistException, PatchException;
 
     /**
@@ -649,7 +702,7 @@ interface Admin
      * deployed on the node.
      *
      **/
-    ["ami"] idempotent void enableServer(string id, bool enabled)
+    idempotent void enableServer(string id, bool enabled)
         throws ServerNotExistException, NodeUnreachableException, DeploymentException;
 
     /**
@@ -690,7 +743,7 @@ interface Admin
      * deployed on the node.
      *
      **/
-    ["ami", "amd"] void startServer(string id)
+    ["amd"] void startServer(string id)
         throws ServerNotExistException, ServerStartException, NodeUnreachableException, DeploymentException;
 
     /**
@@ -712,7 +765,7 @@ interface Admin
      * deployed on the node.
      *
      **/
-    ["ami", "amd"] void stopServer(string id)
+    ["amd"] void stopServer(string id)
         throws ServerNotExistException, ServerStopException, NodeUnreachableException, DeploymentException;
 
     /**
@@ -736,7 +789,7 @@ interface Admin
      * @throws PatchException Raised if the patch failed.
      *
      **/
-    ["ami", "amd"] void patchServer(string id, bool shutdown)
+    ["amd"] void patchServer(string id, bool shutdown)
         throws ServerNotExistException, NodeUnreachableException, DeploymentException, PatchException;
 
     /**
@@ -760,7 +813,7 @@ interface Admin
      * by the target server.
      *
      **/
-    ["ami"] void sendSignal(string id, string signal)
+    void sendSignal(string id, string signal)
        throws ServerNotExistException, NodeUnreachableException, DeploymentException, BadSignalException;
 
     /**
@@ -785,7 +838,7 @@ interface Admin
      * deployed on the node.
      *
      **/
-     ["ami","deprecate:writeMessage is deprecated, use instead the Process facet of the server Admin object."]
+     ["deprecate:writeMessage is deprecated, use instead the Process facet of the server Admin object."]
      void writeMessage(string id, string message, int fd)
          throws ServerNotExistException, NodeUnreachableException, DeploymentException;
 
@@ -827,7 +880,7 @@ interface Admin
      * exist.
      *
      **/
-    ["ami"] void removeAdapter(string id)
+    void removeAdapter(string id)
         throws AdapterNotExistException, DeploymentException;
 
     /**
@@ -855,7 +908,7 @@ interface Admin
      * get the object type failed.
      *
      **/
-    ["ami"] void addObject(Object* obj)
+    void addObject(Object* obj)
         throws ObjectExistsException, DeploymentException;
 
     /**
@@ -891,7 +944,7 @@ interface Admin
      * registered.
      *
      **/
-    ["ami"] void addObjectWithType(Object* obj, string type)
+    void addObjectWithType(Object* obj, string type)
         throws ObjectExistsException, DeploymentException;
 
     /**
@@ -912,7 +965,7 @@ interface Admin
      * deployment descriptor.
      *
      **/
-    ["ami"] void removeObject(Ice::Identity id) 
+    void removeObject(Ice::Identity id) 
         throws ObjectNotRegisteredException, DeploymentException;
 
     /**
@@ -985,7 +1038,7 @@ interface Admin
      * reached.
      *
      **/
-    ["ami", "nonmutating", "cpp:const"] idempotent LoadInfo getNodeLoad(string name)
+    ["nonmutating", "cpp:const"] idempotent LoadInfo getNodeLoad(string name)
         throws NodeNotExistException, NodeUnreachableException;
 
     /**
@@ -1041,7 +1094,7 @@ interface Admin
      * reached.
      *
      **/
-    ["ami"] void shutdownNode(string name)
+    void shutdownNode(string name)
         throws NodeNotExistException, NodeUnreachableException;
 
     /**
@@ -1113,7 +1166,7 @@ interface Admin
      * reached.
      *
      **/
-    ["ami"] idempotent void shutdownRegistry(string name)
+    idempotent void shutdownRegistry(string name)
         throws RegistryNotExistException, RegistryUnreachableException;
 
     /**
@@ -1515,4 +1568,3 @@ interface AdminSession extends Glacier2::Session
 
 };
 
-#endif

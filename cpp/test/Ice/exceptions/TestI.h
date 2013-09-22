@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -11,6 +11,8 @@
 #define TEST_I_H
 
 #include <Test.h>
+
+bool endsWith(const std::string&, const std::string&);
 
 class ThrowerI : public Test::Thrower
 {
@@ -38,6 +40,8 @@ public:
     virtual void throwLocalException(const Ice::Current&);
     virtual void throwNonIceException(const Ice::Current&);
     virtual void throwAssertException(const Ice::Current&);
+
+    virtual void throwLocalExceptionIdempotent(const Ice::Current&);
 
     virtual void throwAfterResponse(const Ice::Current&);
     virtual void throwAfterException(const Ice::Current&);

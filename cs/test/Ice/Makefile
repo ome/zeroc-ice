@@ -1,6 +1,6 @@
 # **********************************************************************
 #
-# Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+# Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 #
 # This copy of Ice is licensed to you under the terms described in the
 # ICE_LICENSE file included in this distribution.
@@ -19,6 +19,7 @@ SUBDIRS		= application \
 		  info \
 		  inheritance \
 		  invoke \
+		  hash \
 		  hold \
 		  location \
 		  objects \
@@ -41,7 +42,12 @@ SUBDIRS		= application \
 		  udp \
 		  defaultServant \
 		  defaultValue \
-		  threadPoolPriority
+		  threadPoolPriority \
+		  plugin \
+		  admin \
+		  optional \
+		  metrics \
+		  enums
 
 $(EVERYTHING)::
 	@for subdir in $(SUBDIRS); \

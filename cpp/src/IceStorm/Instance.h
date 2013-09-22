@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -16,6 +16,7 @@
 #include <Ice/PropertiesF.h>
 #include <IceUtil/Time.h>
 #include <IceStorm/Election.h>
+#include <IceStorm/Instrumentation.h>
 
 namespace IceUtil
 {
@@ -42,14 +43,14 @@ namespace IceStorm
 class TraceLevels;
 typedef IceUtil::Handle<TraceLevels> TraceLevelsPtr;
 
-class DatabaseCache;
-typedef IceUtil::Handle<DatabaseCache> DatabaseCachePtr;
+class ConnectionPool;
+typedef IceUtil::Handle<ConnectionPool> ConnectionPoolPtr;
 
 class Instance : public IceUtil::Shared
 {
 public:
 
-    Instance(const std::string&, const std::string&, const Ice::CommunicatorPtr&, const DatabaseCachePtr&, 
+    Instance(const std::string&, const std::string&, const Ice::CommunicatorPtr&, const ConnectionPoolPtr&, 
              const Ice::ObjectAdapterPtr&, const Ice::ObjectAdapterPtr&, const Ice::ObjectAdapterPtr& = 0,
              const IceStormElection::NodePrx& = 0);
     ~Instance();
@@ -71,7 +72,8 @@ public:
     IceUtil::TimerPtr timer() const;
     Ice::ObjectPrx topicReplicaProxy() const;
     Ice::ObjectPrx publisherReplicaProxy() const;
-    DatabaseCachePtr databaseCache() const;
+    ConnectionPoolPtr connectionPool() const;
+    IceStorm::Instrumentation::TopicManagerObserverPtr observer() const;
 
     IceUtil::Time discardInterval() const;
     IceUtil::Time flushInterval() const;
@@ -95,11 +97,12 @@ private:
     const int _sendTimeout;
     const Ice::ObjectPrx _topicReplicaProxy;
     const Ice::ObjectPrx _publisherReplicaProxy;
-    const DatabaseCachePtr _databaseCache;
+    const ConnectionPoolPtr _connectionPool;
     IceStormElection::NodeIPtr _node;
     IceStormElection::ObserversPtr _observers;
     IceUtil::TimerPtr _batchFlusher;
     IceUtil::TimerPtr _timer;
+    IceStorm::Instrumentation::TopicManagerObserverPtr _observer;
 };
 typedef IceUtil::Handle<Instance> InstancePtr;
 

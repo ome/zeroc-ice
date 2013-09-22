@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -10,7 +10,12 @@
 #ifndef ICE_SERVICE_H
 #define ICE_SERVICE_H
 
+#include <IceUtil/Config.h>
 #include <Ice/Ice.h>
+
+#ifdef _WIN32
+#   include <winsvc.h>
+#endif
 
 namespace Ice
 {
@@ -41,10 +46,6 @@ public:
     //
     // Win32:
     //
-    // --install NAME [--display DISP] [--executable EXEC]
-    // --uninstall NAME
-    // --start NAME [args ...]
-    // --stop NAME
     // --service NAME
     //
     // Unix:
@@ -110,6 +111,12 @@ public:
     // The return value is an exit status code: EXIT_FAILURE or
     // EXIT_SUCCESS.
     //
+#ifdef _WIN32
+    
+    int run(int&, wchar_t*[], const InitializationData& = InitializationData());
+    
+#endif
+
     int run(int&, char*[], const InitializationData& = InitializationData());
 
 #ifdef _WIN32
@@ -119,28 +126,6 @@ public:
     // given name.
     //
     void configureService(const std::string&);
-
-    //
-    // Installs a Win32 service.
-    //
-    int installService(bool, const std::string&, const std::string&, const std::string&,
-                       const std::vector<std::string>&);
-
-    //
-    // Uninstalls a Win32 service.
-    //
-    int uninstallService(bool, const std::string&);
-
-    //
-    // Starts a Win32 service. The argument vector is passed to the
-    // service at startup.
-    //
-    int startService(const std::string&, const std::vector<std::string>&);
-
-    //
-    // Stops a running Win32 service.
-    //
-    int stopService(const std::string&);
 
     static void setModuleHandle(HMODULE);
 
@@ -224,6 +209,15 @@ protected:
     //
     void disableInterrupt();
 
+    //
+    // Log Helpers
+    //
+    typedef LoggerOutput<Service, Service*, &Service::syserror> ServiceSysError;
+    typedef LoggerOutput<Service, Service*, &Service::error> ServiceError;
+    typedef LoggerOutput<Service, Service*, &Service::warning> ServiceWarning;
+    typedef LoggerOutput<Service, Service*, &Service::trace> ServiceTrace;
+    typedef LoggerOutput<Service, Service*, &Service::print> ServicePrint;
+
 private:
 
     Ice::LoggerPtr _logger;
@@ -247,7 +241,7 @@ private:
 
 public:
 
-    void serviceMain(int, char*[]);
+    void serviceMain(int, wchar_t*[]);
     void control(int);
 
 #else

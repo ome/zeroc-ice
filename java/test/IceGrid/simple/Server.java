@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -19,7 +19,8 @@ public class Server extends test.Util.Application
 
         Ice.ObjectAdapter adapter = communicator().createObjectAdapter("TestAdapter");
         Ice.Object object = new TestI();
-        adapter.add(object, communicator().stringToIdentity("test"));
+        String id = communicator().getProperties().getPropertyWithDefault("Identity", "test");
+        adapter.add(object, communicator().stringToIdentity(id));
         //shutdownOnInterrupt();
         try
         {
@@ -50,8 +51,8 @@ public class Server extends test.Util.Application
     public static void
     main(String[] args)
     {
-    	Server c = new Server();
-    	int status = c.main("test.IceGrid.simple.Server", args);
+        Server c = new Server();
+        int status = c.main("test.IceGrid.simple.Server", args);
         
         System.gc();
         System.exit(status);

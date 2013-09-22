@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -59,10 +59,12 @@ public class ApplicationPane extends JSplitPane implements Tab
         if(_root.isLive())
         {
             c.getSaveToRegistryAction().setEnabled(_root.needsSaving() && c.connectedToMaster());
+            c.getSaveToRegistryWithoutRestartAction().setEnabled(_root.needsSaving() && c.connectedToMaster());
         }
         else
         {
             c.getSaveToRegistryAction().setEnabled(c.connectedToMaster());
+            c.getSaveToRegistryWithoutRestartAction().setEnabled(c.connectedToMaster());
         }
         c.getSaveToFileAction().setEnabled(true);
 
@@ -250,7 +252,7 @@ public class ApplicationPane extends JSplitPane implements Tab
             new JScrollPane(tree,
                             JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED,
                             JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
-        leftScroll.setBorder(Borders.EMPTY_BORDER);
+        leftScroll.setBorder(Borders.EMPTY);
 
         _leftPane.setContent(leftScroll);
 
@@ -270,11 +272,11 @@ public class ApplicationPane extends JSplitPane implements Tab
         }
     }
 
-    public void saveToRegistry()
+    public void saveToRegistry(boolean restart)
     {
         if(_currentEditor == null || _currentEditor.save(true))
         {
-            _root.saveToRegistry();
+            _root.saveToRegistry(restart);
         }
     }
 

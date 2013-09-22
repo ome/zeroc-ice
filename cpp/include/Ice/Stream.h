@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -15,213 +15,12 @@
 #include <Ice/Object.h>
 #include <Ice/Exception.h>
 #include <Ice/Proxy.h>
+#include <Ice/SlicedDataF.h>
 #include <IceUtil/Shared.h>
+#include <Ice/StreamHelpers.h>
 
 namespace Ice
 {
-    
-//
-// COMPILERFIX: VC++ 6 compiler bug doesn't allow using templates for
-// the Stream API.
-//
-// see: http://support.microsoft.com/kb/240866
-//      http://support.microsoft.com/kb/241569
-//
-#if !defined(_MSC_VER) || (_MSC_VER >= 1300)
-enum StreamTraitType
-{
-    StreamTraitTypeBuiltin,
-    StreamTraitTypeStruct,
-    StreamTraitTypeStructClass,     // struct with cpp:class metadata
-    StreamTraitTypeByteEnum,        // Enums with up to 127 enumerators
-    StreamTraitTypeShortEnum,       // Enums with up to 32767 enumerators
-    StreamTraitTypeIntEnum,         // Enums with more than 32767 enumerators
-    StreamTraitTypeSequence,
-#ifndef __BCPLUSPLUS__ // COMPILERFIX: See StreamTrait<vector<bool>> comment below
-    StreamTraitTypeSequenceBool,
-#endif
-    StreamTraitTypeDictionary,
-    StreamTraitTypeUserException,
-    StreamTraitTypeUnknown
-};
-
-// Forward declaration required for writer specializations.
-class MarshalException;
-
-//
-// Base trait template. This doesn't actually do anything -- we just
-// use it as a template that we can specialize.
-//
-template<typename T>
-struct StreamTrait
-{
-    static const StreamTraitType type = StreamTraitTypeUnknown;
-    static const int minWireSize = 0;
-};
-
-//
-// StreamTrait specialization for std::vector
-//
-template<typename T>
-struct StreamTrait< ::std::vector<T> >
-{
-    static const StreamTraitType type = StreamTraitTypeSequence;
-    static const int minWireSize = 1;
-};
-
-//
-// StreamTrait specialization for std::vector<bool>. Sequences of bool
-// are handled specifically because C++ optimizations for vector<bool>
-// prevent us from reading vector of bools the same way as other
-// sequences (see StreamReader<StreamTraitTypeSequenceBool>::read 
-// implementation below)
-//
-// COMPILERFIX: BCC2010 doesn't allow use of full specialization over
-// partial specialization.
-//
-#ifndef __BCPLUSPLUS__
-template<>
-struct StreamTrait< ::std::vector<bool> > 
-{
-    static const StreamTraitType type = StreamTraitTypeSequenceBool;
-    static const int minWireSize = 1;
-};
-#endif
-
-template<>
-struct StreamTrait<UserException>
-{
-    static const StreamTraitType type = StreamTraitTypeUserException;
-};
-
-//
-// StreamTrait specialization for std::map.
-//
-template<typename K, typename V>
-struct StreamTrait< ::std::map<K, V> >
-{
-    static const StreamTraitType type = StreamTraitTypeDictionary;
-    static const int minWireSize = 1;
-};
-
-//
-// StreamTrait specialization for builtins (these are needed for sequence
-// marshalling to figure out the minWireSize of each built-in).
-//
-template<>
-struct StreamTrait< bool>
-{
-    static const StreamTraitType type = StreamTraitTypeBuiltin;
-    static const int minWireSize = 1;
-};
-
-template<>
-struct StreamTrait< Byte>
-{
-    static const StreamTraitType type = StreamTraitTypeBuiltin;
-    static const int minWireSize = 1;
-};
-
-template<>
-struct StreamTrait< Short>
-{
-    static const StreamTraitType type = StreamTraitTypeBuiltin;
-    static const int minWireSize = 2;
-};
-
-template<>
-struct StreamTrait< Int>
-{
-    static const StreamTraitType type = StreamTraitTypeBuiltin;
-    static const int minWireSize = 4;
-};
-
-template<>
-struct StreamTrait< Long>
-{
-    static const StreamTraitType type = StreamTraitTypeBuiltin;
-    static const int minWireSize = 8;
-};
-
-template<>
-struct StreamTrait< Float>
-{
-    static const StreamTraitType type = StreamTraitTypeBuiltin;
-    static const int minWireSize = 4;
-};
-
-template<>
-struct StreamTrait< Double>
-{
-    static const StreamTraitType type = StreamTraitTypeBuiltin;
-    static const int minWireSize = 8;
-};
-
-template<>
-struct StreamTrait< ::std::string>
-{
-    static const StreamTraitType type = StreamTraitTypeBuiltin;
-    static const int minWireSize = 1;
-};
-
-template<>
-struct StreamTrait< ::std::wstring>
-{
-    static const StreamTraitType type = StreamTraitTypeBuiltin;
-    static const int minWireSize = 1;
-};
-
-template<typename T>
-struct StreamTrait< ::IceInternal::ProxyHandle<T> >
-{
-    static const StreamTraitType type = StreamTraitTypeBuiltin;
-    static const int minWireSize = 2;
-};
-
-template<typename T>
-struct StreamTrait< ::IceInternal::Handle<T> >
-{
-    static const StreamTraitType type = StreamTraitTypeBuiltin;
-    static const int minWireSize = 4;
-};
-
-//
-// This is the non-specialized version of the writer. For each kind of
-// user-defined type (enum, struct, etc), we specialize this template
-// to call the correct member function that writes an instance of that
-// type to the stream.
-//
-template<StreamTraitType st>
-struct StreamWriter
-{
-    template<typename T>
-    static void write(const OutputStreamPtr&, const T&)
-    {
-        // This asserts because we end up writing something for which
-        // we never defined a trait.
-        assert(false);
-    }
-};
-
-//
-// This is the non-specialized version of the reader. For each kind of
-// user-defined type (enum, struct, etc), we specialize this template
-// to call the correct member function that reads an instance of that
-// type to the stream.
-//
-template<StreamTraitType st>
-struct StreamReader
-{
-    template<typename T>
-    static void read(const InputStreamPtr&, T&)
-    {
-        // This asserts because we end up reading something for which
-        // we never define a trait.
-        assert(false);
-    }
-};
-
-#endif
 
 class ICE_API ReadObjectCallback : public ::IceUtil::Shared
 {
@@ -247,7 +46,7 @@ public:
         _v = ::IceInternal::Handle<T>::dynamicCast(p);
         if(p && !_v)
         {
-            IceInternal::Ex::throwUOE(T::ice_staticId(), p->ice_id());
+            IceInternal::Ex::throwUOE(T::ice_staticId(), p);
         }
     }
 
@@ -255,6 +54,51 @@ private:
 
     ::IceInternal::Handle<T>& _v;
 };
+
+class ICE_API UserExceptionReader : public UserException
+{
+public:
+
+    UserExceptionReader(const CommunicatorPtr&);
+    ~UserExceptionReader() throw();
+
+    virtual void read(const InputStreamPtr&) const = 0;
+    virtual bool usesClasses() const = 0;
+
+    virtual ::std::string ice_name() const = 0;
+    virtual UserException* ice_clone() const = 0;
+    virtual void ice_throw() const = 0;
+
+    virtual void __write(IceInternal::BasicStream*) const;
+    virtual void __read(IceInternal::BasicStream*);
+
+    virtual bool __usesClasses() const;
+
+#ifdef __SUNPRO_CC
+    using UserException::__read;
+    using UserException::__write;
+#endif
+
+protected:
+
+    virtual void __writeImpl(::IceInternal::BasicStream*) const;
+    virtual void __readImpl(::IceInternal::BasicStream*);
+
+#ifdef __SUNPRO_CC
+    using UserException::__writeImpl;
+    using UserException::__readImpl;
+#endif
+
+    const CommunicatorPtr _communicator;
+};
+
+class ICE_API UserExceptionReaderFactory : public IceUtil::Shared
+{
+public:
+
+    virtual void createAndThrow(const std::string&) const = 0;
+};
+typedef ::IceUtil::Handle<UserExceptionReaderFactory> UserExceptionReaderFactoryPtr;
 
 class ICE_API InputStream : public ::IceUtil::Shared
 {
@@ -264,87 +108,11 @@ public:
 
     virtual void sliceObjects(bool) = 0;
 
-    //
-    // COMPILERFIX: BCC2010 doesn't allow use of full specialization over
-    // partial specialization.
-    //
-#ifdef __BCPLUSPLUS__
-    void
-    read(::std::_Vb_reference<unsigned int, int> v)
-    {
-        v = readBool();
-    }
-#endif
-
-    ICE_DEPRECATED_API virtual bool readBool() = 0;
-    ICE_DEPRECATED_API virtual Byte readByte() = 0;
-    ICE_DEPRECATED_API virtual Short readShort() = 0;
-    ICE_DEPRECATED_API virtual Int readInt() = 0;
-    ICE_DEPRECATED_API virtual Long readLong() = 0;
-    ICE_DEPRECATED_API virtual Float readFloat() = 0;
-    ICE_DEPRECATED_API virtual Double readDouble() = 0;
-    ICE_DEPRECATED_API virtual ::std::string readString(bool = true) = 0;
-    ICE_DEPRECATED_API virtual ::std::wstring readWstring() = 0;
-
-    ICE_DEPRECATED_API virtual ::std::vector<bool> readBoolSeq() = 0;
-    ICE_DEPRECATED_API virtual ::std::vector<Byte> readByteSeq() = 0;
-    ICE_DEPRECATED_API virtual ::std::vector<Short> readShortSeq() = 0;
-    ICE_DEPRECATED_API virtual ::std::vector<Int> readIntSeq() = 0;
-    ICE_DEPRECATED_API virtual ::std::vector<Long> readLongSeq() = 0;
-    ICE_DEPRECATED_API virtual ::std::vector<Float> readFloatSeq() = 0;
-    ICE_DEPRECATED_API virtual ::std::vector<Double> readDoubleSeq() = 0;
-    ICE_DEPRECATED_API virtual ::std::vector< ::std::string> readStringSeq(bool = true) = 0;
-    ICE_DEPRECATED_API virtual ::std::vector< ::std::wstring> readWstringSeq() = 0;
-    
-    ICE_DEPRECATED_API virtual bool* readBoolSeq(::std::pair<const bool*, const bool*>&) = 0;
-    ICE_DEPRECATED_API virtual void readByteSeq(::std::pair<const Byte*, const Byte*>&) = 0;
-    ICE_DEPRECATED_API virtual Short* readShortSeq(::std::pair<const Short*, const Short*>&) = 0;
-    ICE_DEPRECATED_API virtual Int* readIntSeq(::std::pair<const Int*, const Int*>&) = 0;
-    ICE_DEPRECATED_API virtual Long* readLongSeq(::std::pair<const Long*, const Long*>&) = 0;
-    ICE_DEPRECATED_API virtual Float* readFloatSeq(::std::pair<const Float*, const Float*>&) = 0;
-    ICE_DEPRECATED_API virtual Double* readDoubleSeq(::std::pair<const Double*, const Double*>&) = 0;
-
     virtual Int readSize() = 0;
     virtual Int readAndCheckSeqSize(int) = 0;
 
     virtual ObjectPrx readProxy() = 0;
-    virtual void readObject(const ReadObjectCallbackPtr&) = 0;
-    virtual ::std::string readTypeId() = 0;
-    virtual void throwException() = 0;
-
-    virtual void startSlice() = 0;
-    virtual void endSlice() = 0;
-    virtual void skipSlice() = 0;
-
-    virtual void startEncapsulation() = 0;
-    virtual void endEncapsulation() = 0;
-    virtual void skipEncapsulation() = 0;
-
-    virtual void readPendingObjects() = 0;
-
-    virtual void rewind() = 0;
-    
-    virtual void read(bool&) = 0;
-    virtual void read(Byte&) = 0;
-    virtual void read(Short&) = 0;
-    virtual void read(Int&) = 0;
-    virtual void read(Long&) = 0;
-    virtual void read(Float&) = 0;
-    virtual void read(Double&) = 0;
-    virtual void read(::std::string&, bool = true) = 0;
-    virtual void read(::std::vector< ::std::string>&, bool) = 0; // Overload required for additional bool argument.
-    virtual void read(::std::wstring&) = 0;
-    
-    virtual void read(::std::pair<const bool*, const bool*>&, ::IceUtil::ScopedArray<bool>&) = 0;
-    virtual void read(::std::pair<const Byte*, const Byte*>&) = 0;
-    virtual void read(::std::pair<const Short*, const Short*>&, ::IceUtil::ScopedArray<Short>&) = 0;
-    virtual void read(::std::pair<const Int*, const Int*>&, ::IceUtil::ScopedArray<Int>&) = 0;
-    virtual void read(::std::pair<const Long*, const Long*>&, ::IceUtil::ScopedArray<Long>&) = 0;
-    virtual void read(::std::pair<const Float*, const Float*>&, ::IceUtil::ScopedArray<Float>&) = 0;
-    virtual void read(::std::pair<const Double*, const Double*>&, ::IceUtil::ScopedArray<Double>&) = 0;
-    
-    template<typename T> inline void
-    read(::IceInternal::ProxyHandle<T>& v)
+    template<typename T> void read(IceInternal::ProxyHandle<T>& v)
     {
         ObjectPrx proxy = readProxy();
         if(!proxy)
@@ -358,82 +126,194 @@ public:
         }
     }
 
-    template<typename T> inline void
-    read(::IceInternal::Handle<T>& v)
+    virtual void readObject(const ReadObjectCallbackPtr&) = 0;
+    template<typename T> void read(IceInternal::Handle<T>& v)
     {
-        ReadObjectCallbackPtr cb = new ReadObjectCallbackI<T>(v);
-        readObject(cb);
+        readObject(new ReadObjectCallbackI<T>(v));
     }
 
-//
-// COMPILERFIX: VC++ 6 compiler bugs doesn't allow using templates for
-// the Stream API.
-//
-// see: http://support.microsoft.com/kb/240866
-//      http://support.microsoft.com/kb/241569
-//
-#if !defined(_MSC_VER) || (_MSC_VER >= 1300)
-    template<typename T> inline void
-    read(T& v)
+    Int
+    readEnum(Int maxValue)
     {
-        StreamReader< StreamTrait<T>::type>::read(this, v);
+        if(getEncoding() == Encoding_1_0)
+        {
+            if(maxValue < 127)
+            {
+                Byte value;
+                read(value);
+                return value;
+            }
+            else if(maxValue < 32767)
+            {
+                Short value;
+                read(value);
+                return value;
+            }
+            else 
+            {
+                Int value;
+                read(value);
+                return value;
+            }
+        }
+        else
+        {
+            return readSize();
+        }
     }
-#endif
 
+    virtual void throwException() = 0;
+    virtual void throwException(const UserExceptionReaderFactoryPtr&) = 0;
+
+    virtual void startObject() = 0;
+    virtual SlicedDataPtr endObject(bool) = 0;
+
+    virtual void startException() = 0;
+    virtual SlicedDataPtr endException(bool) = 0;
+
+    virtual std::string startSlice() = 0;
+    virtual void endSlice() = 0;
+    virtual void skipSlice() = 0;
+
+    virtual EncodingVersion startEncapsulation() = 0;
+    virtual void endEncapsulation() = 0;
+    virtual EncodingVersion skipEncapsulation() = 0;
+
+    virtual EncodingVersion getEncoding() const = 0;
+
+    virtual void readPendingObjects() = 0;
+
+    virtual void rewind() = 0;
+
+    virtual void skip(Int) = 0;
+    virtual void skipSize() = 0;
+
+    virtual void read(bool&) = 0;
+    virtual void read(Byte&) = 0;
+    virtual void read(Short&) = 0;
+    virtual void read(Int&) = 0;
+    virtual void read(Long&) = 0;
+    virtual void read(Float&) = 0;
+    virtual void read(Double&) = 0;
+    virtual void read(::std::string&, bool = true) = 0;
+    virtual void read(::std::vector< ::std::string>&, bool) = 0; // Overload required for additional bool argument.
+    virtual void read(::std::wstring&) = 0;
+    
+    //
+    // std::vector<bool> is a special C++ type, so we give it its own read function
+    //
+    virtual void read(::std::vector<bool>&) = 0;
+
+    virtual void read(::std::pair<const bool*, const bool*>&, ::IceUtil::ScopedArray<bool>&) = 0;
+    virtual void read(::std::pair<const Byte*, const Byte*>&) = 0;
+    virtual void read(::std::pair<const Short*, const Short*>&, ::IceUtil::ScopedArray<Short>&) = 0;
+    virtual void read(::std::pair<const Int*, const Int*>&, ::IceUtil::ScopedArray<Int>&) = 0;
+    virtual void read(::std::pair<const Long*, const Long*>&, ::IceUtil::ScopedArray<Long>&) = 0;
+    virtual void read(::std::pair<const Float*, const Float*>&, ::IceUtil::ScopedArray<Float>&) = 0;
+    virtual void read(::std::pair<const Double*, const Double*>&, ::IceUtil::ScopedArray<Double>&) = 0;
+
+    // This method is useful for generic stream helpers
+    void read(::std::pair<const Byte*, const Byte*>& p, ::IceUtil::ScopedArray<Byte>& result)
+    {
+        result.reset();
+        read(p);
+    }
+
+    virtual bool readOptional(Int, OptionalFormat) = 0; 
+
+    template<typename T> inline void read(T& v)
+    {
+        StreamHelper<T, StreamableTraits<T>::helper>::read(this, v);
+    }
+
+    template<typename T> inline void read(Int tag, IceUtil::Optional<T>& v)
+    {
+        if(readOptional(tag, StreamOptionalHelper<T, 
+                                                  StreamableTraits<T>::helper, 
+                                                  StreamableTraits<T>::fixedLength>::optionalFormat))
+        {
+            v.__setIsSet();
+            StreamOptionalHelper<T, StreamableTraits<T>::helper, StreamableTraits<T>::fixedLength>::read(this, *v);
+        }
+    }
+
+    virtual void closure(void*) = 0;
+    virtual void* closure() const = 0;
 };
 
 class ICE_API OutputStream : public ::IceUtil::Shared
 {
 public:
 
+    typedef size_t size_type;
+
     virtual CommunicatorPtr communicator() const = 0;
 
-    ICE_DEPRECATED_API virtual void writeBool(bool) = 0;
-    ICE_DEPRECATED_API virtual void writeByte(Byte) = 0;
-    ICE_DEPRECATED_API virtual void writeShort(Short) = 0;
-    ICE_DEPRECATED_API virtual void writeInt(Int) = 0;
-    ICE_DEPRECATED_API virtual void writeLong(Long) = 0;
-    ICE_DEPRECATED_API virtual void writeFloat(Float) = 0;
-    ICE_DEPRECATED_API virtual void writeDouble(Double) = 0;
-    ICE_DEPRECATED_API virtual void writeString(const ::std::string&, bool = true) = 0;
-    ICE_DEPRECATED_API virtual void writeWstring(const ::std::wstring&)= 0;    
-    
-    ICE_DEPRECATED_API virtual void writeBoolSeq(const ::std::vector<bool>&) = 0;    
-    ICE_DEPRECATED_API virtual void writeByteSeq(const ::std::vector<Byte>&) = 0;
-    ICE_DEPRECATED_API virtual void writeShortSeq(const ::std::vector<Short>&) = 0;
-    ICE_DEPRECATED_API virtual void writeIntSeq(const ::std::vector<Int>&) = 0;
-    ICE_DEPRECATED_API virtual void writeLongSeq(const ::std::vector<Long>&) = 0;
-    ICE_DEPRECATED_API virtual void writeFloatSeq(const ::std::vector<Float>&) = 0;
-    ICE_DEPRECATED_API virtual void writeDoubleSeq(const ::std::vector<Double>&) = 0;
-    ICE_DEPRECATED_API virtual void writeStringSeq(const ::std::vector< ::std::string>&, bool = true) = 0;
-    ICE_DEPRECATED_API virtual void writeWstringSeq(const ::std::vector< ::std::wstring>&) = 0;
-
-    ICE_DEPRECATED_API virtual void writeBoolSeq(const bool*, const bool*) = 0;
-    ICE_DEPRECATED_API virtual void writeByteSeq(const Byte*, const Byte*) = 0;
-    ICE_DEPRECATED_API virtual void writeShortSeq(const Short*, const Short*) = 0;    
-    ICE_DEPRECATED_API virtual void writeIntSeq(const Int*, const Int*) = 0;
-    ICE_DEPRECATED_API virtual void writeLongSeq(const Long*, const Long*) = 0;
-    ICE_DEPRECATED_API virtual void writeFloatSeq(const Float*, const Float*) = 0;
-    ICE_DEPRECATED_API virtual void writeDoubleSeq(const Double*, const Double*) = 0;
-
     virtual void writeSize(Int) = 0;
+
     virtual void writeProxy(const ObjectPrx&) = 0;
+    template<typename T> void write(const IceInternal::ProxyHandle<T>& v)
+    {
+        writeProxy(ObjectPrx(v.get()));
+    }
+
     virtual void writeObject(const ObjectPtr&) = 0;
-    virtual void writeTypeId(const ::std::string&) = 0;
+    template<typename T> void write(const IceInternal::Handle<T>& v)
+    {
+        writeObject(ObjectPtr(v.get()));
+    }
+
+    void
+    writeEnum(Int v, Int maxValue)
+    {
+        if(getEncoding() == Encoding_1_0)
+        {
+            if(maxValue < 127)
+            {
+                write(static_cast<Byte>(v));
+            }
+            else if(maxValue < 32767)
+            {
+                write(static_cast<Short>(v));
+            }
+            else 
+            {
+                write(v);
+            }
+        }
+        else
+        {
+            writeSize(v);
+        }
+    }
+
     virtual void writeException(const UserException&) = 0;
 
-    virtual void startSlice() = 0;
+    virtual void startObject(const SlicedDataPtr&) = 0;
+    virtual void endObject() = 0;
+
+    virtual void startException(const SlicedDataPtr&) = 0;
+    virtual void endException() = 0;
+
+    virtual void startSlice(const ::std::string&, int, bool) = 0;
     virtual void endSlice() = 0;
 
+    virtual void startEncapsulation(const EncodingVersion&, FormatType) = 0;
     virtual void startEncapsulation() = 0;
     virtual void endEncapsulation() = 0;
+
+    virtual EncodingVersion getEncoding() const = 0;
 
     virtual void writePendingObjects() = 0;
 
     virtual void finished(::std::vector<Byte>&) = 0;
+    virtual std::pair<const Byte*, const Byte*> finished() = 0;
+
+    virtual size_type pos() = 0;
+    virtual void rewrite(Int, size_type) = 0;
 
     virtual void reset(bool) = 0;
-    
+
     virtual void write(bool) = 0;
     virtual void write(Byte) = 0;
     virtual void write(Short) = 0;
@@ -446,309 +326,66 @@ public:
     virtual void write(const char*, bool = true) = 0;
     virtual void write(const ::std::wstring&) = 0;
 
+    //
+    // std::vector<bool> is a special C++ type, so we give it its own write function
+    //
+    virtual void write(const ::std::vector<bool>&) = 0;
+
     virtual void write(const bool*, const bool*) = 0;
     virtual void write(const Byte*, const Byte*) = 0;
     virtual void write(const Short*, const Short*) = 0;
     virtual void write(const Int*, const Int*) = 0;
     virtual void write(const Long*, const Long*) = 0;
     virtual void write(const Float*, const Float*) = 0;
-    virtual void write(const Double*, const Double*) = 0;    
-    
-    template<typename T> inline void
-    write(const ::IceInternal::ProxyHandle<T>& v)
+    virtual void write(const Double*, const Double*) = 0;
+
+    virtual bool writeOptional(Int, OptionalFormat) = 0;
+
+    virtual void startSize() = 0;
+    virtual void endSize() = 0;
+
+    template<typename T> inline void write(const T& v)
     {
-        writeProxy(v);
+        StreamHelper<T, StreamableTraits<T>::helper>::write(this, v);
     }
 
-    template<typename T> inline void
-    write(const ::IceInternal::Handle<T>& v)
+    template<typename T> inline void write(Int tag, const IceUtil::Optional<T>& v)
     {
-        writeObject(v);
-    }
-
-
-//
-// COMPILERFIX: VC++ 6 compiler bugs doesn't allow using templates for
-// the Stream API.
-//
-// see: http://support.microsoft.com/kb/240866
-//      http://support.microsoft.com/kb/241569
-//
-#if !defined(_MSC_VER) || (_MSC_VER >= 1300)
-    template<typename T> inline void
-    write(const T& v)
-    {
-        StreamWriter<StreamTrait<T>::type>::write(this, v);
-    }    
-#endif
-
-protected:
-    
-};
-
-//
-// COMPILERFIX: VC++ 6 compiler bugs doesn't allow using templates for
-// the Stream API.
-//
-// see: http://support.microsoft.com/kb/240866
-//      http://support.microsoft.com/kb/241569
-//
-#if !defined(_MSC_VER) || (_MSC_VER >= 1300)
-template<> // StreamWriter specialization for structs
-struct StreamWriter<StreamTraitTypeStruct>
-{
-    template<typename T>
-    static void write(const OutputStreamPtr& outS, const T& v)
-    {
-        v.ice_write(outS);
-    }
-};
-
-template<> // StreamReader specialization for structs
-struct StreamReader<StreamTraitTypeStruct>
-{
-    template<typename T>
-    static void read(const InputStreamPtr& inS, T& v)
-    {
-        v.ice_read(inS);
-    }
-};
-
-template<> // StreamWriter specialization for structs with cpp:class metadata
-struct StreamWriter<StreamTraitTypeStructClass>
-{
-    template<typename T>
-    static void write(const OutputStreamPtr& outS, const T& v)
-    {
-        v->ice_write(outS);
-    }
-};
-
-template<> // StreamReader specialization for structs with cpp:class metadata
-struct StreamReader<StreamTraitTypeStructClass>
-{
-    template<typename T>
-    static void read(const InputStreamPtr& inS, const T& v)
-    {
-        v->ice_read(inS);
-    }
-};
-
-template<> // StreamWriter specialization for byte enums
-struct StreamWriter<StreamTraitTypeByteEnum>
-{
-    template<typename T>
-    static void write(const OutputStreamPtr& outS, const T& v)
-    {
-        if(static_cast<int>(v) < 0 || static_cast<int>(v) >= StreamTrait<T>::enumLimit)
+        if(v)
         {
-            throw MarshalException(__FILE__, __LINE__, "enumerator out of range");
+            writeOptional(tag, StreamOptionalHelper<T,
+                                                    StreamableTraits<T>::helper, 
+                                                    StreamableTraits<T>::fixedLength>::optionalFormat);
+            StreamOptionalHelper<T, StreamableTraits<T>::helper, StreamableTraits<T>::fixedLength>::write(this, *v);
         }
-        outS->write(static_cast<Byte>(v));
     }
-};
 
-template<> // StreamReader specialization for byte enums
-struct StreamReader<StreamTraitTypeByteEnum>
-{
-    template<typename T>
-    static void read(const InputStreamPtr& inS, T& v)
+    //
+    // Template functions for sequences and custom sequences
+    // 
+    template<typename T> void write(const T* begin, const T* end)
     {
-        Byte val;
-        inS->read(val);
-        if(val > StreamTrait<T>::enumLimit)
+        writeSize(static_cast<Int>(end - begin));
+        for(const T* p = begin; p != end; ++p)
         {
-            throw MarshalException(__FILE__, __LINE__, "enumerator out of range");
-        }
-        v = static_cast<T>(val);
-    }
-};
-
-
-template<> // StreamWriter specialization for short enums
-struct StreamWriter<StreamTraitTypeShortEnum>
-{
-    template<typename T>
-    static void write(const OutputStreamPtr& outS, const T& v)
-    {
-        if(static_cast<int>(v) < 0 || static_cast<int>(v) >= StreamTrait<T>::enumLimit)
-        {
-            throw MarshalException(__FILE__, __LINE__, "enumerator out of range");
-        }
-        outS->write(static_cast<Short>(v));
-    }
-};
-
-template<> // StreamReader specialization for short enums
-struct StreamReader<StreamTraitTypeShortEnum>
-{
-    template<typename T>
-    static void read(const InputStreamPtr& inS, T& v)
-    {
-        Short val;
-        inS->read(val);
-        if(val < 0 || val > StreamTrait<T>::enumLimit)
-        {
-            throw MarshalException(__FILE__, __LINE__, "enumerator out of range");
-        }
-        v = static_cast<T>(val);
-    }
-};
-
-template<> // StreamWriter specialization for int enums
-struct StreamWriter<StreamTraitTypeIntEnum>
-{
-    template<typename T>
-    static void write(const OutputStreamPtr& outS, const T& v)
-    {
-        if(static_cast<int>(v) < 0 || static_cast<int>(v) >= StreamTrait<T>::enumLimit)
-        {
-            throw MarshalException(__FILE__, __LINE__, "enumerator out of range");
-        }
-        outS->write(static_cast<Int>(v));
-    }
-};
-
-template<> // StreamReader specialization for int enums
-struct StreamReader<StreamTraitTypeIntEnum>
-{
-    template<typename T>
-    static void read(const InputStreamPtr& inS, T& v)
-    {
-        Int val;
-        inS->read(val);
-        if(val < 0 || val > StreamTrait<T>::enumLimit)
-        {
-            throw MarshalException(__FILE__, __LINE__, "enumerator out of range");
-        }
-        v = static_cast<T>(val);
-    }
-};
-
-template<> // StreamWriter specialization for sequences
-struct StreamWriter<StreamTraitTypeSequence>
-{
-    template<typename T>
-    static void write(const OutputStreamPtr& outS, const T& v)
-    {
-        outS->writeSize(static_cast<Int>(v.size()));
-        for(typename T::const_iterator p = v.begin(); p != v.end(); ++p)
-        {
-            outS->write(*p);
+            write(*p);
         }
     }
 };
-
-template<> // StreamReader specialization for sequences
-struct StreamReader<StreamTraitTypeSequence>
-{
-    template<typename T>
-    static void read(const InputStreamPtr& inS, T& v)
-    {
-        Int sz = inS->readAndCheckSeqSize(StreamTrait<typename T::value_type>::minWireSize);
-        v.resize(sz);
-        for(typename T::iterator p = v.begin(); p != v.end(); ++p)
-        {
-            inS->read(*p);
-        }
-    }
-};
-
-#ifndef __BCPLUSPLUS__ // COMPILERFIX: See StreamTrait<vector<bool>> comment above
-template<> // StreamWriter specialization for sequences of bool
-struct StreamWriter<StreamTraitTypeSequenceBool>
-{
-    template<typename T>
-    static void write(const OutputStreamPtr& outS, const T& v)
-    {
-        outS->writeSize(static_cast<Int>(v.size()));
-        for(typename T::const_iterator p = v.begin(); p != v.end(); ++p)
-        {
-            outS->write(*p);
-        }
-    }
-};
-
-template<> // Reader specialization for sequences of bool
-struct StreamReader<StreamTraitTypeSequenceBool>
-{
-    template<typename T>
-    static void read(const InputStreamPtr& inS, T& v)
-    {
-        Int sz = inS->readAndCheckSeqSize(StreamTrait<bool>::minWireSize);
-        v.resize(sz);
-        for(typename T::iterator p = v.begin(); p != v.end(); ++p)
-        {
-            //
-            // We can't just call inS->read(*p) here because *p is
-            // a compiler dependent bit reference.
-            //
-            bool b;
-            inS->read(b);
-            *p = b;
-        }
-    }
-};
-#endif
-
-template<> // StreamWriter specialization for dictionaries.
-struct StreamWriter<StreamTraitTypeDictionary>
-{
-    template<typename T>
-    static void write(const OutputStreamPtr& outS, const T& v)
-    {
-        outS->writeSize(static_cast<Int>(v.size()));
-        typename T::const_iterator p;
-        for(p = v.begin(); p != v.end(); ++p)
-        {
-            outS->write(p->first);
-            outS->write(p->second);
-        }
-    }
-};
-
-template<> // StreamReader specialization for dictionaries.
-struct StreamReader<StreamTraitTypeDictionary>
-{
-    template<typename T>
-    static void read(const InputStreamPtr& inS, T& v)
-    {
-        Int sz = inS->readSize();
-        while(sz--)
-        {
-            typename T::value_type p;
-            inS->read(const_cast<typename T::key_type&>(p.first));
-            typename T::iterator i = v.insert(v.end(), p);
-            inS->read(i->second);
-        }
-    }
-};
-
-template<> // StreamWriter specialization for UserExceptions.
-struct StreamWriter<StreamTraitTypeUserException>
-{
-    template<typename T>
-    static void write(const OutputStreamPtr& outS, const T& v)
-    {
-        outS->writeException(v);
-    }
-};
-
-#endif
 
 class ICE_API ObjectReader : public Object
 {
 public:
 
-    virtual void read(const InputStreamPtr&, bool) = 0;
+    virtual void read(const InputStreamPtr&) = 0;
 
 private:
 
     virtual void __write(::IceInternal::BasicStream*) const;
-    virtual void __read(::IceInternal::BasicStream*, bool = true);
+    virtual void __read(::IceInternal::BasicStream*);
 
     virtual void __write(const OutputStreamPtr&) const;
-    virtual void __read(const InputStreamPtr&, bool);
+    virtual void __read(const InputStreamPtr&);
 };
 typedef ::IceInternal::Handle<ObjectReader> ObjectReaderPtr;
 
@@ -761,13 +398,12 @@ public:
 private:
 
     virtual void __write(::IceInternal::BasicStream*) const;
-    virtual void __read(::IceInternal::BasicStream*, bool = true);
+    virtual void __read(::IceInternal::BasicStream*);
 
     virtual void __write(const OutputStreamPtr&) const;
-    virtual void __read(const InputStreamPtr&, bool);
+    virtual void __read(const InputStreamPtr&);
 };
 typedef ::IceInternal::Handle<ObjectWriter> ObjectWriterPtr;
-
 
 class ICE_API UserExceptionWriter : public UserException
 {
@@ -780,15 +416,28 @@ public:
     virtual bool usesClasses() const = 0;
 
     virtual ::std::string ice_name() const = 0;
-    virtual Exception* ice_clone() const = 0;
+    virtual UserException* ice_clone() const = 0;
     virtual void ice_throw() const = 0;
 
     virtual void __write(IceInternal::BasicStream*) const;
-    virtual void __read(IceInternal::BasicStream*, bool);
+    virtual void __read(IceInternal::BasicStream*);
 
     virtual bool __usesClasses() const;
 
+#ifdef __SUNPRO_CC
+    using UserException::__read;
+    using UserException::__write;
+#endif
+
 protected:
+
+    virtual void __writeImpl(::IceInternal::BasicStream*) const;
+    virtual void __readImpl(::IceInternal::BasicStream*);
+
+#ifdef __SUNPRO_CC
+    using UserException::__writeImpl;
+    using UserException::__readImpl;
+#endif
 
     const CommunicatorPtr _communicator;
 };

@@ -1,6 +1,6 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
@@ -98,7 +98,7 @@ namespace IceInternal
             inc.adopt(this);
         }
 
-        protected void response__(bool ok)
+        protected void response__()
         {
             try
             {
@@ -111,22 +111,10 @@ namespace IceInternal
 
                 if(response_)
                 {
-                    os_.endWriteEncaps();
-                
-                    int save = os_.pos();
-                    os_.pos(Protocol.headerSize + 4); // Reply status position.
-                
-                    if(ok)
+                    if(observer_ != null)
                     {
-                        os_.writeByte(ReplyStatus.replyOK);
+                        observer_.reply(os_.size() - Protocol.headerSize - 4);
                     }
-                    else
-                    {
-                        os_.writeByte(ReplyStatus.replyUserException);
-                    }
-                
-                    os_.pos(save);
-
                     connection_.sendResponse(os_, compress_);
                 }
                 else
@@ -134,6 +122,11 @@ namespace IceInternal
                     connection_.sendNoResponse();
                 }
 
+                if(observer_ != null)
+                {
+                    observer_.detach();
+                    observer_ = null;
+                }
                 connection_ = null;
             }
             catch(Ice.LocalException ex)
@@ -159,7 +152,7 @@ namespace IceInternal
             }
         }
         
-        protected internal BasicStream os__()
+        protected internal BasicStream getOs__()
         {
             return os_;
         }
@@ -225,9 +218,9 @@ namespace Ice
         /// <param name="ok">True indicates that the operation
         /// completed successfully; false indicates that the
         /// operation raised a user exception.</param>
-        /// <param name="outParams">The encoded out-parameters for the operation or,
+        /// <param name="outEncaps">The encoded out-parameters for the operation or,
         /// if ok is false, the encoded user exception.</param>
-        void ice_response(bool ok, byte[] outParams);
+        void ice_response(bool ok, byte[] outEncaps);
     }
 
     sealed class _AMD_Object_ice_invoke : IceInternal.IncomingAsync, AMD_Object_ice_invoke
@@ -237,18 +230,18 @@ namespace Ice
         {
         }
         
-        public void ice_response(bool ok, byte[] outParams)
+        public void ice_response(bool ok, byte[] outEncaps)
         {
             try
             {
-                os__().writeBlob(outParams);
+                writeParamEncaps__(outEncaps, ok);
             }
             catch(Ice.LocalException ex)
             {
                 exception__(ex);
                 return;
             }
-            response__(ok);
+            response__();
         }
     }
 }

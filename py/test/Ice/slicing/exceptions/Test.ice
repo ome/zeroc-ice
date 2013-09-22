@@ -1,14 +1,13 @@
 // **********************************************************************
 //
-// Copyright (c) 2003-2011 ZeroC, Inc. All rights reserved.
+// Copyright (c) 2003-2013 ZeroC, Inc. All rights reserved.
 //
 // This copy of Ice is licensed to you under the terms described in the
 // ICE_LICENSE file included in this distribution.
 //
 // **********************************************************************
 
-#ifndef TEST_ICE
-#define TEST_ICE
+#pragma once
 
 module Test
 {
@@ -33,6 +32,34 @@ exception KnownMostDerived extends KnownIntermediate
     string kmd;
 };
 
+["preserve-slice"]
+exception KnownPreserved extends Base
+{
+    string kp;
+};
+
+exception KnownPreservedDerived extends KnownPreserved
+{
+    string kpd;
+};
+
+["preserve-slice"]
+class BaseClass
+{
+    string bc;
+};
+
+["format:sliced"]
+interface Relay
+{
+    void knownPreservedAsBase() throws Base;
+    void knownPreservedAsKnownPreserved() throws KnownPreserved;
+
+    void unknownPreservedAsBase() throws Base;
+    void unknownPreservedAsKnownPreserved() throws KnownPreserved;
+};
+
+["format:sliced"]
 interface TestIntf
 {
     void baseAsBase() throws Base;
@@ -51,9 +78,21 @@ interface TestIntf
     void unknownMostDerived1AsKnownIntermediate() throws KnownIntermediate;
     void unknownMostDerived2AsBase() throws Base;
 
+    ["format:compact"] void unknownMostDerived2AsBaseCompact() throws Base;
+
+    void knownPreservedAsBase() throws Base;
+    void knownPreservedAsKnownPreserved() throws KnownPreserved;
+
+    void relayKnownPreservedAsBase(Relay* r) throws Base;
+    void relayKnownPreservedAsKnownPreserved(Relay* r) throws KnownPreserved;
+
+    void unknownPreservedAsBase() throws Base;
+    void unknownPreservedAsKnownPreserved() throws KnownPreserved;
+
+    void relayUnknownPreservedAsBase(Relay* r) throws Base;
+    void relayUnknownPreservedAsKnownPreserved(Relay* r) throws KnownPreserved;
+
     void shutdown();
 };
 
 };
-
-#endif
