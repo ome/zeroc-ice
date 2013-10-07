@@ -80,7 +80,7 @@ IceInternal::UdpTransceiver::setCompletedHandler(SocketOperationCompletedHandler
 #endif
 
 SocketOperation
-IceInternal::UdpTransceiver::initialize()
+IceInternal::UdpTransceiver::initialize(Buffer& /*readBuffer*/, Buffer& /*writeBuffer*/)
 {
     if(_state == StateNeedConnect)
     {
@@ -974,7 +974,6 @@ IceInternal::UdpTransceiver::UdpTransceiver(const InstancePtr& instance, const s
     _write(SocketOperationWrite)
 #endif
 {
-    _fd = createSocket(true, _addr);
     _fd = createServerSocket(true, _addr, instance->protocolSupport());
     setBufSize(instance);
     setBlock(_fd, false);

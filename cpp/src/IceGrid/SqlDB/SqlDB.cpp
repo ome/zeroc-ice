@@ -12,6 +12,7 @@
 #include <Ice/Communicator.h>
 #include <Ice/Locator.h>
 #include <Ice/Instance.h>
+#include <Ice/LoggerUtil.h>
 #include <IceDB/SqlTypes.h>
 #include <IceGrid/SqlDB/SqlDB.h>
 
@@ -49,6 +50,18 @@ public:
         SqlDB::Wrapper<SqlStringApplicationInfoDict, std::string, ApplicationInfo>(con, table)
     {
     }
+
+    virtual Ice::Long
+    updateSerial(Ice::Long serial)
+    {
+        return -1; // Serials not supported
+    }
+
+    virtual Ice::Long
+    getSerial() const
+    {
+        return -1; // Serials not supported
+    }
 };
 
 class SqlAdaptersWrapper : public SqlDB::Wrapper<SqlStringAdapterInfoDict, std::string, AdapterInfo>, 
@@ -66,6 +79,18 @@ public:
     {
         return _table->findByReplicaGroupId(_connection, name);
     }
+
+    virtual Ice::Long
+    updateSerial(Ice::Long serial)
+    {
+        return -1; // Serials not supported
+    }
+
+    virtual Ice::Long
+    getSerial() const
+    {
+        return -1; // Serials not supported
+    }
 };
 
 class SqlObjectsWrapper : public SqlDB::Wrapper<SqlIdentityObjectInfoDict, Ice::Identity, ObjectInfo>,
@@ -82,6 +107,18 @@ public:
     findByType(const std::string& type)
     {
         return _table->findByType(_connection, type);
+    }
+
+    virtual Ice::Long
+    updateSerial(Ice::Long serial)
+    {
+        return -1; // Serials not supported
+    }
+
+    virtual Ice::Long
+    getSerial() const
+    {
+        return -1; // Serials not supported
     }
 };
 
@@ -168,6 +205,27 @@ SqlDBPlugin::~SqlDBPlugin()
 void
 SqlDBPlugin::initialize()
 {
+}
+
+void
+SqlDBPlugin::destroy()
+{
+    //
+    // Break cyclic reference count (thread hook holds a reference on the cache and the cache holds
+    // a reference on the communicator through the SQL dictionaries).
+    //
+    SqlDB::ThreadHookPtr threadHook = 
+        SqlDB::ThreadHookPtr::dynamicCast(IceInternal::getInstance(_communicator)->initializationData().threadHook);
+    if(threadHook)
+    {
+        threadHook->setConnectionPool(0);
+    }
+    _connectionPool = 0;
+}
+
+bool
+SqlDBPlugin::initDB()
+{
     Ice::PropertiesPtr properties = _communicator->getProperties();
     string databaseName;
     string tablePrefix;
@@ -176,17 +234,20 @@ SqlDBPlugin::initialize()
         string dbPath = properties->getProperty("IceGrid.Registry.Data");
         if(dbPath.empty())
         {
-            throw Ice::PluginInitializationException(__FILE__, __LINE__, "property `IceGrid.Registry.Data' is not set");
+            Ice::Error out(_communicator->getLogger());
+            out << "property `IceGrid.Registry.Data' is not set";
+            return false;
         }
         else
         {
             if(!IceUtilInternal::directoryExists(dbPath))
             {
-                ostringstream os;
                 Ice::SyscallException ex(__FILE__, __LINE__);
                 ex.error = IceInternal::getSystemErrno();
-                os << "property `IceGrid.Registry.Data' is set to an invalid path:\n" << ex;
-                throw Ice::PluginInitializationException(__FILE__, __LINE__, os.str());
+
+                Ice::Error out(_communicator->getLogger());
+                out << "property `IceGrid.Registry.Data' is set to an invalid path:\n" << ex;
+                return false;
             }
         }
         databaseName = dbPath + "/" + properties->getPropertyWithDefault("IceGrid.SQL.DatabaseName", "registry.db");
@@ -218,7 +279,6 @@ SqlDBPlugin::initialize()
         properties->getPropertyWithDefault("IceGrid.SQL.EncodingVersion",
                                            encodingVersionToString(Ice::currentEncoding));
 
-
     _connectionPool = new SqlConnectionPool(_communicator, 
                                             properties->getProperty("IceGrid.SQL.DatabaseType"),
                                             databaseName,
@@ -233,21 +293,7 @@ SqlDBPlugin::initialize()
         SqlDB::ThreadHookPtr::dynamicCast(IceInternal::getInstance(_communicator)->initializationData().threadHook);
     assert(threadHook);
     threadHook->setConnectionPool(_connectionPool);
-}
-
-void
-SqlDBPlugin::destroy()
-{
-    //
-    // Break cyclic reference count (thread hook holds a reference on the cache and the cache holds
-    // a reference on the communicator through the SQL dictionaries).
-    //
-    SqlDB::ThreadHookPtr threadHook = 
-        SqlDB::ThreadHookPtr::dynamicCast(IceInternal::getInstance(_communicator)->initializationData().threadHook);
-    assert(threadHook);
-    threadHook->setConnectionPool(0);
-
-    _connectionPool = 0;
+    return true;
 }
 
 ConnectionPoolPtr

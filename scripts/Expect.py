@@ -197,6 +197,11 @@ class reader(threading.Thread):
                         s, regexp = p
                         if s == TIMEOUT:
                             continue
+                        if not buf:
+                            #
+                            # Don't try to match on an empty buffer, http://bugs.python.org/issue17998
+                            #
+                            break
                         m = regexp.search(buf)
                         if m is not None:
                             before = buf[:m.start()]
@@ -546,7 +551,7 @@ class Expect (object):
         def test(result, expected):
             if expected != result:
                 print("unexpected exit status: expected: %d, got %d" % (expected, result))
-                assert False
+                sys.exit(1)
 
         self.wait(timeout)
         if self.mapping == "java":
@@ -557,9 +562,9 @@ class Expect (object):
                     if self.killed == signal.SIGINT:
                         test(130, self.exitstatus)
                     else:
-                        assert False
+                        sys.exit(1)
             else:
-                assert self.exitstatus == exitstatus
+                test(self.exitstatus, exitstatus)
         else:
             test(self.exitstatus, exitstatus)
 
@@ -570,7 +575,7 @@ class Expect (object):
         self.wait(timeout)
         if self.exitstatus == 0:
             print("unexpected non-zero exit status")
-            assert False
+            sys.exit(1)
 
     def trace(self, suppress = None):
         self.r.enabletrace(suppress)

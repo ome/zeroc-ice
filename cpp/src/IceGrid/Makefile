@@ -31,7 +31,8 @@ COMMON_OBJS	= Internal.o \
                   DescriptorBuilder.o \
 		  TraceLevels.o \
 		  FileCache.o \
-		  PlatformInfo.o
+		  PlatformInfo.o \
+		  SessionManager.o
 
 NODE_OBJS	= NodeI.o \
                   NodeServerAdminRouter.o \
@@ -119,9 +120,12 @@ $(NODE_SERVER): $(NODE_SVR_OBJS) $(LIBTARGETS)
 	-lIcePatch2 -lIceDB $(EXPAT_RPATH_LINK) -lIceXML -lIceSSL $(OPENSSL_LIBS) $(LIBS)
 
 install:: all
-	$(call installprogram,$(ADMIN),$(install_bindir))
-	$(call installprogram,$(NODE_SERVER),$(install_bindir))
-	$(call installprogram,$(REGISTRY_SERVER),$(install_bindir))
+	$(call installprogram,$(ADMIN),$(DESTDIR)$(install_bindir))
+	$(call installdata,$(top_srcdir)/../man/man1/icegridadmin.1,$(DESTDIR)$(install_mandir))
+	$(call installprogram,$(NODE_SERVER),$(DESTDIR)$(install_bindir))
+	$(call installdata,$(top_srcdir)/../man/man1/icegridnode.1,$(DESTDIR)$(install_mandir))
+	$(call installprogram,$(REGISTRY_SERVER),$(DESTDIR)$(install_bindir))
+	$(call installdata,$(top_srcdir)/../man/man1/icegridregistry.1,$(DESTDIR)$(install_mandir))
 
 SUBDIRS = FreezeDB
 

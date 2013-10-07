@@ -56,6 +56,10 @@
 #   include <sys/types.h>
 #endif
 
+#if defined(__linux) || defined(__sun)
+#   include <grp.h> // for initgroups
+#endif
+
 #include <Ice/UdpEndpointI.h>
 
 #ifndef ICE_OS_WINRT
@@ -114,6 +118,11 @@ public:
 
 Init init;
 
+}
+
+namespace IceInternal
+{
+
 class ObserverUpdaterI : public Ice::Instrumentation::ObserverUpdater
 {
 public:
@@ -124,33 +133,12 @@ public:
 
     void updateConnectionObservers()
     {
-        try
-        {
-            _instance->outgoingConnectionFactory()->updateConnectionObservers();
-            _instance->objectAdapterFactory()->updateObservers(&ObjectAdapterI::updateConnectionObservers);
-        }
-        catch(const Ice::CommunicatorDestroyedException&)
-        {
-        }
+        _instance->updateConnectionObservers();
     }
 
     void updateThreadObservers()
     {
-        try
-        {
-            _instance->clientThreadPool()->updateObservers();
-            ThreadPoolPtr serverThreadPool = _instance->serverThreadPool(false);
-            if(serverThreadPool)
-            {
-                serverThreadPool->updateObservers();
-            }
-            _instance->objectAdapterFactory()->updateObservers(&ObjectAdapterI::updateThreadObservers);
-            _instance->endpointHostResolver()->updateObserver();
-            theCollector->updateObserver(_instance->initializationData().observer);
-        }
-        catch(const Ice::CommunicatorDestroyedException&)
-        {
-        }
+        _instance->updateThreadObservers();
     }
 
 private:
@@ -307,6 +295,12 @@ bool
 IceInternal::Instance::preferIPv6() const
 {
     return _preferIPv6;
+}
+
+NetworkProxyPtr
+IceInternal::Instance::networkProxy() const
+{
+    return _networkProxy;
 }
 
 ThreadPoolPtr
@@ -918,15 +912,31 @@ IceInternal::Instance::Instance(const CommunicatorPtr& communicator, const Initi
                 string newUser = _initData.properties->getProperty("Ice.ChangeUser");
                 if(!newUser.empty())
                 {
+                    errno = 0;
                     struct passwd* pw = getpwnam(newUser.c_str());
                     if(!pw)
+                    {
+                        if(errno)
+                        {
+                            SyscallException ex(__FILE__, __LINE__);
+                            ex.error = getSystemErrno();
+                            throw ex;
+                        }
+                        else
+                        {
+                            InitializationException ex(__FILE__, __LINE__, "Unknown user account `" + newUser + "'");
+                            throw ex;
+                        }
+                    }
+                    
+                    if(setgid(pw->pw_gid) == -1)
                     {
                         SyscallException ex(__FILE__, __LINE__);
                         ex.error = getSystemErrno();
                         throw ex;
                     }
-                    
-                    if(setgid(pw->pw_gid) == -1)
+
+                    if(initgroups(pw->pw_name, pw->pw_gid) == -1)
                     {
                         SyscallException ex(__FILE__, __LINE__);
                         ex.error = getSystemErrno();
@@ -1045,8 +1055,21 @@ IceInternal::Instance::Instance(const CommunicatorPtr& communicator, const Initi
 
         _proxyFactory = new ProxyFactory(this);
 
+        string proxyHost = _initData.properties->getProperty("Ice.SOCKSProxyHost");
+        int defaultIPv6 = 1; // IPv6 enabled by default.
+        if(!proxyHost.empty())
+        {
+#ifdef ICE_OS_WINRT
+            throw InitializationException(__FILE__, __LINE__, "SOCKS proxy not supported in WinRT");
+#else
+            int proxyPort = _initData.properties->getPropertyAsIntWithDefault("Ice.SOCKSProxyPort", 1080);
+            _networkProxy = new SOCKSNetworkProxy(proxyHost, proxyPort);
+            defaultIPv6 = 0; // IPv6 is not supported with SOCKS
+#endif
+        }
+
         bool ipv4 = _initData.properties->getPropertyAsIntWithDefault("Ice.IPv4", 1) > 0;
-        bool ipv6 = _initData.properties->getPropertyAsIntWithDefault("Ice.IPv6", 1) > 0;
+        bool ipv6 = _initData.properties->getPropertyAsIntWithDefault("Ice.IPv6", defaultIPv6) > 0;
         if(!ipv4 && !ipv6)
         {
             throw InitializationException(__FILE__, __LINE__, "Both IPV4 and IPv6 support cannot be disabled.");
@@ -1064,6 +1087,14 @@ IceInternal::Instance::Instance(const CommunicatorPtr& communicator, const Initi
             _protocolSupport = EnableIPv6;
         }
         _preferIPv6 = _initData.properties->getPropertyAsInt("Ice.PreferIPv6Address") > 0;
+
+#ifndef ICE_OS_WINRT
+        if(ipv6 && SOCKSNetworkProxyPtr::dynamicCast(_networkProxy))
+        {
+            throw InitializationException(__FILE__, __LINE__, "IPv6 is not supported with SOCKS4 proxies");
+        }
+#endif
+
         _endpointFactoryManager = new EndpointFactoryManager(this);
 #ifndef ICE_OS_WINRT
         EndpointFactoryPtr tcpEndpointFactory = new TcpEndpointFactory(this);
@@ -1117,17 +1148,19 @@ IceInternal::Instance::Instance(const CommunicatorPtr& communicator, const Initi
         // Setup the communicator observer only if the user didn't already set an
         // Ice observer resolver and if the admininistrative endpoints are set.
         //
-        if(!_initData.observer && 
-           (_adminFacetFilter.empty() || _adminFacetFilter.find("Metrics") != _adminFacetFilter.end()) &&
+        if((_adminFacetFilter.empty() || _adminFacetFilter.find("Metrics") != _adminFacetFilter.end()) &&
            _initData.properties->getProperty("Ice.Admin.Endpoints") != "")
         {
-            CommunicatorObserverIPtr observer = new CommunicatorObserverI(_metricsAdmin);
-            _initData.observer = observer;
+            _observer = new CommunicatorObserverI(_metricsAdmin, _initData.observer);
 
             //
             // Make sure the admin plugin receives property updates.
             //
             props->addUpdateCallback(_metricsAdmin);
+        }
+        else
+        {
+            _observer = _initData.observer;
         }
 
         __setNoDelete(false);
@@ -1198,10 +1231,10 @@ IceInternal::Instance::finishSetup(int& argc, char* argv[])
     //
     // Set observer updater
     //
-    if(_initData.observer)
+    if(_observer)
     {
-        theCollector->updateObserver(_initData.observer);
-        _initData.observer->setObserverUpdater(new ObserverUpdaterI(this));
+        theCollector->updateObserver(_observer);
+        _observer->setObserverUpdater(new ObserverUpdaterI(this));
     }
 
     //
@@ -1367,18 +1400,20 @@ IceInternal::Instance::destroy()
         _retryQueue->destroy();
     }
 
-    if(_initData.observer)
+    if(_observer && theCollector)
     {
-        theCollector->clearObserver(_initData.observer);
+        theCollector->clearObserver(_observer);
     }
 
     if(_metricsAdmin)
     {
         _metricsAdmin->destroy();
         _metricsAdmin = 0;
-        if(CommunicatorObserverIPtr::dynamicCast(_initData.observer))
+
+        // Break cyclic reference counts. Don't clear _observer, it's immutable.
+        if(_observer)
         {
-            _initData.observer = 0; // Clear cyclic reference counts.
+            CommunicatorObserverIPtr::dynamicCast(_observer)->destroy(); 
         }
     }
 
@@ -1499,6 +1534,48 @@ IceInternal::Instance::destroy()
         }
     }
     return true;
+}
+
+void
+IceInternal::Instance::updateConnectionObservers()
+{
+    try
+    {
+        assert(_outgoingConnectionFactory);
+        _outgoingConnectionFactory->updateConnectionObservers();
+        assert(_objectAdapterFactory);
+        _objectAdapterFactory->updateObservers(&ObjectAdapterI::updateConnectionObservers);
+    }
+    catch(const Ice::CommunicatorDestroyedException&)
+    {
+    }
+}
+
+void
+IceInternal::Instance::updateThreadObservers()
+{
+    try
+    {
+        if(_clientThreadPool)
+        {
+            _clientThreadPool->updateObservers();
+        }
+        if(_serverThreadPool)
+        {
+            _serverThreadPool->updateObservers();
+        }
+        assert(_objectAdapterFactory);
+        _objectAdapterFactory->updateObservers(&ObjectAdapterI::updateThreadObservers);
+        if(_endpointHostResolver)
+        {
+            _endpointHostResolver->updateObserver();
+        }
+        assert(theCollector);
+        theCollector->updateObserver(_observer);
+    }
+    catch(const Ice::CommunicatorDestroyedException&)
+    {
+    }
 }
 
 IceInternal::ProcessI::ProcessI(const CommunicatorPtr& communicator) :

@@ -43,6 +43,26 @@ enum Enum2 { Enum21, Enum22, Enum23, Enum24 };
 enum Enum3 { Enum32, Enum33 };
 
 //
+// TEST: Enum with explicit values.
+//
+enum EnumExplicit0 { EnumExplicit01 = 1, EnumExplicit02 = 2, EnumExplicit03 = 3 };
+
+//
+// TEST: Enum with same explicit values, different order.
+//
+enum EnumExplicit1 { EnumExplicit11 = 1, EnumExplicit13 = 3, EnumExplicit12 = 2 };
+
+//
+// TEST: Enum with different explicit values.
+//
+enum EnumExplicit2 { EnumExplicit21 = 1, EnumExplicit22 = 3, EnumExplicit23 };
+
+//
+// TEST: Enum with explicit values, removed enumerator.
+//
+enum EnumExplicit3 { EnumExplicit31 = 1, EnumExplicit32 = 2};
+
+//
 // TEST: Change to a different type
 //
 class Enum4 {};
@@ -302,6 +322,57 @@ exception Exception5 extends Exception1
 class Exception6 {};
 
 //
+// TEST: Exception with optional members.
+//
+exception OptionalEx0
+{
+    string firstName;
+    optional(1) string secondName;
+    optional(2) string emailAddress;
+};
+
+//
+// TEST: Exception with optional members, different order, same tags.
+//
+exception OptionalEx1
+{
+    string firstName;
+    optional(2) string emailAddress;
+    optional(1) string secondName;
+};
+
+//
+// TEST: Exception with different optional members.
+//
+exception OptionalEx2
+{
+    string firstName;
+    optional(1) string secondName;
+    string emailAddress;
+};
+
+//
+// TEST: Exception with different optional members.
+//
+exception OptionalEx3
+{
+    string firstName;
+    optional(1) string secondName;
+    optional(2) string emailAddress;
+    optional(3) string phoneNumber;
+};
+
+//
+// TEST: Exception with optional members using different tags.
+//
+exception OptionalEx4
+{
+    string firstName;
+    optional(2) string secondName;
+    optional(1) string emailAddress;
+};
+
+//
 // TEST: Same
 //
 class BaseClass1
@@ -397,6 +468,134 @@ class BaseClass11 extends EmptyClass1 implements Interface1
 {
     void baseOp();
     void baseOp2(int i, out string s) throws Exception1;
+};
+
+//
+// TEST: Class with compact id
+//
+class Compact1(1)
+{
+    void baseOp();
+    void baseOp2(int i, out string s) throws Exception1;
+};
+
+//
+// TEST: Derived from class with compact id
+//
+class Derived1 extends Compact1
+{
+};
+
+//
+// TEST: Same class names but different compact id
+//
+class Compact2(3)
+{
+    void baseOp();
+    void baseOp2(int i, out string s) throws Exception1;
+};
+
+//
+// TEST: Class with optional members.
+//
+class Optional0
+{
+    string firstName;
+    optional(1) string secondName;
+    optional(2) string emailAddress;
+};
+
+//
+// TEST: Class with optional members, different order, same tags.
+//
+class Optional1
+{
+    string firstName;
+    optional(2) string emailAddress;
+    optional(1) string secondName;
+};
+
+//
+// TEST: Class with different optional members.
+//
+class Optional2
+{
+    string firstName;
+    optional(1) string secondName;
+    string emailAddress;
+};
+
+//
+// TEST: Class with different optional members.
+//
+class Optional3
+{
+    string firstName;
+    optional(1) string secondName;
+    optional(2) string emailAddress;
+    optional(3) string phoneNumber;
+};
+
+//
+// TEST: Class with optional members using different tags.
+//
+class Optional4
+{
+    string firstName;
+    optional(2) string secondName;
+    optional(1) string emailAddress;
+};
+
+//
+// TEST: Class with optional parameters.
+//
+class OptionalParameters0
+{
+    void op1(string firstName, optional(1) string secondName,
+             optional(2) string emailAddress);
+};
+
+//
+// TEST: Class with optional parameters, different order.
+//
+class OptionalParameters1
+{
+    void op1(string firstName, optional(2) string emailAddress,
+             optional(1) string secondName);
+};
+
+//
+// TEST: Class with optional parameters, different tags.
+//
+class OptionalParameters2
+{
+    void op1(string firstName, optional(2) string emailAddress,
+             optional(1) string secondName);
+};
+
+//
+// TEST: Class with different optional parameters.
+//
+class OptionalParameters3
+{
+    void op1(string firstName, string emailAddress,
+             optional(1) string secondName);
+};
+
+//
+// TEST: Class with optional return type.
+//
+class OptionalReturn0
+{
+    optional(1) int op();
+};
+
+//
+// TEST: Class that changes optional return type.
+//
+class OptionalReturn2
+{
+    int op();
 };
 
 //

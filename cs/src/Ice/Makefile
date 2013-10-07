@@ -135,6 +135,7 @@ SLICE_SRCS	= $(SDIR)/BuiltinSequences.ice \
 		  $(SDIR)/Instrumentation.ice \
 		  $(SDIR)/Plugin.ice \
 		  $(SDIR)/Process.ice \
+		  $(SDIR)/PropertiesAdmin.ice \
 		  $(SDIR)/Properties.ice \
 		  $(SDIR)/Router.ice \
 		  $(SDIR)/ServantLocator.ice \
@@ -168,16 +169,16 @@ clean::
 
 ifeq ($(GACINSTALL),yes)
 install:: all
-	$(call installdata,../../lib/pkgconfig/$(PKG).pc,$(install_pkgconfigdir))
+	$(call installdata,../../lib/pkgconfig/$(PKG).pc,$(DESTDIR)$(install_pkgconfigdir))
 else
 install:: all
-	$(call installdata,$(TARGETS).config,$(install_assembliesdir))
+	$(call installdata,$(TARGETS).config,$(DESTDIR)$(install_assembliesdir))
 endif
 
 install:: all
 	(cd $(assembliesdir); $(call installassembly,$(LIBNAME),$(PKG)); $(call installpolicy,$(POLICY)); \
 	 $(call installmdb,$(LIBNAME).mdb); \
-	 $(call installdata,$(PKG).xml,$(install_assembliesdir)))
+	 $(call installdata,$(PKG).xml,$(DESTDIR)$(install_assembliesdir)))
 
 clean::
 	-rm -f $(assembliesdir)/$(PKG).xml

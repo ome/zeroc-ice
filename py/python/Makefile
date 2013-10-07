@@ -27,6 +27,7 @@ ICE_SRCS	= Ice_LocalException_ice.py \
 		  Ice_ObjectAdapterF_ice.py \
 		  Ice_ServantLocator_ice.py \
 		  Ice_ServantLocatorF_ice.py \
+		  Ice_PropertiesAdmin_ice.py \
 		  Ice_Properties_ice.py \
 		  Ice_PropertiesF_ice.py \
 		  Ice_ObjectFactory_ice.py \
@@ -130,10 +131,10 @@ IceStorm_%_ice.py: $(slicedir)/IceStorm/%.ice $(SLICE2PY) $(SLICEPARSERLIB)
 
 install:: $(ALL_SRCS)
 	@echo "Installing generated code"
-	$(INSTALL_DATA) *.py $(install_pythondir)
+	$(INSTALL_DATA) *.py $(DESTDIR)$(install_pythondir)
 	@for i in $(PACKAGES) ; \
 	do \
-	    $(INSTALL_DATA) -r $$i $(install_pythondir) ; \
+	    $(INSTALL_DATA) -r $$i $(DESTDIR)$(install_pythondir) ; \
 	done
 
 depend::  $(ICE_SLICE) $(GLACIER2_SLICE) $(ICEBOX_SLICE) $(ICEGRID_SLICE) $(ICEPATCH2_SLICE) $(ICESTORM_SLICE)

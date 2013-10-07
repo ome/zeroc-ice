@@ -21,6 +21,7 @@ ICE_SRCS	= Ice/LocalException.php \
 		  Ice/LoggerF.php \
 		  Ice/BuiltinSequences.php \
 		  Ice/ObjectAdapterF.php \
+		  Ice/PropertiesAdmin.php \
 		  Ice/Properties.php \
 		  Ice/PropertiesF.php \
 		  Ice/ObjectFactory.php \
@@ -167,11 +168,11 @@ install:: $(ALL_SRCS)
 	@echo "Installing generated code"
 	@for i in $(MODULES) ; \
 	do \
-	    $(INSTALL_DATA) -r $$i $(install_phpdir) ; \
+	    $(INSTALL_DATA) -r $$i $(DESTDIR)$(install_phpdir) ; \
 	done
 	@for i in $(MODULE_SRCS) ; \
 	do \
-	    $(INSTALL_DATA) $$i $(install_phpdir) ; \
+	    $(INSTALL_DATA) $$i $(DESTDIR)$(install_phpdir) ; \
 	done
 
 clean::

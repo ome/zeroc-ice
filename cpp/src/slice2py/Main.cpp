@@ -490,7 +490,7 @@ compile(int argc, char* argv[])
         if(depend)
         {
             PreprocessorPtr icecpp = Preprocessor::create(argv[0], *i, cppArgs);
-            FILE* cppHandle = icecpp->preprocess(false);
+            FILE* cppHandle = icecpp->preprocess(false, "-D__SLICE2PY__");
 
             if(cppHandle == 0)
             {
@@ -506,7 +506,8 @@ compile(int argc, char* argv[])
                 return EXIT_FAILURE;
             }
 
-            if(!icecpp->printMakefileDependencies(Preprocessor::Python, includePaths, "", prefix))
+            if(!icecpp->printMakefileDependencies(Preprocessor::Python, includePaths, 
+                                                  "-D__SLICE2PY__", "", prefix))
             {
                 return EXIT_FAILURE;
             }
@@ -519,7 +520,7 @@ compile(int argc, char* argv[])
         else
         {
             PreprocessorPtr icecpp = Preprocessor::create(argv[0], *i, cppArgs);
-            FILE* cppHandle = icecpp->preprocess(keepComments);
+            FILE* cppHandle = icecpp->preprocess(keepComments, "-D__SLICE2PY__");
 
             if(cppHandle == 0)
             {

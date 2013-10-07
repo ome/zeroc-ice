@@ -136,8 +136,43 @@ Slice::Preprocessor::normalizeIncludePath(const string& path)
     return result;
 }
 
+namespace
+{
+
+vector<string>
+baseArgs(vector<string> args, bool keepComments, const string& extraArgs, const string& fileName)
+{
+    if(keepComments)
+    {
+        args.push_back("-C");
+    }
+    args.push_back("-e");
+    args.push_back("en_us.utf8");
+    
+    //
+    // Define version macros __ICE_VERSION__ is preferred. We keep
+    // ICE_VERSION for backward compatibility with 3.5.0.
+    //
+    const string version[2] = {"ICE_VERSION", "__ICE_VERSION__"};
+    for(int i = 0; i < 2; ++i)
+    {
+        ostringstream os;
+        os << "-D" << version[i] << "=" << ICE_INT_VERSION;
+        args.push_back(os.str());
+    }
+    
+    if(!extraArgs.empty())
+    {
+        args.push_back(extraArgs);
+    }
+    args.push_back(fileName);
+    return args;
+}
+
+}
+
 FILE*
-Slice::Preprocessor::preprocess(bool keepComments)
+Slice::Preprocessor::preprocess(bool keepComments, const string& extraArgs)
 {
     if(!checkInputFile())
     {
@@ -147,17 +182,7 @@ Slice::Preprocessor::preprocess(bool keepComments)
     //
     // Build arguments list.
     //
-    vector<string> args = _args;
-    if(keepComments)
-    {
-        args.push_back("-C");
-    }
-    args.push_back("-e");
-    args.push_back("en_us.utf8");
-    ostringstream version;
-    version << "-DICE_VERSION=" << ICE_INT_VERSION;
-    args.push_back(version.str());
-    args.push_back(_fileName);
+    vector<string> args = baseArgs(_args, keepComments, extraArgs, _fileName);
     const char** argv = new const char*[args.size() + 1];
     argv[0] = "mcpp";
     for(unsigned int i = 0; i < args.size(); ++i)
@@ -251,7 +276,8 @@ Slice::Preprocessor::preprocess(bool keepComments)
 
 bool
 Slice::Preprocessor::printMakefileDependencies(Language lang, const vector<string>& includePaths,
-                                               const string& cppSourceExt, const string& optValue)
+                                               const std::string& extraArgs, const string& cppSourceExt,
+                                               const string& optValue)
 {
     if(!checkInputFile())
     {
@@ -274,10 +300,8 @@ Slice::Preprocessor::printMakefileDependencies(Language lang, const vector<strin
     //
     vector<string> args = _args;
     args.push_back("-M");
-    args.push_back("-e");
-    args.push_back("en_us.utf8");
-    args.push_back(_fileName);
-
+    args = baseArgs(args, false, extraArgs, _fileName);
+   
     const char** argv = new const char*[args.size() + 1];
     for(unsigned int i = 0; i < args.size(); ++i)
     {

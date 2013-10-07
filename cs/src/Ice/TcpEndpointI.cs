@@ -394,8 +394,17 @@ namespace IceInternal
         //
         public override List<Connector> connectors(Ice.EndpointSelectionType selType)
         {
-            return connectors(Network.getAddresses(_host, _port, _instance.protocolSupport(), selType, 
-                                                   _instance.preferIPv6(), true));
+#if SILVERLIGHT
+            return connectors(Network.getAddresses(_host, 
+                                                   _port,
+                                                   _instance.protocolSupport(), 
+                                                   selType, 
+                                                   _instance.preferIPv6(), 
+                                                   false),
+                              _instance.networkProxy());
+#else
+            return _instance.endpointHostResolver().resolve(_host, _port, selType, this);
+#endif
         }
 
 
@@ -463,12 +472,12 @@ namespace IceInternal
             return tcpEndpointI._host.Equals(_host) && tcpEndpointI._port == _port;
         }
 
-        public override List<Connector> connectors(List<EndPoint> addresses)
+        public override List<Connector> connectors(List<EndPoint> addresses, NetworkProxy networkProxy)
         {
             List<Connector> connectors = new List<Connector>();
             foreach(EndPoint addr in addresses)
             {
-                connectors.Add(new TcpConnector(_instance, addr, _timeout, connectionId_));
+                connectors.Add(new TcpConnector(_instance, addr, networkProxy, _timeout, connectionId_));
             }
             return connectors;
         }

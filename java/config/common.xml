@@ -22,6 +22,30 @@
     <!-- Load build configuration properties -->
     <property file="${top.dir}/config/build.properties"/>
 
+    <condition property="version.suffix" value="-${ice.version}">
+        <and>
+            <not><isset property="version.suffix"/></not>
+            <isset property="append-version-suffix"/>
+            <equals arg1="${append-version-suffix}" arg2="yes"/>
+        </and>
+    </condition>
+
+    <condition property="version.suffix" value="">
+        <and>
+            <not><isset property="version.suffix"/></not>
+        </and>
+    </condition>
+
+    <property name="ant-ice.jar.name" value="ant-ice${version.suffix}.jar"/>
+    <property name="freeze.jar.name" value="Freeze${version.suffix}.jar"/>
+    <property name="glacier2.jar.name" value="Glacier2${version.suffix}.jar"/>
+    <property name="icebox.jar.name" value="IceBox${version.suffix}.jar"/>
+    <property name="icegridgui.jar.name" value="IceGridGUI${version.suffix}.jar"/>
+    <property name="icegrid.jar.name" value="IceGrid${version.suffix}.jar"/>
+    <property name="ice.jar.name" value="Ice${version.suffix}.jar"/>
+    <property name="icepatch2.jar.name" value="IcePatch2${version.suffix}.jar"/>
+    <property name="icestorm.jar.name" value="IceStorm${version.suffix}.jar"/>
+
     <condition property="thirdparty.home" value="${env.THIRDPARTY_HOME}">
        <and>
           <os family="Windows"/>
@@ -48,6 +72,9 @@
         </and>
     </condition>
 
+    <condition property="DESTDIR" value="">
+        <not><isset property="DESTDIR"/></not>
+    </condition>
 
     <!-- Set default prefix directory, just if prefix is not set -->
     <condition property="prefix" value="${env.SystemDrive}\Ice-${ice.version}">
@@ -61,6 +88,19 @@
         <and>
             <not><os family="windows"/></not>
             <not><isset property="prefix"/></not>
+        </and>
+    </condition>
+    
+    <condition property="install_libdir" value="${prefix}/share/java">
+        <and>
+            <not><isset property="install_libdir"/></not>
+            <equals arg1="${prefix}" arg2="/usr"/>
+        </and>
+    </condition>
+
+     <condition property="install_libdir" value="${prefix}/lib">
+        <and>
+            <not><isset property="install_libdir"/></not>
         </and>
     </condition>
 
@@ -80,13 +120,12 @@
     <property name="class.dir" value="classes${build.suffix}"/>
     <property name="generated.dir" value="generated${build.suffix}"/>
 
-    <!-- Do we build the IceGrid Admin graphical tool -->
-    <!-- Currently we build it when the JDK is version 7 and we are not 
-         on Solaris (which does not have JavaFX) -->
-    <condition property="build-icegridadmin">
+    <!-- When JavaFX is available we include the Metrics Graph that
+         depends on JavaFX functionality. -->
+    <condition property="javafx-available" value="">
       <and>
-         <equals arg1="${java.specification.version}" arg2="1.7"/>
-         <not><os name="SunOS"/></not>
+         <available file="${java.home}/lib/jfxrt.jar"/>
+         <available file="${java.home}/../lib/ant-javafx.jar"/>
       </and>
     </condition>
 
@@ -236,6 +275,13 @@
             <not><isset property="ice.dir"/></not>
         </and>
     </condition>
+    <condition property="ice.dir" value="/Library/Developer/Ice-${ice.version}">
+        <and>
+            <os family="mac"/>
+            <not><isset property="ice.dir"/></not>
+            <available file="/Library/Developer/Ice-${ice.version}/bin/${slice.translator}"/>
+        </and>
+    </condition>
     <condition property="ice.dir" value="/opt/Ice-${ice.version}">
         <and>
             <not><os family="windows"/></not>
@@ -383,7 +429,7 @@
         <echo message="Found ${slice.translator} in both ${ice.cpp.dir}/bin and ${ice.dir}/cpp/bin, ${ice.cpp.dir}/bin/${slice.translator} will be used!" level="warning"/>
     </target>
 
-    <target name="config-init-javafx" if="build-icegridadmin">
+    <target name="config-init-javafx" if="javafx-available">
 
         <!-- JavaFX jar file -->
         <condition property="javafx.jar" value="${java.home}/lib/jfxrt.jar">
