@@ -243,7 +243,7 @@ public class AllTests : TestCommon.TestApp
         func();
         long timestamp;
         Dictionary<string, IceMX.Metrics[]> view = metrics.getMetricsView("View", out timestamp);
-        if(!view.ContainsKey(map))
+        if(!view.ContainsKey(map) || view[map].Length == 0)
         {
             if(value.Length > 0)
             {
@@ -377,9 +377,9 @@ public class AllTests : TestCommon.TestApp
     }
 
 #if SILVERLIGHT
-    override public void run(Ice.Communicator communicator)
+    override public void run(Ice.Communicator communicator, CommunicatorObserverI obsv)
 #else
-    public static MetricsPrx allTests(Ice.Communicator communicator)
+    public static MetricsPrx allTests(Ice.Communicator communicator, CommunicatorObserverI obsv)
 #endif
     {
         MetricsPrx metrics = MetricsPrxHelper.checkedCast(communicator.stringToProxy("metrics:default -p 12010"));
@@ -462,8 +462,8 @@ public class AllTests : TestCommon.TestApp
         props["IceMX.Metrics.View.Map.Connection.GroupBy"] = "none";
         updateProps(clientProps, serverProps, update, props, "Connection");
 
-        test(!clientMetrics.getMetricsView("View", out timestamp).ContainsKey("Connection"));
-        test(!serverMetrics.getMetricsView("View", out timestamp).ContainsKey("Connection"));
+        test(clientMetrics.getMetricsView("View", out timestamp)["Connection"].Length == 0);
+        test(serverMetrics.getMetricsView("View", out timestamp)["Connection"].Length == 0);
 
         metrics.ice_ping();
 
@@ -621,7 +621,7 @@ public class AllTests : TestCommon.TestApp
 
         props["IceMX.Metrics.View.Map.ConnectionEstablishment.GroupBy"] = "id";
         updateProps(clientProps, serverProps, update, props, "ConnectionEstablishment");
-        test(!clientMetrics.getMetricsView("View", out timestamp).ContainsKey("ConnectionEstablishment"));
+        test(clientMetrics.getMetricsView("View", out timestamp)["ConnectionEstablishment"].Length == 0);
 
         metrics.ice_ping();
     
@@ -675,7 +675,7 @@ public class AllTests : TestCommon.TestApp
 
         props["IceMX.Metrics.View.Map.ConnectionEstablishment.GroupBy"] = "id";
         updateProps(clientProps, serverProps, update, props, "EndpointLookup");
-        test(!clientMetrics.getMetricsView("View", out timestamp).ContainsKey("EndpointLookup"));
+        test(clientMetrics.getMetricsView("View", out timestamp)["EndpointLookup"].Length == 0);
 
         Ice.ObjectPrx prx = communicator.stringToProxy("metrics:default -p 12010 -h localhost");
         prx.ice_ping();
@@ -736,7 +736,7 @@ public class AllTests : TestCommon.TestApp
 
         props["IceMX.Metrics.View.Map.Dispatch.GroupBy"] = "operation";
         updateProps(clientProps, serverProps, update, props, "Dispatch");
-        test(!serverMetrics.getMetricsView("View", out timestamp).ContainsKey("Dispatch"));
+        test(serverMetrics.getMetricsView("View", out timestamp)["Dispatch"].Length == 0);
 
         metrics.op();
         try
@@ -854,7 +854,7 @@ public class AllTests : TestCommon.TestApp
         props["IceMX.Metrics.View.Map.Invocation.GroupBy"] = "operation";
         props["IceMX.Metrics.View.Map.Invocation.Map.Remote.GroupBy"] = "localPort";
         updateProps(clientProps, serverProps, update, props, "Invocation");
-        test(!serverMetrics.getMetricsView("View", out timestamp).ContainsKey("Invocation"));
+        test(serverMetrics.getMetricsView("View", out timestamp)["Invocation"].Length == 0);
 
         Callback cb = new Callback();
 
@@ -1054,6 +1054,41 @@ public class AllTests : TestCommon.TestApp
         catch(IceMX.UnknownMetricsView)
         {
         }
+
+        WriteLine("ok");
+
+        Write("testing instrumentation observer delegate... ");
+        Flush();
+
+        test(obsv.threadObserver.getTotal() > 0);
+        test(obsv.connectionObserver.getTotal() > 0);
+        test(obsv.connectionEstablishmentObserver.getTotal() > 0);
+        test(obsv.endpointLookupObserver.getTotal() > 0);
+        test(obsv.dispatchObserver.getTotal() > 0);
+        test(obsv.invocationObserver.getTotal() > 0);
+        test(obsv.invocationObserver.remoteObserver.getTotal() > 0);
+
+        test(obsv.threadObserver.getCurrent() > 0);
+        test(obsv.connectionObserver.getCurrent() > 0);
+        test(obsv.connectionEstablishmentObserver.getCurrent() == 0);
+        test(obsv.endpointLookupObserver.getCurrent() == 0);
+        test(obsv.dispatchObserver.getCurrent() == 0);
+        test(obsv.invocationObserver.getCurrent() == 0);
+        test(obsv.invocationObserver.remoteObserver.getCurrent() == 0);
+
+        test(obsv.threadObserver.getFailedCount() == 0);
+        test(obsv.connectionObserver.getFailedCount() > 0);
+        test(obsv.connectionEstablishmentObserver.getFailedCount() > 0);
+        test(obsv.endpointLookupObserver.getFailedCount() > 0);
+        //test(obsv.dispatchObserver.getFailedCount() > 0);
+        test(obsv.invocationObserver.getFailedCount() > 0);
+        test(obsv.invocationObserver.remoteObserver.getFailedCount() > 0);
+
+        test(obsv.threadObserver.states > 0);
+        test(obsv.connectionObserver.received > 0 && obsv.connectionObserver.sent > 0);
+        //test(obsv.dispatchObserver.userExceptionCount > 0);
+        test(obsv.invocationObserver.userExceptionCount > 0 && obsv.invocationObserver.retriedCount > 0);
+        test(obsv.invocationObserver.remoteObserver.replySize > 0);
 
         WriteLine("ok");
 

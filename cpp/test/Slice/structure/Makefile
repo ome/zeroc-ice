@@ -9,16 +9,17 @@
 
 top_srcdir	= ../../..
 
-CLIENT		= client$(EXE_EXT)
+CLIENT		= $(call mktestname,client)
 
 TARGETS		= $(CLIENT)
 
 COBJS		= Client.o \
-		  Test.o
+		  Test.o \
+		  Forward.o
 
 SRCS		= $(COBJS:.o=.cpp)
 
-SLICE_SRCS	= Test.ice
+SLICE_SRCS	= Test.ice Forward.ice
 
 include $(top_srcdir)/config/Make.rules
 
@@ -26,6 +27,6 @@ CPPFLAGS	:= -I. -I../../include $(CPPFLAGS)
 
 $(CLIENT): $(COBJS)
 	rm -f $@
-	$(CXX) $(LDFLAGS) -o $@ $(COBJS) $(LIBS)
+	$(call mktest,$@,$(COBJS),$(LIBS))
 
 include .depend

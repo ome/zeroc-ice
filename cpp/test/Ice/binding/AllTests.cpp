@@ -124,7 +124,7 @@ allTests(const Ice::CommunicatorPtr& communicator)
             test3->ice_ping();
             test(false);
         }
-        catch(const Ice::ConnectionRefusedException&)
+        catch(const Ice::ConnectFailedException&)
         {
         }
     }
@@ -468,7 +468,7 @@ allTests(const Ice::CommunicatorPtr& communicator)
         {
             test->getAdapterName();
         }
-        catch(const Ice::ConnectionRefusedException&)
+        catch(const Ice::ConnectFailedException&)
         {
         }
 
@@ -516,7 +516,7 @@ allTests(const Ice::CommunicatorPtr& communicator)
             test(test3->ice_getConnection() == test1->ice_getConnection());
             test(false);
         }
-        catch(const Ice::ConnectionRefusedException&)
+        catch(const Ice::ConnectFailedException&)
         {
         }
     }
@@ -627,7 +627,7 @@ allTests(const Ice::CommunicatorPtr& communicator)
         {
             test->getAdapterName();
         }
-        catch(const Ice::ConnectionRefusedException&)
+        catch(const Ice::ConnectFailedException&)
         {
         }
 
@@ -686,7 +686,7 @@ allTests(const Ice::CommunicatorPtr& communicator)
         {
             test->getAdapterName();
         }
-        catch(const Ice::ConnectionRefusedException&)
+        catch(const Ice::ConnectFailedException&)
         {
         }
 
@@ -779,7 +779,7 @@ allTests(const Ice::CommunicatorPtr& communicator)
                 testSecure->ice_ping();
                 test(false);
             }
-            catch(const Ice::ConnectionRefusedException&)
+            catch(const Ice::ConnectFailedException&)
             {
             }
 
@@ -913,7 +913,9 @@ allTests(const Ice::CommunicatorPtr& communicator)
                          (*p == bothPreferIPv6 && *q == ipv6 && ipv6NotSupported) ||
                          (*p == anyipv4 && *q == ipv6) || (*p == anyipv6 && *q == ipv4) ||
                          (*p == anyboth && *q == ipv4 && !dualStack) ||
-                         (*p == localipv4 && *q == ipv6) || (*p == localipv6 && *q == ipv4));
+                         (*p == localipv4 && *q == ipv6) || (*p == localipv6 && *q == ipv4) ||
+                         (*p == ipv6 && *q == bothPreferIPv4) || (*p == ipv6 && *q == bothPreferIPv6) || 
+                         (*p == bothPreferIPv6 && *q == ipv6));
                 }
                 clientCommunicator->destroy();
             }

@@ -46,6 +46,17 @@ Init init;
 Ice::LocalObject* IceInternal::upCast(EndpointI* p) { return p; }
 IceUtil::Shared* IceInternal::upCast(EndpointHostResolver* p) { return p; }
 
+vector<ConnectorPtr>
+IceInternal::EndpointI::connectors(const vector<Address>& /*addrs*/, const NetworkProxyPtr& /*proxy*/) const
+{
+    //
+    // This method must be extended by endpoints which use the EndpointHostResolver to create
+    // connectors from IP addresses.
+    //
+    assert(false);
+    return vector<ConnectorPtr>();
+}
+
 const string&
 IceInternal::EndpointI::connectionId() const
 {
@@ -61,17 +72,6 @@ IceInternal::EndpointI::internal_getHash() const
         _hashValue = hashInit();
     }
     return _hashValue;
-}
-
-vector<ConnectorPtr>
-IceInternal::EndpointI::connectors(const vector<Address>& /*addrs*/) const
-{
-    //
-    // This method must be extended by endpoints which use the EndpointHostResolver to create
-    // connectors from IP addresses.
-    //
-    assert(false);
-    return vector<ConnectorPtr>();
 }
 
 IceInternal::EndpointI::EndpointI(const std::string& connectionId) : 
@@ -128,14 +128,18 @@ IceInternal::EndpointHostResolver::resolve(const string& host, int port, Ice::En
     // Try to get the addresses without DNS lookup. If this doesn't
     // work, we retry with DNS lookup (and observer).
     //
-    vector<Address> addrs = getAddresses(host, port, _protocol, selType, _preferIPv6, false);
-    if(!addrs.empty())
+    NetworkProxyPtr networkProxy = _instance->networkProxy();
+    if(!networkProxy)
     {
-        return endpoint->connectors(addrs);
+        vector<Address> addrs = getAddresses(host, port, _protocol, selType, _preferIPv6, false);
+        if(!addrs.empty())
+        {
+            return endpoint->connectors(addrs, 0);
+        }
     }
 
     ObserverHelperT<> observer;
-    const CommunicatorObserverPtr& obsv = _instance->initializationData().observer;
+    const CommunicatorObserverPtr& obsv = _instance->getObserver();
     if(obsv)
     {
         observer.attach(obsv->getEndpointLookupObserver(endpoint));
@@ -144,7 +148,13 @@ IceInternal::EndpointHostResolver::resolve(const string& host, int port, Ice::En
     vector<ConnectorPtr> connectors;
     try 
     {
-        connectors = endpoint->connectors(getAddresses(host, port, _protocol, selType, _preferIPv6, true));
+        if(networkProxy)
+        {
+            networkProxy = networkProxy->resolveHost();
+        }
+
+        connectors = endpoint->connectors(getAddresses(host, port, _protocol, selType, _preferIPv6, true),
+                                          networkProxy);
     }
     catch(const Ice::LocalException& ex)
     {
@@ -162,19 +172,23 @@ IceInternal::EndpointHostResolver::resolve(const string& host, int port, Ice::En
     // Try to get the addresses without DNS lookup. If this doesn't work, we queue a resolve
     // entry and the thread will take care of getting the endpoint addresses.
     //
-    try
+    NetworkProxyPtr networkProxy = _instance->networkProxy();
+    if(!networkProxy)
     {
-        vector<Address> addrs = getAddresses(host, port, _protocol, selType, _preferIPv6, false);
-        if(!addrs.empty())
+        try
         {
-            callback->connectors(endpoint->connectors(addrs));
+            vector<Address> addrs = getAddresses(host, port, _protocol, selType, _preferIPv6, false);
+            if(!addrs.empty())
+            {
+                callback->connectors(endpoint->connectors(addrs, 0));
+                return;
+            }
+        }
+        catch(const Ice::LocalException& ex)
+        {
+            callback->exception(ex);
             return;
         }
-    }
-    catch(const Ice::LocalException& ex)
-    {
-        callback->exception(ex);
-        return;
     }
 
     Lock sync(*this);
@@ -187,7 +201,7 @@ IceInternal::EndpointHostResolver::resolve(const string& host, int port, Ice::En
     entry.endpoint = endpoint;
     entry.callback = callback;
 
-    const CommunicatorObserverPtr& obsv = _instance->initializationData().observer;
+    const CommunicatorObserverPtr& obsv = _instance->getObserver();
     if(obsv)
     {
         entry.observer = obsv->getEndpointLookupObserver(endpoint);
@@ -241,15 +255,27 @@ IceInternal::EndpointHostResolver::run()
                 threadObserver->stateChanged(ThreadStateIdle, ThreadStateInUseForOther);
             }
 
+            NetworkProxyPtr networkProxy = _instance->networkProxy();
+            if(networkProxy)
+            {
+                networkProxy = networkProxy->resolveHost();
+            }
+
             r.callback->connectors(r.endpoint->connectors(getAddresses(r.host, 
                                                                        r.port, 
                                                                        _protocol,
                                                                        r.selType, 
-                                                                       _preferIPv6, true)));
+                                                                       _preferIPv6, true),
+                                                          networkProxy));
 
             if(threadObserver)
             {
                 threadObserver->stateChanged(ThreadStateInUseForOther, ThreadStateIdle);
+            }
+
+            if(r.observer)
+            {
+                r.observer->detach();
             }
         }
         catch(const Ice::LocalException& ex)
@@ -257,25 +283,21 @@ IceInternal::EndpointHostResolver::run()
             if(r.observer)
             {
                 r.observer->failed(ex.ice_name());
+                r.observer->detach();
             }
             r.callback->exception(ex);
-        }
-
-        if(r.observer)
-        {
-            r.observer->detach();
         }
     }
 
     for(deque<ResolveEntry>::const_iterator p = _queue.begin(); p != _queue.end(); ++p)
     {
         Ice::CommunicatorDestroyedException ex(__FILE__, __LINE__);
-        p->callback->exception(ex);
         if(p->observer)
         {
             p->observer->failed(ex.ice_name());
             p->observer->detach();
         }
+        p->callback->exception(ex);
     }
     _queue.clear();
 
@@ -289,7 +311,7 @@ void
 IceInternal::EndpointHostResolver::updateObserver()
 {
     Lock sync(*this);
-    const CommunicatorObserverPtr& obsv = _instance->initializationData().observer;
+    const CommunicatorObserverPtr& obsv = _instance->getObserver();
     if(obsv)
     {
         _observer.attach(obsv->getThreadObserver("Communicator", name(), ThreadStateIdle, _observer.get()));
@@ -307,8 +329,9 @@ vector<ConnectorPtr>
 IceInternal::EndpointHostResolver::resolve(const string& host, int port, Ice::EndpointSelectionType selType, 
                                            const EndpointIPtr& endpoint)
 {
-    return endpoint->connectors(getAddresses(host, port, _instance->protocolSupport(), selType, 
-                                             _instance->preferIPv6(), false));
+    vector<Address> addrs =
+        getAddresses(host, port, _instance->protocolSupport(), selType, _instance->preferIPv6(), false);
+    return endpoint->connectors(addrs, 0);
 }
 
 void

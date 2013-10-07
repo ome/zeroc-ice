@@ -17,16 +17,17 @@ ifeq ($(shell uname | grep MINGW),)
 SUBDIRS		:= $(SUBDIRS) demo
 endif
 
-INSTALL_SUBDIRS	= $(install_bindir) $(install_libdir) $(install_includedir) $(install_configdir)
+INSTALL_SUBDIRS	= $(install_bindir) $(install_libdir) $(install_includedir) \
+	$(install_configdir) $(install_mandir)
 
 install:: install-common
 	@for subdir in $(INSTALL_SUBDIRS); \
 	do \
-	    if test ! -d $$subdir ; \
+	    if test ! -d $(DESTDIR)$$subdir ; \
 	    then \
-		echo "Creating $$subdir..." ; \
-		mkdir -p $$subdir ; \
-		chmod a+rx $$subdir ; \
+		echo "Creating $(DESTDIR)$$subdir..." ; \
+		mkdir -p $(DESTDIR)$$subdir ; \
+		chmod a+rx $(DESTDIR)$$subdir ; \
 	    fi ; \
 	done
 ifeq ($(create_runpath_symlink),yes)

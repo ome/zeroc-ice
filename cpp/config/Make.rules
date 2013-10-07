@@ -192,6 +192,12 @@ install_bindir	  	:= $(prefix)/$(binsubdir)$(cpp11suffix)
 install_libdir	  	:= $(prefix)/$(libsubdir)$(cpp11suffix)
 install_configdir 	:= $(prefix)/config
 
+ifneq ($(prefix),/usr)
+install_mandir		:= $(prefix)/man/man1
+else
+install_mandir		:= $(prefix)/share/man/man1
+endif
+
 ifneq ($(embedded_runpath_prefix),)
     runpath_libdir	:= $(embedded_runpath_prefix)/$(libsubdir)
 else
@@ -245,6 +251,15 @@ endif
 EXPAT_RPATH_LINK        = $(if $(EXPAT_HOME),$(call rpathlink,$(EXPAT_HOME)/$(libsubdir)))
 
 ifeq ($(MCPP_LIBS),)
+    ifeq ($(MCPP_HOME),)
+        #
+        # If libmcpp.a is in the third-party subdirectory, we are building the core C++ distribution
+        # and we used that mcpp package.
+        #
+        ifneq ($(wildcard ../../../third-party/mcpp/lib/libmcpp.a),)
+            MCPP_HOME = ../../../third-party/mcpp
+        endif
+    endif
     MCPP_LIBS              = $(if $(MCPP_HOME),-L$(MCPP_HOME)/$(libsubdir)) -lmcpp
 endif
 MCPP_RPATH_LINK        = $(if $(MCPP_HOME),$(call rpathlink,$(MCPP_HOME)/$(libsubdir)))
@@ -253,7 +268,7 @@ MCPP_RPATH_LINK        = $(if $(MCPP_HOME),$(call rpathlink,$(MCPP_HOME)/$(libsu
 ifeq ($(PLATFORM_HAS_READLINE),yes)
     ifeq ($(USE_READLINE),yes)
 	READLINE_FLAGS  = -DHAVE_READLINE $(if $(READLINE_HOME),-I$(READLINE_HOME)/include)
-	READLINE_LIBS   = $(if $(READLINE_HOME),-L$(READLINE_HOME)/$(libsubdir)) -lreadline -lncurses        
+	READLINE_LIBS   = $(if $(READLINE_HOME),-L$(READLINE_HOME)/$(libsubdir)) -lreadline
     endif
 endif
 
@@ -288,20 +303,22 @@ ifeq ($(mkshlib),)
     $(error You need to define mkshlib in Make.rules.$(UNAME)) 
 endif
 
+ifeq ($(mktestname),)
+    mktestname	= $(1)$(EXE_EXT)
+endif
+
+ifeq ($(mktest),)
+    mktest 	  = $(CXX) $(LDFLAGS) -o $(@) $(2) $(3)
+endif
+
 ifdef ice_src_dist
     SLICEPARSERLIB	= $(libdir)/$(call mklibfilename,Slice,$(VERSION))
     SLICE2CPP		= $(bindir)/slice2cpp
     SLICE2FREEZE	= $(bindir)/slice2freeze
-    ifeq ($(RPATH_DIR),)
-      RPATH_DIR = @loader_path/$(libdir)
-    endif
 else
     SLICEPARSERLIB	= $(ice_dir)/$(libsubdir)$(cpp11suffix)/$(call mklibfilename,Slice,$(VERSION))
     SLICE2CPP		= $(ice_dir)/$(binsubdir)$(cpp11suffix)/slice2cpp
     SLICE2FREEZE	= $(ice_dir)/$(binsubdir)$(cpp11suffix)/slice2freeze
-    ifeq ($(RPATH_DIR),)
-      RPATH_DIR = $(ice_dir)/$(libsubdir)$(cpp11suffix)
-    endif
 endif
 
 ifeq ($(SLICE_LIBS),)

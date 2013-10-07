@@ -963,6 +963,7 @@ public class AllTests : TestCommon.TestApp
         initData.properties = Ice.Util.createProperties();
         WriteLine("setting Ice.FactoryAssemblies");
         initData.properties.setProperty("Ice.FactoryAssemblies", "exceptions,version=1.0.0.0");
+        initData.properties.setProperty("Ice.MessageSizeMax", "10");
         return initData;
     }
 
@@ -1307,6 +1308,54 @@ public class AllTests : TestCommon.TestApp
 
             WriteLine("ok");
         }
+
+        Write("testing memory limit marshal exception...");
+        Flush();
+        {
+            try
+            {
+                thrower.throwMemoryLimitException(null);
+                test(collocated);
+            }
+            catch(Ice.UnknownLocalException)
+            {
+            }
+            catch(Exception)
+            {
+                test(false);
+            }
+
+            try
+            {
+                thrower.throwMemoryLimitException(new byte[20 * 1024]); // 20KB
+                test(collocated);
+            }
+            catch(Ice.MemoryLimitException)
+            {
+            }
+            catch(Exception)
+            {
+                test(false);
+            }
+            
+            if(!collocated)
+            {
+                try
+                {
+                    thrower.end_throwMemoryLimitException(
+                        thrower.begin_throwMemoryLimitException(new byte[20 * 1024])); // 20KB
+                    test(false);
+                }
+                catch(Ice.MemoryLimitException)
+                {
+                }
+                catch(Exception)
+                {
+                    test(false);
+                }
+            }
+        }
+        WriteLine("ok");
 
         Write("catching object not exist exception... ");
         Flush();

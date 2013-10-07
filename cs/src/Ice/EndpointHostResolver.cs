@@ -28,7 +28,7 @@ namespace IceInternal
             if(instance.initializationData().properties.getProperty("Ice.ThreadPriority").Length > 0)
             {
                 ThreadPriority priority = IceInternal.Util.stringToThreadPriority(
-                                           instance.initializationData().properties.getProperty("Ice.ThreadPriority"));
+                    instance.initializationData().properties.getProperty("Ice.ThreadPriority"));
                 _thread.Start(priority);
             }
             else
@@ -44,13 +44,17 @@ namespace IceInternal
             // Try to get the addresses without DNS lookup. If this doesn't
             // work, we retry with DNS lookup (and observer).
             //
-            List<EndPoint> addrs = Network.getAddresses(host, port, _protocol, selType, _preferIPv6, false);
-            if(addrs.Count > 0)
+            NetworkProxy networkProxy = _instance.networkProxy();
+            if(networkProxy == null)
             {
-                return endpoint.connectors(addrs);
+                List<EndPoint> addrs = Network.getAddresses(host, port, _protocol, selType, _preferIPv6, false);
+                if(addrs.Count > 0)
+                {
+                    return endpoint.connectors(addrs, null);
+                }
             }
 
-            Ice.Instrumentation.CommunicatorObserver obsv = _instance.initializationData().observer;
+            Ice.Instrumentation.CommunicatorObserver obsv = _instance.getObserver();
             Ice.Instrumentation.Observer observer = null;
             if(obsv != null)
             {
@@ -64,8 +68,14 @@ namespace IceInternal
             List<Connector> connectors = null;
             try 
             {
+                if(networkProxy != null)
+                {
+                    networkProxy = networkProxy.resolveHost();
+                }
+
                 connectors = endpoint.connectors(Network.getAddresses(host, port, _protocol, selType, _preferIPv6, 
-                                                                      true));
+                                                                      true), 
+                                                 networkProxy);
             }
             catch(Ice.LocalException ex)
             {
@@ -92,19 +102,23 @@ namespace IceInternal
             // Try to get the addresses without DNS lookup. If this doesn't work, we queue a resolve
             // entry and the thread will take care of getting the endpoint addresses.
             //
-            try
+            NetworkProxy networkProxy = _instance.networkProxy();
+            if(networkProxy == null)
             {
-                List<EndPoint> addrs = Network.getAddresses(host, port, _protocol, selType, _preferIPv6, false);
-                if(addrs.Count > 0)
+                try
                 {
-                    callback.connectors(endpoint.connectors(addrs));
+                    List<EndPoint> addrs = Network.getAddresses(host, port, _protocol, selType, _preferIPv6, false);
+                    if(addrs.Count > 0)
+                    {
+                        callback.connectors(endpoint.connectors(addrs, null));
+                        return;
+                    }
+                }
+                catch(Ice.LocalException ex)
+                {
+                    callback.exception(ex);
                     return;
                 }
-            }
-            catch(Ice.LocalException ex)
-            {
-                callback.exception(ex);
-                return;
             }
 
             _m.Lock();
@@ -119,7 +133,7 @@ namespace IceInternal
                 entry.endpoint = endpoint;
                 entry.callback = callback;
 
-                Ice.Instrumentation.CommunicatorObserver obsv = _instance.initializationData().observer;
+                Ice.Instrumentation.CommunicatorObserver obsv = _instance.getObserver();
                 if(obsv != null)
                 {
                     entry.observer = obsv.getEndpointLookupObserver(endpoint);
@@ -198,17 +212,29 @@ namespace IceInternal
                                                     Ice.Instrumentation.ThreadState.ThreadStateInUseForOther);
                     }
 
+                    NetworkProxy networkProxy = _instance.networkProxy();
+                    if(networkProxy != null)
+                    {
+                        networkProxy = networkProxy.resolveHost();
+                    }
+
                     r.callback.connectors(r.endpoint.connectors(Network.getAddresses(r.host, 
                                                                                      r.port, 
                                                                                      _protocol, 
                                                                                      r.selType, 
                                                                                      _preferIPv6, 
-                                                                                     true)));
+                                                                                     true),
+                                                                networkProxy));
 
                     if(threadObserver != null)
                     {
                         threadObserver.stateChanged(Ice.Instrumentation.ThreadState.ThreadStateInUseForOther, 
                                                     Ice.Instrumentation.ThreadState.ThreadStateIdle);
+                    }
+
+                    if(r.observer != null)
+                    {
+                        r.observer.detach();
                     }
                 }
                 catch(Ice.LocalException ex)
@@ -216,27 +242,21 @@ namespace IceInternal
                     if(r.observer != null)
                     {
                         r.observer.failed(ex.ice_name());
-                    }
-                    r.callback.exception(ex);
-                }
-                finally
-                {
-                    if(r.observer != null)
-                    {
                         r.observer.detach();
                     }
+                    r.callback.exception(ex);
                 }
             }
 
             foreach(ResolveEntry entry in _queue)
             {
                 Ice.CommunicatorDestroyedException ex = new Ice.CommunicatorDestroyedException();
-                entry.callback.exception(ex);
                 if(entry.observer != null)
                 {
                     entry.observer.failed(ex.ice_name());
                     entry.observer.detach();
                 }
+                entry.callback.exception(ex);
             }
             _queue.Clear();
 
@@ -252,7 +272,7 @@ namespace IceInternal
             _m.Lock();
             try
             {
-                Ice.Instrumentation.CommunicatorObserver obsv = _instance.initializationData().observer;
+                Ice.Instrumentation.CommunicatorObserver obsv = _instance.getObserver();
                 if(obsv != null)
                 {
                     _observer = obsv.getThreadObserver("Communicator", 

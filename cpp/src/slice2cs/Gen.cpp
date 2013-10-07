@@ -858,7 +858,7 @@ Slice::CsVisitor::writeDispatchAndMarshalling(const ClassDefPtr& p, bool stream)
                     StructPtr st = StructPtr::dynamicCast((*pli)->type());
                     if(st)
                     {
-                        if(isValueType((*pli)->type()))
+                        if(isValueType(st))
                         {
                             _out << nl << param << " = new " << typeS << "();";
                         }
@@ -2728,6 +2728,11 @@ Slice::Gen::TypesVisitor::visitClassDefStart(const ClassDefPtr& p)
         _out << eb;
         _out << eb;
 
+        _out << sp << nl << "public static Ice.OptionalFormat optionalFormat()";
+        _out << sb;
+        _out << nl << "return " << getOptionalFormat(p->declaration()) << ';';
+        _out << eb;
+
         _out << sp << nl << "private Ice.InputStream _in;";
         _out << nl << "private IceInternal.ParamPatcher<" << scoped << "> _pp;";
 
@@ -3691,6 +3696,11 @@ Slice::Gen::TypesVisitor::visitStructStart(const StructPtr& p)
         _out << nl << "return v__;";
         _out << eb;
 
+        _out << sp << nl << "public static Ice.OptionalFormat optionalFormat()";
+        _out << sb;
+        _out << nl << "return " << getOptionalFormat(p) << ';';
+        _out << eb;
+
         _out << eb;
     }
 
@@ -3700,7 +3710,7 @@ Slice::Gen::TypesVisitor::visitStructStart(const StructPtr& p)
 
     emitAttributes(p);
     emitPartialTypeAttributes();
-    if(isValueType(p) && !p->hasDefaultValues())
+    if(isValueType(p))
     {
         _out << nl << "public partial struct " << name;
     }
@@ -3727,7 +3737,7 @@ Slice::Gen::TypesVisitor::visitStructEnd(const StructPtr& p)
 
     _out << sp << nl << "#endregion"; // Slice data members
 
-    const bool isClass = !isValueType(p) || p->hasDefaultValues();
+    const bool isClass = !isValueType(p);
 
     _out << sp << nl << "#region Constructor";
     if(isClass)
@@ -4093,6 +4103,11 @@ Slice::Gen::TypesVisitor::visitEnum(const EnumPtr& p)
         _out << nl << "return v__;";
         _out << eb;
 
+        _out << sp << nl << "public static Ice.OptionalFormat optionalFormat()";
+        _out << sb;
+        _out << nl << "return " << getOptionalFormat(p) << ';';
+        _out << eb;
+
         _out << eb;
     }
 }
@@ -4126,7 +4141,7 @@ Slice::Gen::TypesVisitor::visitDataMember(const DataMemberPtr& p)
     if(StructPtr::dynamicCast(cont))
     {
         isValue = isValueType(StructPtr::dynamicCast(cont));
-        if(!isValue || cont->hasMetaData("clr:class"))
+        if(!isValue)
         {
             baseTypes = DotNet::ICloneable;
         }
@@ -4998,7 +5013,7 @@ Slice::Gen::HelperVisitor::visitClassDefStart(const ClassDefPtr& p)
                         StructPtr st = StructPtr::dynamicCast((*pli)->type());
                         if(st)
                         {
-                            if(isValueType((*pli)->type()))
+                            if(isValueType(st))
                             {
                                 _out << nl << param << " = new " << typeS << "();";
                             }
@@ -5019,7 +5034,7 @@ Slice::Gen::HelperVisitor::visitClassDefStart(const ClassDefPtr& p)
                         StructPtr st = StructPtr::dynamicCast(ret);
                         if(st)
                         {
-                            if(isValueType(ret))
+                            if(isValueType(st))
                             {
                                 _out << nl << "ret__ = new " << typeS << "();";
                             }
@@ -5471,6 +5486,12 @@ Slice::Gen::HelperVisitor::visitClassDefStart(const ClassDefPtr& p)
         _out << eb;
         _out << nl << "return null;";
         _out << eb;
+
+        _out << sp << nl << "public static Ice.OptionalFormat optionalFormat()";
+        _out << sb;
+        _out << nl << "return Ice.OptionalFormat.FSize;";
+        _out << eb;
+
     }
 
     _out << sp << nl << "#endregion"; // Marshaling support
@@ -5526,6 +5547,11 @@ Slice::Gen::HelperVisitor::visitSequence(const SequencePtr& p)
         _out << nl << typeS << " v__;";
         writeSequenceMarshalUnmarshalCode(_out, p, "v__", false, true, false);
         _out << nl << "return v__;";
+        _out << eb;
+
+        _out << sp << nl << "public static Ice.OptionalFormat optionalFormat()";
+        _out << sb;
+        _out << nl << "return " << getOptionalFormat(p) << ';';
         _out << eb;
     }
 
@@ -5684,7 +5710,7 @@ Slice::Gen::HelperVisitor::visitDictionary(const DictionaryPtr& p)
     StructPtr st = StructPtr::dynamicCast(key);
     if(st)
     {
-        if(isValueType(key))
+        if(isValueType(st))
         {
             _out << nl << "k__ = new " << typeToString(key) << "();";
         }
@@ -5707,7 +5733,7 @@ Slice::Gen::HelperVisitor::visitDictionary(const DictionaryPtr& p)
         StructPtr st = StructPtr::dynamicCast(value);
         if(st)
         {
-            if(isValueType(value))
+            if(isValueType(st))
             {
                 _out << nl << "v__ = new " << typeToString(value) << "();";
             }
@@ -5764,7 +5790,7 @@ Slice::Gen::HelperVisitor::visitDictionary(const DictionaryPtr& p)
         StructPtr st = StructPtr::dynamicCast(key);
         if(st)
         {
-            if(isValueType(key))
+            if(isValueType(st))
             {
                 _out << nl << "k__ = new " << typeToString(key) << "();";
             }
@@ -5780,7 +5806,7 @@ Slice::Gen::HelperVisitor::visitDictionary(const DictionaryPtr& p)
             StructPtr st = StructPtr::dynamicCast(value);
             if(st)
             {
-                if(isValueType(value))
+                if(isValueType(st))
                 {
                     _out << nl << "v__ = new " << typeToString(value) << "();";
                 }
@@ -5797,6 +5823,11 @@ Slice::Gen::HelperVisitor::visitDictionary(const DictionaryPtr& p)
         }
         _out << eb;
         _out << nl << "return r__;";
+        _out << eb;
+
+        _out << sp << nl << "public static Ice.OptionalFormat optionalFormat()";
+        _out << sb;
+        _out << nl << "return " << getOptionalFormat(p) << ';';
         _out << eb;
     }
 
@@ -6075,7 +6106,7 @@ Slice::Gen::DelegateMVisitor::visitClassDefStart(const ClassDefPtr& p)
                     StructPtr st = StructPtr::dynamicCast(ret);
                     if(st)
                     {
-                        if(isValueType(ret))
+                        if(isValueType(st))
                         {
                             _out << nl << "ret__ = new " << typeS << "();";
                         }
@@ -6619,7 +6650,8 @@ Slice::Gen::AsyncVisitor::visitOperation(const OperationPtr& p)
             _out << eb;
             _out << nl << "catch(Ice.LocalException ex__)";
             _out << sb;
-            _out << nl << "ice_exception(ex__);";
+            _out << nl << "exception__(ex__);";
+            _out << nl << "return;";
             _out << eb;
         }
         else

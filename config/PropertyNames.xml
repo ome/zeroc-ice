@@ -352,6 +352,8 @@ generated from the section label.
         <property name="ProgramName" />
         <property name="RetryIntervals" />
         <property name="ServerIdleTime" />
+        <property name="SOCKSProxyHost" />
+        <property name="SOCKSProxyPort" />
         <property name="StdErr" />
         <property name="StdOut" />
         <property name="SyslogFacility" />
@@ -404,6 +406,7 @@ generated from the section label.
 
     <section name="IceGridAdmin">
         <property name="AuthenticateUsingSSL" />
+        <property name="MetricsConfig" />
         <property name="Username" />
         <property name="Password" />
         <property name="Replica" />
