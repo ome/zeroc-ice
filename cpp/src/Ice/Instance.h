@@ -34,6 +34,7 @@
 #include <Ice/RetryQueueF.h>
 #include <Ice/DynamicLibraryF.h>
 #include <Ice/PluginF.h>
+#include <Ice/NetworkF.h>
 #include <Ice/Initialize.h>
 #include <Ice/ImplicitContextI.h>
 #include <Ice/FacetMap.h>
@@ -73,6 +74,7 @@ public:
     ObjectAdapterFactoryPtr objectAdapterFactory() const;
     ProtocolSupport protocolSupport() const;
     bool preferIPv6() const;
+    NetworkProxyPtr networkProxy() const;
     ThreadPoolPtr clientThreadPool();
     ThreadPoolPtr serverThreadPool(bool create = true);
     EndpointHostResolverPtr endpointHostResolver();
@@ -91,6 +93,11 @@ public:
     void addAdminFacet(const Ice::ObjectPtr&, const std::string&);
     Ice::ObjectPtr removeAdminFacet(const std::string&);
     Ice::ObjectPtr findAdminFacet(const std::string&);
+
+    const Ice::Instrumentation::CommunicatorObserverPtr& getObserver() const
+    {
+        return _observer;
+    }
     
     const Ice::ImplicitContextIPtr& getImplicitContext() const
     {
@@ -112,6 +119,10 @@ private:
     void finishSetup(int&, char*[]);
     bool destroy();
     friend class Ice::CommunicatorI;
+
+    void updateConnectionObservers();
+    void updateThreadObservers();
+    friend class ObserverUpdaterI;
 
     enum State
     {
@@ -136,6 +147,7 @@ private:
     ObjectAdapterFactoryPtr _objectAdapterFactory;
     ProtocolSupport _protocolSupport;
     bool _preferIPv6;
+    NetworkProxyPtr _networkProxy;
     ThreadPoolPtr _clientThreadPool;
     ThreadPoolPtr _serverThreadPool;
     EndpointHostResolverPtr _endpointHostResolver;
@@ -150,6 +162,7 @@ private:
     Ice::Identity _adminIdentity;
     std::set<std::string> _adminFacetFilter;
     IceInternal::MetricsAdminIPtr _metricsAdmin;
+    Ice::Instrumentation::CommunicatorObserverPtr _observer;
 };
 
 class ProcessI : public Ice::Process

@@ -257,11 +257,11 @@ public final class ConnectionI extends IceInternal.EventHandler implements Conne
             return;
         }
 
-        assert(_instance.initializationData().observer != null);
-        _observer = _instance.initializationData().observer.getConnectionObserver(initConnectionInfo(),
-                                                                                  _endpoint,
-                                                                                  toConnectionState(_state),
-                                                                                  _observer);
+        assert(_instance.getObserver() != null);
+        _observer = _instance.getObserver().getConnectionObserver(initConnectionInfo(),
+                                                                  _endpoint,
+                                                                  toConnectionState(_state),
+                                                                  _observer);
         if(_observer != null)
         {
             _observer.attach();
@@ -1831,16 +1831,16 @@ public final class ConnectionI extends IceInternal.EventHandler implements Conne
             }
         }
 
-        if(_instance.initializationData().observer != null)
+        if(_instance.getObserver() != null)
         {
             Ice.Instrumentation.ConnectionState oldState = toConnectionState(_state);
             Ice.Instrumentation.ConnectionState newState = toConnectionState(state);
             if(oldState != newState)
             {
-                _observer = _instance.initializationData().observer.getConnectionObserver(initConnectionInfo(),
-                                                                                          _endpoint, 
-                                                                                          newState,
-                                                                                          _observer);
+                _observer = _instance.getObserver().getConnectionObserver(initConnectionInfo(),
+                                                                          _endpoint, 
+                                                                          newState,
+                                                                          _observer);
                 if(_observer != null)
                 {
                     _observer.attach();
@@ -1930,7 +1930,7 @@ public final class ConnectionI extends IceInternal.EventHandler implements Conne
     private boolean
     initialize(int operation)
     {
-        int s = _transceiver.initialize();
+        int s = _transceiver.initialize(_readStream.getBuffer(), _writeStream.getBuffer());
         if(s != IceInternal.SocketOperation.None)
         {
             scheduleTimeout(s, connectTimeout());
@@ -2079,10 +2079,14 @@ public final class ConnectionI extends IceInternal.EventHandler implements Conne
 
                 //
                 // If we are in the closed state, don't continue sending.
+                //
+                // The connection can be in the closed state if parseMessage
+                // (called before sendNextMessage by message()) closes the
+                // connection.
                 // 
                 if(_state >= StateClosed)
                 {
-                    break;
+                    return callbacks;
                 }
         
                 //

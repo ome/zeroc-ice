@@ -773,7 +773,6 @@ twoways(const Ice::CommunicatorPtr& communicator, const Test::MyClassPrx& p)
 
                 ctx = ic->getImplicitContext()->getContext();
                 test(p->opContext() == ctx);
-                
                 Ice::Context prxContext;
                 prxContext["one"] = "UN";
                 prxContext["four"] = "QUATRE";

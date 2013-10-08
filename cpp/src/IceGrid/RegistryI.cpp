@@ -51,7 +51,6 @@ using namespace IceGrid;
 namespace
 {
 
-
 class NullPermissionsVerifierI : public Glacier2::PermissionsVerifier
 {
 public:
@@ -109,7 +108,6 @@ private:
     const std::map<std::string, std::string> _passwords;
 };
 
-
 class DefaultServantLocator : public Ice::ServantLocator
 {
 public:
@@ -141,11 +139,14 @@ private:
 RegistryI::RegistryI(const CommunicatorPtr& communicator, 
                      const TraceLevelsPtr& traceLevels, 
                      bool nowarn, 
-                     bool readonly) : 
+                     bool readonly,
+                     const string& initFromReplica) : 
     _communicator(communicator),
     _traceLevels(traceLevels),
     _nowarn(nowarn),
     _readonly(readonly),
+    _initFromReplica(initFromReplica),
+    _session(communicator),
     _platform("IceGrid.Registry", communicator, traceLevels)
 {
 }
@@ -247,6 +248,13 @@ RegistryI::startImpl()
     _master = _replicaName == "Master";
     _sessionTimeout = properties->getPropertyAsIntWithDefault("IceGrid.Registry.SessionTimeout", 30);
 
+    if(!_initFromReplica.empty() && (_initFromReplica == _replicaName || (_master && _initFromReplica == "Master")))
+    {
+        Error out(_communicator->getLogger());
+        out << "invalid --initdb-from-replica option: identical replica";
+        return false; 
+    }
+
     if(properties->getProperty("IceGrid.Registry.Client.ACM").empty())
     {
         //
@@ -310,6 +318,28 @@ RegistryI::startImpl()
     }
 
     //
+    // Create the registry database.
+    //
+    DatabasePluginPtr plugin;
+    try
+    {
+        plugin = DatabasePluginPtr::dynamicCast(_communicator->getPluginManager()->getPlugin("DB"));
+    }
+    catch(const NotRegisteredException&)
+    {
+    }
+    if(!plugin)
+    {
+        Error out(_communicator->getLogger());
+        out << "no database plugin configured with `Ice.Plugin.DB' or plugin is not a database plugin";
+        return false;
+    }
+    if(!plugin->initDB())
+    {
+        return false;
+    }
+
+    //
     // Ensure that nothing is running on this port. This is also
     // useful to ensure that we don't run twice the same instance of
     // the service too (which would cause the database environment of
@@ -355,44 +385,98 @@ RegistryI::startImpl()
                                                   "Registry");
     const IceStorm::TopicManagerPrx topicManager = _iceStorm->getTopicManager();
 
-    //
-    // Create the registry database.
-    //
-    DatabasePluginPtr plugin;
-    try
-    {
-        plugin = DatabasePluginPtr::dynamicCast(_communicator->getPluginManager()->getPlugin("DB"));
-    }
-    catch(const NotRegisteredException&)
-    {
-    }
-    if(!plugin)
-    {
-        Error out(_communicator->getLogger());
-        out << "no database plugin configured with `Ice.Plugin.DB' or plugin is not a database plugin";
-        return false;
-    }
-    
     _database = new Database(registryAdapter, topicManager, _instanceName, _traceLevels, getInfo(), plugin, _readonly);
     _wellKnownObjects = new WellKnownObjectsManager(_database);
 
-    //
-    // Get the saved replica/node proxies.
-    //
-    ObjectProxySeq proxies;
+    if(!_initFromReplica.empty())
+    {
+        Ice::Identity id;
+        id.category = _instanceName;
+        id.name = (_initFromReplica == "Master") ? "Registry" : "Registry-" + _initFromReplica;
+        Ice::ObjectPrx proxy;
+        try
+        {
+            proxy = _database->getObjectProxy(id);
+            id.name = "Query";
+            IceGrid::QueryPrx query = IceGrid::QueryPrx::uncheckedCast(proxy->ice_identity(id));
+            if(query)
+            {
+                id.name = "InternalRegistry-" + _initFromReplica;
+                try
+                {
+                    proxy = query->findObjectById(id);
+                }
+                catch(const Ice::Exception&)
+                {
+                }
+            }
+        }
+        catch(const ObjectNotRegisteredException&)
+        {
+            id.name = "InternalRegistry-" + _initFromReplica;
+            try
+            {
+                proxy = _database->getObjectProxy(id);
+            }
+            catch(const ObjectNotRegisteredException&)
+            {
+            }
+        }
 
+        // If we still didn't find the replica proxy, check with the
+        // locator or the IceGrid.Registry.ReplicaEndpoints properties
+        // if we can find it.
+        if(!proxy)
+        {
+            id.name = "InternalRegistry-" + (_initFromReplica.empty() ? "Master" : _initFromReplica);
+            proxy = _session.findInternalRegistryForReplica(id);
+        }
+
+        if(!proxy)
+        {
+            Error out(_communicator->getLogger());
+            out << "couldn't find replica `" << _initFromReplica << "' to\n";
+            out << "initialize the database (specify the replica endpoints in the endpoints of\n";
+            out << "the `Ice.Default.Locator' proxy property to allow finding the replica)";
+            return false;
+        }
+
+        try
+        {
+            Ice::Long serial;
+            IceGrid::InternalRegistryPrx registry = IceGrid::InternalRegistryPrx::checkedCast(proxy);
+	    ApplicationInfoSeq applications = registry->getApplications(serial);
+            _database->syncApplications(applications, serial);
+	    AdapterInfoSeq adapters = registry->getAdapters(serial);
+            _database->syncAdapters(adapters, serial);
+	    ObjectInfoSeq objects = registry->getObjects(serial);
+            _database->syncObjects(objects, serial);
+        }
+        catch(const Ice::OperationNotExistException&)
+        {
+            Error out(_communicator->getLogger());
+            out << "couldn't initialize database from replica `" << _initFromReplica << "':\n";
+            out << "replica doesn't support this functionality (IceGrid < 3.5.1)";
+            return false;
+        }
+        catch(const Ice::Exception& ex)
+        {
+            Error out(_communicator->getLogger());
+            out << "couldn't initialize database from replica `" << _initFromReplica << "':\n";
+            out << ex;
+            return false;
+        }
+    }
+
+    //
+    // Get proxies for nodes that we were connected with on last
+    // shutdown.
+    //
     NodePrxSeq nodes;
-    proxies = _database->getInternalObjectsByType(Node::ice_staticId());
+    ObjectProxySeq proxies = _database->getInternalObjectsByType(Node::ice_staticId());
     for(ObjectProxySeq::const_iterator p = proxies.begin(); p != proxies.end(); ++p)
     {
         nodes.push_back(NodePrx::uncheckedCast(*p));
-    }
-
-    InternalRegistryPrxSeq replicas;
-    proxies = _database->getObjectsByType(InternalRegistry::ice_staticId());
-    for(ObjectProxySeq::const_iterator p = proxies.begin(); p != proxies.end(); ++p)
-    {
-        replicas.push_back(InternalRegistryPrx::uncheckedCast(*p));
     }
 
     //
@@ -404,7 +488,7 @@ RegistryI::startImpl()
     InternalRegistryPrx internalRegistry = setupInternalRegistry(registryAdapter);
     if(_master)
     {
-        nodes = registerReplicas(internalRegistry, replicas, nodes);
+        nodes = registerReplicas(internalRegistry, nodes);
         registerNodes(internalRegistry, nodes);
     }
     else
@@ -1293,18 +1377,63 @@ RegistryI::getSSLInfo(const ConnectionPtr& connection, string& userDN)
 }
 
 NodePrxSeq
-RegistryI::registerReplicas(const InternalRegistryPrx& internalRegistry, 
-                            const InternalRegistryPrxSeq& replicas,
-                            const NodePrxSeq& dbNodes)
+RegistryI::registerReplicas(const InternalRegistryPrx& internalRegistry, const NodePrxSeq& dbNodes)
 {
+    //
+    // Get proxies for slaves that we we connected with on last
+    // shutdown.
+    //
+    // We first get the internal registry proxies and then also check
+    // the public registry proxies. If we find public registry
+    // proxies, we use indirect proxies setup with a locator using the
+    // public proxy in preference over the internal proxy which might
+    // contain stale endpoints if the slave was restarted. IceGrid
+    // version <= 3.5.0 also kept the internal proxy in the database
+    // instead of the public proxy.
+    //
+    map<InternalRegistryPrx, RegistryPrx> replicas;
+    Ice::ObjectProxySeq proxies = _database->getObjectsByType(InternalRegistry::ice_staticId());
+    for(ObjectProxySeq::const_iterator p = proxies.begin(); p != proxies.end(); ++p)
+    {
+        replicas.insert(pair<InternalRegistryPrx, RegistryPrx>(InternalRegistryPrx::uncheckedCast(*p), RegistryPrx()));
+    }
+
+    proxies = _database->getObjectsByType(Registry::ice_staticId());
+    for(ObjectProxySeq::const_iterator p = proxies.begin(); p != proxies.end(); ++p)
+    {
+        Ice::Identity id = (*p)->ice_getIdentity();
+        const string prefix("Registry-");
+        string::size_type pos = id.name.find(prefix);
+        if(pos == string::npos)
+        {
+            continue; // Ignore the master registry proxy.
+        }
+        id.name = "InternalRegistry-" + id.name.substr(prefix.size());
+        
+        Ice::ObjectPrx prx = (*p)->ice_identity(id)->ice_endpoints(Ice::EndpointSeq());
+        id.name = "Locator";
+        prx = prx->ice_locator(Ice::LocatorPrx::uncheckedCast((*p)->ice_identity(id)));
+
+        for(map<InternalRegistryPrx, RegistryPrx>::iterator q = replicas.begin(); q != replicas.end(); ++q)
+        {
+            if(q->first->ice_getIdentity() == prx->ice_getIdentity()) 
+            {
+                replicas.erase(q);
+                break;
+            }
+        }
+        replicas.insert(pair<InternalRegistryPrx, RegistryPrx>(InternalRegistryPrx::uncheckedCast(prx), 
+                                                               RegistryPrx::uncheckedCast(*p)));
+    }
+
     set<NodePrx> nodes;
     nodes.insert(dbNodes.begin(), dbNodes.end());
     vector<Ice::AsyncResultPtr> results;
-    for(InternalRegistryPrxSeq::const_iterator r = replicas.begin(); r != replicas.end(); ++r)
+    for(map<InternalRegistryPrx, RegistryPrx>::const_iterator r = replicas.begin(); r != replicas.end(); ++r)
     {
-        if((*r)->ice_getIdentity() != internalRegistry->ice_getIdentity())
+        if(r->first->ice_getIdentity() != internalRegistry->ice_getIdentity())
         {
-            results.push_back((*r)->begin_registerWithReplica(internalRegistry));
+            results.push_back(r->first->begin_registerWithReplica(internalRegistry));
         }
     }
 
@@ -1347,14 +1476,35 @@ RegistryI::registerReplicas(const InternalRegistryPrx& internalRegistry,
             // Clear the proxy from the database if we can't
             // contact the replica.
             //
+            RegistryPrx registry;
+            for(map<InternalRegistryPrx, RegistryPrx>::const_iterator q = replicas.begin(); q != replicas.end(); ++q)
+            {
+                if(q->first->ice_getIdentity() == replica->ice_getIdentity()) 
+                {
+                    registry = q->second;
+                    break;
+                }
+            }
+	    ObjectInfoSeq infos;
+            if(registry)
+            {
+                try
+                {
+		    infos.push_back(_database->getObjectInfo(registry->ice_getIdentity()));
+                }
+                catch(const ObjectNotRegisteredException&)
+                {
+                }
+            }
             try
             {
-                _database->removeObject(replica->ice_getIdentity());
+	        infos.push_back(_database->getObjectInfo(replica->ice_getIdentity()));
             }
             catch(const ObjectNotRegisteredException&)
             {
             }
-            
+	    _database->removeRegistryWellKnownObjects(infos);
+
             if(_traceLevels && _traceLevels->replica > 1)
             {
                 Ice::Trace out(_traceLevels->logger, _traceLevels->replicaCat);

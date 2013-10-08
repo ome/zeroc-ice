@@ -385,6 +385,10 @@ Slice::Gen::generate(const UnitPtr& p)
         H << "\n#include <Ice/Proxy.h>";
         H << "\n#include <Ice/OutgoingAsync.h>";
     }
+    else if(p->hasNonLocalClassDecls())
+    {
+        H << "\n#include <Ice/Proxy.h>";
+    }
 
     if(p->hasNonLocalDataOnlyClasses() || p->hasNonLocalExceptions())
     {
@@ -1848,9 +1852,24 @@ Slice::Gen::ProxyVisitor::visitOperation(const OperationPtr& p)
     H.zeroIndent();
     H << nl << "#ifdef ICE_CPP11";
     H.restoreIndent();
-    
+
     string retEndArg = getEndArg(ret, p->getMetaData(), "__ret");
-    
+
+    //
+    // COMPILERFIX VC compilers up to VC110 don't support more than 10 parameters with std::function due to
+    // lack of variadic templates.
+    //
+    if(outDecls.size() > 10 || (outDecls.size() > 9 && !retInS.empty()))
+    {
+        H.zeroIndent();
+        H << nl << "#if !defined(_MSC_VER) || _MSC_VER > 1700";
+        H.restoreIndent();
+        H << nl << "//";
+        H << nl << "// COMPILERFIX VC compilers up to VC110 don't support more than 10 parameters with";
+        H << nl << "// std::function due to lack of variadic templates.";
+        H << nl << "//";
+    }
+
     H << nl << "::Ice::AsyncResultPtr";
     H << nl << "begin_" << name << spar << paramsDeclAMI
       << "const ::IceInternal::Function<void " << spar;
@@ -1858,70 +1877,121 @@ Slice::Gen::ProxyVisitor::visitOperation(const OperationPtr& p)
     {
         H << retInS;
     }
-    H << outDecls << epar << ">& response, "
-      << "const ::IceInternal::Function<void (const ::Ice::Exception&)>& exception = "
+    H << outDecls << epar << ">& __response, "
+      << "const ::IceInternal::Function<void (const ::Ice::Exception&)>& __exception = "
          "::IceInternal::Function<void (const ::Ice::Exception&)>(), "
-      << "const ::IceInternal::Function<void (bool)>& sent = ::IceInternal::Function<void (bool)>()" << epar;
-      
+      << "const ::IceInternal::Function<void (bool)>& __sent = ::IceInternal::Function<void (bool)>()" << epar;
+
     H << sb;
     if(p->returnsData())
     {
-        H << nl << "return __begin_" << name << spar << argsAMI << "0, response, exception, sent" << epar << ";";
+        H << nl << "return __begin_" << name << spar << argsAMI << "0, __response, __exception, __sent" << epar << ";";
     }
     else
     {
         H << nl << "return begin_" << name << spar << argsAMI 
-          << "0, new ::IceInternal::Cpp11FnOnewayCallbackNC(response, exception, sent)" << epar << ";";
+          << "0, new ::IceInternal::Cpp11FnOnewayCallbackNC(__response, __exception, __sent)" << epar << ";";
           
     }
     H << eb;
+
+    //
+    // COMPILERFIX VC compilers up to VC110 don't support more than 10 parameters with std::function due to
+    // lack of variadic templates.
+    //
+    if(outDecls.size() > 10 || (outDecls.size() > 9 && !retInS.empty()))
+    {
+        H.zeroIndent();
+        H << nl << "#endif";
+        H.restoreIndent();
+    }
     
     H << nl << "::Ice::AsyncResultPtr";
     H << nl << "begin_" << name << spar << paramsDeclAMI 
-      << "const ::IceInternal::Function<void (const ::Ice::AsyncResultPtr&)>& completed"
-      << "const ::IceInternal::Function<void (const ::Ice::AsyncResultPtr&)>& sent = "
+      << "const ::IceInternal::Function<void (const ::Ice::AsyncResultPtr&)>& __completed"
+      << "const ::IceInternal::Function<void (const ::Ice::AsyncResultPtr&)>& __sent = "
          "::IceInternal::Function<void (const ::Ice::AsyncResultPtr&)>()" << epar;
     H << sb;
-    H << nl << "return begin_" << name << spar << argsAMI << "0, ::Ice::newCallback(completed, sent), 0" << epar << ";";
+    H << nl << "return begin_" << name << spar << argsAMI << "0, ::Ice::newCallback(__completed, __sent), 0" << epar << ";";
     H << eb;
     
-    
+    //
+    // COMPILERFIX VC compilers up to VC110 don't support more than 10 parameters with std::function due to
+    // lack of variadic templates.
+    //
+    if(outDecls.size() > 10 || (outDecls.size() > 9 && !retInS.empty()))
+    {
+        H.zeroIndent();
+        H << nl << "#if !defined(_MSC_VER) || _MSC_VER > 1700";
+        H.restoreIndent();
+        H << nl << "//";
+        H << nl << "// COMPILERFIX VC compilers up to VC110 don't support more than 10 parameters with";
+        H << nl << "// std::function due to lack of variadic templates.";
+        H << nl << "//";
+    }
+
     H << nl << "::Ice::AsyncResultPtr";
-    H << nl << "begin_" << name << spar << paramsDeclAMI << "const ::Ice::Context& ctx"
+    H << nl << "begin_" << name << spar << paramsDeclAMI << "const ::Ice::Context& __ctx"
       << "const ::IceInternal::Function<void " << spar;
     if(!retInS.empty())
     {
         H << retInS;
     }
-    H << outDecls << epar << ">& response, "
-      << "const ::IceInternal::Function<void (const ::Ice::Exception&)>& exception = "
+    H << outDecls << epar << ">& __response, "
+      << "const ::IceInternal::Function<void (const ::Ice::Exception&)>& __exception = "
          "::IceInternal::Function<void (const ::Ice::Exception&)>(), "
-      << "const ::IceInternal::Function<void (bool)>& sent = ::IceInternal::Function<void (bool)>()" << epar;
+      << "const ::IceInternal::Function<void (bool)>& __sent = ::IceInternal::Function<void (bool)>()" << epar;
       
     H << sb;
     if(p->returnsData())
     {
-        H << nl << "return __begin_" << name << spar << argsAMI << "&ctx, response, exception, sent" << epar << ";";
+        H << nl << "return __begin_" << name << spar << argsAMI << "&__ctx, __response, __exception, __sent" << epar << ";";
     }
     else
     {
         H << nl << "return begin_" << name << spar << argsAMI
-          << "&ctx, new ::IceInternal::Cpp11FnOnewayCallbackNC(response, exception, sent), 0" << epar << ";";
+          << "&__ctx, new ::IceInternal::Cpp11FnOnewayCallbackNC(__response, __exception, __sent), 0" << epar << ";";
     }
     H << eb;
     
+    //
+    // COMPILERFIX VC compilers up to VC110 don't support more than 10 parameters with std::function due to
+    // lack of variadic templates.
+    //
+    if(outDecls.size() > 10 || (outDecls.size() > 9 && !retInS.empty()))
+    {
+        H.zeroIndent();
+        H << nl << "#endif";
+        H.restoreIndent();
+    }
+    
     H << nl << "::Ice::AsyncResultPtr";
     H << nl << "begin_" << name << spar << paramsDeclAMI 
-      << "const ::Ice::Context& ctx"
-      << "const ::IceInternal::Function<void (const ::Ice::AsyncResultPtr&)>& completed"
-      << "const ::IceInternal::Function<void (const ::Ice::AsyncResultPtr&)>& sent = "
+      << "const ::Ice::Context& __ctx"
+      << "const ::IceInternal::Function<void (const ::Ice::AsyncResultPtr&)>& __completed"
+      << "const ::IceInternal::Function<void (const ::Ice::AsyncResultPtr&)>& __sent = "
          "::IceInternal::Function<void (const ::Ice::AsyncResultPtr&)>()" << epar;
     H << sb;
-    H << nl << "return begin_" << name << spar << argsAMI << "&ctx, ::Ice::newCallback(completed, sent)" << epar << ";";
+    H << nl << "return begin_" << name << spar << argsAMI << "&__ctx, ::Ice::newCallback(__completed, __sent)" << epar << ";";
     H << eb;
     
     if(p->returnsData())
     {
+        //
+        // COMPILERFIX VC compilers up to VC110 don't support more than 10 parameters with std::function due to
+        // lack of variadic templates.
+        //
+        if(outDecls.size() > 10 || (outDecls.size() > 9 && !retInS.empty()))
+        {
+            H.zeroIndent();
+            H << nl << "#if !defined(_MSC_VER) || _MSC_VER > 1700";
+            H.restoreIndent();
+            H << nl << "//";
+            H << nl << "// COMPILERFIX VC compilers up to VC110 don't support more than 10 parameters with";
+            H << nl << "// std::function due to lack of variadic templates.";
+            H << nl << "//";
+        }
+
         H << nl;
         H.dec();
         H << nl << "private:";
@@ -1929,7 +1999,7 @@ Slice::Gen::ProxyVisitor::visitOperation(const OperationPtr& p)
         
         
         H << sp << nl << "::Ice::AsyncResultPtr __begin_" << name << spar << paramsDeclAMI
-          << "const ::Ice::Context* ctx" << "const ::IceInternal::Function<void " << spar;
+          << "const ::Ice::Context* __ctx" << "const ::IceInternal::Function<void " << spar;
                 
 
         if(!retInS.empty())
@@ -1938,9 +2008,9 @@ Slice::Gen::ProxyVisitor::visitOperation(const OperationPtr& p)
         }
         H << outDecls;
 
-        H << epar << ">& response, "
-          << "const ::IceInternal::Function<void (const ::Ice::Exception&)>& exception, "
-          << "const ::IceInternal::Function<void (bool)>& sent" << epar;
+        H << epar << ">& __response, "
+          << "const ::IceInternal::Function<void (const ::Ice::Exception&)>& __exception, "
+          << "const ::IceInternal::Function<void (bool)>& __sent" << epar;
         H << sb;
         H << nl << "class Cpp11CB : public ::IceInternal::Cpp11FnCallbackNC";
         H << sb;
@@ -2027,13 +2097,23 @@ Slice::Gen::ProxyVisitor::visitOperation(const OperationPtr& p)
         
         H << eb << ';';
         
-        H << nl << "return begin_" << name << spar << argsAMI << "ctx" << "new Cpp11CB(response, exception, sent)" 
+        H << nl << "return begin_" << name << spar << argsAMI << "__ctx" << "new Cpp11CB(__response, __exception, __sent)" 
           << epar << ';';
         H << eb;
         H << nl;
         H.dec();
         H << nl << "public:";
         H.inc();
+        //
+        // COMPILERFIX VC compilers up to VC110 don't support more than 10 parameters with std::function due to
+        // lack of variadic templates.
+        //
+        if(outDecls.size() > 10 || (outDecls.size() > 9 && !retInS.empty()))
+        {
+            H.zeroIndent();
+            H << nl << "#endif";
+            H.restoreIndent();
+        }
     }
     
     H.zeroIndent();
@@ -4758,7 +4838,7 @@ Slice::Gen::ObjectVisitor::emitGCClearCode(const TypePtr& p, const string& prefi
 }
 
 bool
-Slice::Gen::ObjectVisitor::emitVirtualBaseInitializers(const ClassDefPtr& p, bool virtualInheritance)
+Slice::Gen::ObjectVisitor::emitVirtualBaseInitializers(const ClassDefPtr& p, bool virtualInheritance, bool direct)
 {
     DataMemberList allDataMembers = p->allDataMembers();
     if(allDataMembers.empty())
@@ -4766,16 +4846,21 @@ Slice::Gen::ObjectVisitor::emitVirtualBaseInitializers(const ClassDefPtr& p, boo
         return false;
     }
 
-    if(virtualInheritance)
+    ClassList bases = p->bases();
+    if(!bases.empty() && !bases.front()->isInterface())
     {
-        ClassList bases = p->bases();
-        if(!bases.empty() && !bases.front()->isInterface())
+        if(emitVirtualBaseInitializers(bases.front(), p->hasMetaData("cpp:virtual"), false))
         {
-            if(emitVirtualBaseInitializers(bases.front(), virtualInheritance))
-            {
-                H << ',';
-            }
+            H << ',';
         }
+    }
+
+    //
+    // Do not call non direct base classes constructor if not using virtual inheritance.
+    //
+    if(!direct && !virtualInheritance)
+    {
+        return false;
     }
 
     string upcall = "(";
@@ -4824,7 +4909,7 @@ Slice::Gen::ObjectVisitor::emitOneShotConstructor(const ClassDefPtr& p)
         ClassDefPtr base;
         if(!bases.empty() && !bases.front()->isInterface())
         {
-            if(emitVirtualBaseInitializers(bases.front(), p->hasMetaData("cpp:virtual")))
+            if(emitVirtualBaseInitializers(bases.front(), p->hasMetaData("cpp:virtual"), true))
             {
                 if(!dataMembers.empty())
                 {

@@ -26,13 +26,20 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.awt.event.ComponentEvent;
 import java.awt.event.ComponentAdapter;
+import java.awt.BorderLayout;
 
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.HashMap;
+import java.util.Set;
+import java.util.LinkedHashSet;
+import java.util.prefs.Preferences;
 
 import java.text.DecimalFormat;
+
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
 
 import javax.swing.AbstractAction;
 import javax.swing.Action;
@@ -41,6 +48,9 @@ import javax.swing.JButton;
 import javax.swing.AbstractCellEditor;
 import javax.swing.DefaultCellEditor;
 import javax.swing.JOptionPane;
+import javax.swing.BorderFactory;
+
+import javax.swing.border.TitledBorder;
 
 import javax.swing.event.TreeSelectionEvent;
 import javax.swing.event.TreeSelectionListener;
@@ -51,6 +61,7 @@ import javax.swing.JComponent;
 import javax.swing.JFrame;
 import javax.swing.SwingConstants;
 import javax.swing.JScrollPane;
+import javax.swing.JSplitPane;
 import javax.swing.JTable;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
@@ -58,6 +69,7 @@ import javax.swing.JTree;
 import javax.swing.JMenu;
 import javax.swing.JMenuItem;
 import javax.swing.JPopupMenu;
+import javax.swing.JPanel;
 
 import javax.swing.table.TableColumnModel;
 import javax.swing.table.DefaultTableCellRenderer;
@@ -240,20 +252,48 @@ public class MetricsViewEditor extends Editor implements MetricsFieldContext
             {
                 MetricsViewEditor.startRefreshThread((MetricsView)e.getPath().getLastPathComponent());
             }
+            
+            if(e.isAddedPath())
+            {
+                MetricsViewEditor.setSelectedPath(e.getPath());
+            }
         }
     }
 
     MetricsViewEditor(Root root)
     {
+        Coordinator coord = root.getCoordinator();
+        _prefs = coord.getPrefs().node("MetricsView");
+            
         if(_properties == null)
         {
             JTree tree = root.getTree();
             tree.addTreeSelectionListener(new SelectionListener());
 
+            Set<String> sectionSort = new LinkedHashSet<String>();
             _properties = Ice.Util.createProperties();
+
             _properties.load("metrics.cfg");
-            _sectionSort = _properties.getPropertyAsList("IceGridGUI.Metrics");
-            for(String name : _sectionSort)
+            sectionSort.addAll(java.util.Arrays.asList(_properties.getPropertyAsList("IceGridGUI.Metrics")));
+            
+            String metricsDefs = coord.getProperties().getProperty("IceGridAdmin.MetricsConfigs");
+            if(!metricsDefs.isEmpty())
+            {
+                for(String s : metricsDefs.split(","))
+                {
+                    try
+                    {
+                        _properties.load(s.trim());
+                    }
+                    catch(Ice.FileException ex)
+                    {
+                        coord.getCommunicator().getLogger().warning("unable to load `" + ex.path + "'");
+                    }
+                    sectionSort.addAll(java.util.Arrays.asList(_properties.getPropertyAsList("IceGridGUI.Metrics")));
+                }
+            }
+
+            for(String name : sectionSort)
             {
                 String displayName = _properties.getPropertyWithDefault("IceGridGUI.Metrics." + name, "");
                 if(!displayName.equals(""))
@@ -261,6 +301,8 @@ public class MetricsViewEditor extends Editor implements MetricsFieldContext
                     _sectionNames.put(name, displayName);
                 }
             }
+            
+            _sectionSort = sectionSort.toArray(new String[sectionSort.size()]);
         }
     }
 
@@ -283,6 +325,11 @@ public class MetricsViewEditor extends Editor implements MetricsFieldContext
             _refreshThread.done();
             _refreshThread = null;
         }
+    }
+    
+    static void setSelectedPath(TreePath path)
+    {
+        _selectedPath = path;
     }
 
     public static class MetricsViewInfo
@@ -412,25 +459,19 @@ public class MetricsViewEditor extends Editor implements MetricsFieldContext
             }
             else
             {
+                _samples++;
                 _last = value.doubleValue();
-                if(_average == 0)
-                {
-                    _average = _last;
-                    _min = _last;
-                    _max = _last;
-                }
-                else
-                {
-                    _average = (_average + _last) / 2;
-                }
-                if(_last < _min)
+                
+                _average = _average + (_last - _average) / _samples;
+                if(_last < _min || _samples == 1)
                 {
                     _min = _last;
                 }
-                if(_last > _max)
+                if(_last > _max || _samples == 1)
                 {
                     _max = _last;
                 }
+
                 return _last * _scaleFactor;
             }
         }
@@ -465,6 +506,7 @@ public class MetricsViewEditor extends Editor implements MetricsFieldContext
         private double _scaleFactor = 1.0d;
         private double _last;
         private double _average = 0;
+        private int _samples = 0;
         private double _min;
         private double _max;
     }
@@ -734,15 +776,18 @@ public class MetricsViewEditor extends Editor implements MetricsFieldContext
                                         {
                                             public void actionPerformed(ActionEvent e)
                                             {
-                                                GraphView view = node.getCoordinator().createGraphView();
-                                                view.addSeries(new MetricsViewTransferableData(new MetricsViewInfo(node), 
-                                                                                               entry.getKey(), rows));
+                                                Coordinator.IGraphView view = node.getCoordinator().createGraphView();
+                                                if(view != null)
+                                                {
+                                                    view.addSeries(new MetricsViewTransferableData(new MetricsViewInfo(node), 
+                                                                                                   entry.getKey(), rows));
+                                                }
                                             }
                                         });
                                 addToGraph.add(newGraph);
 
-                                GraphView[] graphs = node.getCoordinator().getGraphViews();
-                                for(final GraphView view : graphs)
+                                Coordinator.IGraphView[] graphs = node.getCoordinator().getGraphViews();
+                                for(final Coordinator.IGraphView view : graphs)
                                 {
                                     JMenuItem item = new JMenuItem(view.getTitle());
                                     addToGraph.add(item);
@@ -901,11 +946,22 @@ public class MetricsViewEditor extends Editor implements MetricsFieldContext
         return null;
     }
 
-    protected void appendProperties(DefaultFormBuilder builder)
+    protected JComponent createPropertiesPanel()
     {
+        JSplitPane current = null;
+        JSplitPane top = null;
         Map<String, JTable> tables = new HashMap<String, JTable>(_tables);
-        for(String name : _sectionSort)
+        
+        StringBuilder sb = new StringBuilder();
+        Object[] elements = _selectedPath.getPath();
+        for(Object element : elements)
         {
+            sb.append(element.toString());
+            sb.append(".");
+        }
+        
+        for(String name : _sectionSort)
+        {                                                        
             JTable table = tables.remove(name);
             if(table == null)
             {
@@ -916,35 +972,64 @@ public class MetricsViewEditor extends Editor implements MetricsFieldContext
             {
                 section = name;
             }
-            createScrollTable(builder, section, table);
+            current = createScrollTable(current, sb.toString() + name, section, table);
+            if(top == null)
+            {
+                top = current;
+            }
         }
         for(Map.Entry<String, JTable> entry : tables.entrySet())
         {
-            createScrollTable(builder, entry.getKey(), entry.getValue());
+            current = createScrollTable(current, sb.toString() + entry.getKey(), entry.getKey(), entry.getValue());
+            if(top == null)
+            {
+                top = current;
+            }
         }
+        if(current != null)
+        {
+            current.setBottomComponent(new JPanel());
+        }
+        return top;
     }
 
-    private void createScrollTable(DefaultFormBuilder builder, String title, JTable table)
+    private JSplitPane createScrollTable(JSplitPane currentPane,final String key, String title, JTable table)
     {
-        CellConstraints cc = new CellConstraints();
-        builder.appendSeparator(title);
-        builder.append("");
-        builder.nextLine();
-        builder.append("");
-        builder.nextLine();
-        builder.append("");
-        builder.nextLine();
-        builder.append("");
-        builder.nextLine();
-        builder.append("");
-        builder.nextLine();
-        builder.append("");
-        builder.nextRow(-10);
-
-        JScrollPane scrollPane = new JScrollPane(table);
-        builder.add(scrollPane, cc.xywh(builder.getColumn(), builder.getRow(), 3, 10));
-        builder.nextRow(10);
-        builder.nextLine();
+        JPanel panel = new JPanel();
+        TitledBorder border = BorderFactory.createTitledBorder(BorderFactory.createEmptyBorder(), 
+                                                               title, TitledBorder.LEFT, TitledBorder.CENTER);
+        panel.setBorder(border);
+        panel.setLayout(new BorderLayout());
+        panel.add(new JScrollPane(table),  BorderLayout.CENTER);
+        
+        JSplitPane splitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT);
+        splitPane.setTopComponent(panel);
+        if(currentPane != null)
+        {
+            currentPane.setBottomComponent(splitPane);
+        }
+        splitPane.setDividerLocation(_prefs.getInt(key, 120));
+        splitPane.addPropertyChangeListener(JSplitPane.DIVIDER_LOCATION_PROPERTY, 
+                                            new PropertyChangeListener()
+                                                {
+                                                    @Override
+                                                    public void propertyChange(PropertyChangeEvent e)
+                                                    {
+                                                        _prefs.putInt(key, Integer.valueOf((Integer)e.getNewValue()));
+                                                        try
+                                                        {
+                                                            _prefs.flush();
+                                                        }
+                                                        catch(java.util.prefs.BackingStoreException ex)
+                                                        {
+                                                            JOptionPane.showMessageDialog(null, 
+                                                                                          ex.toString(),
+                                                                                          "Error saving preferences",
+                                                                                          JOptionPane.ERROR_MESSAGE);
+                                                        }
+                                                    }
+                                                });
+        return splitPane;
     }
 
     protected void buildPropertiesPanel()
@@ -1143,7 +1228,7 @@ public class MetricsViewEditor extends Editor implements MetricsFieldContext
 
         public MetricsField createField()
         {
-            return createField(_node, _prefix, _metricsName, _fieldName, _objectField, _context);
+            return MetricsViewEditor.createField(_node, _prefix, _metricsName, _fieldName, _objectField, _context);
         }
 
         public String getPropertyPrefix()
@@ -1698,5 +1783,7 @@ public class MetricsViewEditor extends Editor implements MetricsFieldContext
     private static Ice.Properties _properties;
     private static String[] _sectionSort;
     private static Map<String, String> _sectionNames = new HashMap<String, String>();
+    private static TreePath _selectedPath;
+    final private Preferences _prefs;
 }
 
