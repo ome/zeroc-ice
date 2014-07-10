@@ -39,7 +39,7 @@ using namespace Slice::Ruby;
 namespace
 {
 
-IceUtil::Mutex* mutex = 0;
+IceUtil::Mutex* l_mutex = 0;
 bool interrupted = false;
 
 class Init
@@ -48,13 +48,13 @@ public:
 
     Init()
     {
-        mutex = new IceUtil::Mutex;
+        l_mutex = new IceUtil::Mutex;
     }
 
     ~Init()
     {
-        delete mutex;
-        mutex = 0;
+        delete l_mutex;
+        l_mutex = 0;
     }
 };
 
@@ -65,7 +65,7 @@ Init init;
 void
 interruptedCallback(int signal)
 {
-    IceUtilInternal::MutexPtrLock<IceUtil::Mutex> sync(mutex);
+    IceUtilInternal::MutexPtrLock<IceUtil::Mutex> sync(l_mutex);
 
     interrupted = true;
 }
@@ -316,7 +316,7 @@ compile(int argc, char* argv[])
         }
 
         {
-            IceUtilInternal::MutexPtrLock<IceUtil::Mutex> sync(mutex);
+            IceUtilInternal::MutexPtrLock<IceUtil::Mutex> sync(l_mutex);
 
             if(interrupted)
             {

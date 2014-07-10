@@ -26,7 +26,7 @@
 #  include <dir.h>
 #endif
 
-#ifdef __FreeBSD__
+#if defined(__FreeBSD__) || defined(__APPLE__)
 #  include <unistd.h>
 #endif
 
