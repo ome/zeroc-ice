@@ -1,2 +1,0 @@
-ExceptionRedefinition.ice:14: redefinition of exception `Base' as exception
-ExceptionRedefinition.ice:16: redefinition of exception `Derived' as exception
